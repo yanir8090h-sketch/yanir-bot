@@ -48,6 +48,6 @@ class DiceView(discord.ui.View):
 async def dice(ctx):
     view = DiceView(ctx.author)
     await ctx.send("לחץ על הכפתור כדי לגלגל קובייה!", view=view)
-bot.run("MTQ4MDMzMjIxMTQyODUyODI0OA.G1qeDN.92WecniqxDPSviKmmyrfDyqm7Cr5ZsFFXVY55E")
+bot.run("MTQ4MDMzMjIxMTQyODUyODI0OA.G71DHS.qdd9-nmRZuPadkTnvw6Nemuj9pDexy08XoNDQg")
 
 
