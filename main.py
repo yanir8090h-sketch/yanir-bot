@@ -191,3 +191,4 @@ async def staff_request(ctx):
 
 # הרצת הבוט באמצעות משתנה הסביבה הסודי
 bot.run(os.environ.get("MTQ4MDMzMjIxMTQyODUyODI0OA.GaXn4S.Kmzt9Akb6jGlfnsKsUI-33sIpdAV4q6fWvVJfs"))
+
