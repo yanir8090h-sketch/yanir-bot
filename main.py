@@ -1,3 +1,4 @@
+import os
 import discord
 from discord.ext import commands
 import random
@@ -49,5 +50,4 @@ async def dice(ctx):
     await ctx.send("לחץ על הכפתור כדי לגלגל קובייה!", view=view)
 
 # ⚠️ שים לב: כאן אתה צריך לשים את הטוקן החדש שלך מפורטל המפתחים של דיסקורד!
-import os
 bot.run("MTQ4MDMzMjIxMTQyODUyODI0OA.G1qeDN.92WecniqxDPSviKmmyrfDyqm7Cr5ZsFFXVY55E")
