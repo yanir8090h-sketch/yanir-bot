@@ -10,7 +10,7 @@ intents.message_content = True
 intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# מאגרי נתונים זמניים בזיכרון (מתאפס בריסטארט)
+# מאגרי נתונים זמניים בזיכרון
 xp_data = {}  # user_id: xp
 inventory = {}  # user_id: [items]
 
@@ -23,7 +23,7 @@ SHOP_ITEMS = {
 
 @bot.event
 async def on_ready():
-    print(f"🤖 הבוט {bot.user.name} עלה לאוויר בהצלחה ב-Railway!")
+    print(f"Logged in as {bot.user.name}")
 
 # ---- מערכת XP ו-SHOP ----
 def add_xp(user_id, amount):
@@ -108,7 +108,7 @@ async def game_gamma(ctx):
     except asyncio.TimeoutError:
         await ctx.send(f"⏰ נגמר הזמן! המספר היה `{secret}`.")
 
-# ---- מערכת טיקטים מעוצבת עם תיוג @STAFF ושאלות וויס וסיבה ----
+# ---- מערכת טיקטים מעוצבת ----
 class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -119,7 +119,6 @@ class TicketView(discord.ui.View):
         staff_role_id = int(os.environ.get("STAFF_ROLE_ID", 0))
         staff_role = guild.get_role(staff_role_id)
         
-        # יצירת חדר פרטי לטיקט
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(read_messages=False),
             interaction.user: discord.PermissionOverwrite(read_messages=True, send_messages=True),
@@ -130,21 +129,16 @@ class TicketView(discord.ui.View):
         ticket_channel = await guild.create_text_channel(name=f"ticket-{interaction.user.name}", overwrites=overwrites)
         await interaction.response.send_message(f"✅ הטיקט שלך נפתח בחדר: {ticket_channel.mention}", ephemeral=True)
 
-        # שאלון אינטראקטיבי בתוך חדר הטיקט
         staff_mention = staff_role.mention if staff_role else "@STAFF"
-        
         embed_welcome = discord.Embed(title="🎫 אימות ופתיחת טיקט שירות", description=f"ברוך הבא {interaction.user.mention}.\nנא לענות על השאלות הבאות כדי שהצוות יוכל לעזור לך.", color=discord.Color.red())
         await ticket_channel.send(content=staff_mention, embed=embed_welcome)
 
-        # שאלה 1: סיבה
         await ticket_channel.send("❓ **שאלה 1:** מהי סיבת פתיחת הטיקט?")
         reason = await bot.wait_for("message", check=lambda m: m.author == interaction.user and m.channel == ticket_channel)
 
-        # שאלה 2: וויס
         await ticket_channel.send("❓ **שאלה 2:** האם תרצה שנציג ייכנס איתך לחדר וויס (Voice)? (כן/לא)")
         voice_req = await bot.wait_for("message", check=lambda m: m.author == interaction.user and m.channel == ticket_channel)
 
-        # סיכום מרהיב לצוות
         embed_summary = discord.Embed(title="📝 פרטי קריאת השירות", color=discord.Color.orange())
         embed_summary.add_field(name="👤 פותח הטיקט", value=interaction.user.mention, inline=True)
         embed_summary.add_field(name="📌 סיבה", value=reason.content, inline=False)
@@ -153,12 +147,12 @@ class TicketView(discord.ui.View):
 
 @bot.command(name="ticket")
 @commands.has_permissions(administrator=True)
-def send_ticket_launcher(ctx):
+async def send_ticket_launcher(ctx):
     view = TicketView()
     embed = discord.Embed(title="🎫 מרכז התמיכה והאימות", description="זקוק לעזרה מהצוות או לאימות מהיר?\nלחץ על הכפתור למטה כדי לפתוח פנייה פרטית.", color=discord.Color.red())
     await ctx.send(embed=embed, view=view)
 
-# ---- בקשת סטאף (רק הצוות שולח, רק הלנה מאשרת בחדר ספציפי) ----
+# ---- בקשת סטאף ----
 class StaffActionView(discord.ui.View):
     def __init__(self, applicant):
         super().__init__(timeout=None)
@@ -166,7 +160,6 @@ class StaffActionView(discord.ui.View):
 
     @discord.ui.button(label="✅ אשר סטאף", style=discord.ButtonStyle.green, custom_id="approve_staff")
     async def approve(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # בדיקה שרק הלנה (או אדמין ראשי) יכולה ללחוץ
         if interaction.user.name != "helena" and not interaction.user.guild_permissions.administrator:
             return await interaction.response.send_message("❌ רק הלנה יכולה לאשר בקשות בחדר זה!", ephemeral=True)
         
@@ -175,20 +168,15 @@ class StaffActionView(discord.ui.View):
 
 @bot.command(name="staff_req")
 async def staff_request(ctx):
-    staff_role_id = int(os.environ.get("STAFF_ROLE_ID", 0))
-    if staff_role_id not in [r.id for r in ctx.author.roles]:
-        return await ctx.send("❌ פקודה זו מיועדת לחברי צוות (Staff) בלבד!")
-
-    target_channel_id = int(os.environ.get("STAFF_CHANNEL_ID", 1492894356091179008))
+    target_channel_id = 1492894356091179008
     channel = bot.get_channel(target_channel_id)
     if not channel:
-        return await ctx.send("❌ חדר בקשות הצוות לא נמצא. ודא שה-ID תקין!")
+        return await ctx.send("❌ חדר בקשות הצוות לא נמצא!")
 
-    embed = discord.Embed(title="📩 בקשת סטאף פרנד חדשה", description=f"חבר הצוות {ctx.author.mention} שלח בקשת קידום/סטאף פרנד.\nממתין לאישור של הלנה.", color=discord.Color.blue())
+    embed = discord.Embed(title="📩 בקשת סטאף פרנד חדשה", description=f"חבר הצוות {ctx.author.mention} שלח בקשת קידום.\nממתין לאישור של הלנה.", color=discord.Color.blue())
     view = StaffActionView(ctx.author)
     await channel.send(embed=embed, view=view)
     await ctx.send("✅ בקשת הסטאף שלך נשלחה בהצלחה לחדר האישורים של הלנה!")
 
-# הרצת הבוט באמצעות משתנה הסביבה הסודי
+# שימוש במשתנה המאובטח מה-Variables
 bot.run(os.environ.get("MTQ4MDMzMjIxMTQyODUyODI0OA.GaXn4S.Kmzt9Akb6jGlfnsKsUI-33sIpdAV4q6fWvVJfs"))
-
