@@ -190,4 +190,4 @@ async def staff_request(ctx):
     await ctx.send("✅ בקשת הסטאף שלך נשלחה בהצלחה לחדר האישורים של הלנה!")
 
 # הרצת הבוט באמצעות משתנה הסביבה הסודי
-bot.run(os.environ.get("MTQ4MDMzMjIxMTQyODUyODI0OA.G71DHS.qdd9-nmRZuPadkTnvw6Nemuj9pDexy08XoNDQg"))
+bot.run(os.environ.get("MTQ4MDMzMjIxMTQyODUyODI0OA.GaXn4S.Kmzt9Akb6jGlfnsKsUI-33sIpdAV4q6fWvVJfs"))
