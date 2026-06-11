@@ -155,7 +155,8 @@ class StaffFriendView(discord.ui.View):
         embed = interaction.message.embeds
         embed.color = discord.Color.green()
         embed.title = "✅ בקשת סטאף פרנד - אושרה סופית!"
-        embed.set_field_at(3, name="สถานะ (מצב בקשה)", value=f"💚 הבקשה אושרה על ידי ההנהלה הגבוהה ({interaction.user.mention})!", inline=False)
+            embed.set_field_at(3, name="סטטוס (טיקט סגור)", value=f"✅ הטיקט נסגר על ידי {interaction.user.mention}", inline=False)
+
         
         for child in self.children:
             child.disabled = True
@@ -174,7 +175,7 @@ class StaffFriendView(discord.ui.View):
         await interaction.response.defer()
         embed = interaction.message.embeds
         embed.color = discord.Color.red()
-        embed.title = "❌ בקשת סטאף פרנד - נדחתה"
+          embed.set_field_at(3, name="סטטוס (טיקט סגור)", value=f"❌ הטיקט נסגר על ידי {interaction.user.mention}", inline=False)
         embed.set_field_at(3, name="สถานะ (מצב בקשה)", value=f"❤️ הבקשה נדחתה על ידי ההנהלה 
 
 bot.run(os.environ.get("DISCORD_TOKEN"))
