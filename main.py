@@ -6,16 +6,14 @@ import random
 from datetime import datetime
 
 # --- הגדרות קבועות ---
-STAFF_ROLE_ID = 1493335218004820180  # ID של רול הסטאף שלכם
-ADMIN_ROLE_ID = 1485440480459227227  # תחליף ל-ID של רול ההנהלה הגבוהה שיכולה לאשר
+STAFF_ROLE_ID = 1493335218004820180
+ADMIN_ROLE_ID = 1485440480459227227
 
-# --- הגדרות ה-ID והמחירים המדויקים של הרולים לחנות לפי מה ששלחת ---
-ROLE_LEVEL_1_ID = 1484226514051665930  # מחיר: 10,000 XP
-ROLE_LEVEL_2_ID = 1491063689502003360  # מחיר: 12,000 XP
-ROLE_LEVEL_3_ID = 1490894966262726687  # מחיר: 15,000 XP
-ROLE_LEVEL_4_ID = 1490894817373196388  # מחיר: 20,000 XP
+ROLE_LEVEL_1_ID = 1484226514051665930
+ROLE_LEVEL_2_ID = 1491063689502003360
+ROLE_LEVEL_3_ID = 1490894966262726687
+ROLE_LEVEL_4_ID = 1490894817373196388
 
-# --- מערכת שמירת ה-XP בקובץ מקומי ---
 XP_FILE = "xp_data.json"
 
 def load_xp():
@@ -31,101 +29,112 @@ def save_xp(data):
 def add_xp(user_id, amount):
     data = load_xp()
     user_key = str(user_id)
+
     if user_key not in data:
         data[user_key] = {"xp": 0, "level": 1}
+
     data[user_key]["xp"] += amount
-    
+
     expected_level = (data[user_key]["xp"] // 150) + 1
+    leveled_up = False
+
     if expected_level > data[user_key]["level"]:
         data[user_key]["level"] = expected_level
-        save_xp(data)
-        return True, expected_level
-    save_xp(data)
-    return False, data[user_key]["level"]
+        leveled_up = True
 
-# --- הגדרת הבוט ---
+    save_xp(data)
+    return leveled_up, data[user_key]["level"]
+
+# --- BOT ---
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
+
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# --- הגדרות ה-Views לטעינה קבועה ---
-class HelpClaimView(discord.ui.View):
-    def __init__(self, user_id=None):
-        super().__init__(timeout=None)
-        self.user_id = user_id
+# ================= XP SHOP =================
 
-    @discord.ui.button(label="🛠️ טפל כאן (Claim)", style=discord.ButtonStyle.blurple, custom_id="help_claim_button_v2")
-    async def help_claim(self, interaction: discord.Interaction):
-        staff_role = interaction.guild.get_role(STAFF_ROLE_ID)
-        if staff_role not in interaction.user.roles and not interaction.user.guild_permissions.administrator:
-            return await interaction.response.send_message("❌ רק חברי צוות בעלי רול @STAFF יכולים לטפל בקריאה זו!", ephemeral=True)
-            
-        await interaction.response.defer()
-        embed = interaction.message.embeds
-        embed.color = discord.Color.orange()
-        embed.add_field(name="🔒 מצב טיפול", value=f"🔶 הקריאה נלקחה לטיפול על ידי חבר הצוות: {interaction.user.mention}", inline=False)
-        
-        for child in self.children:
-            child.disabled = True
-            
-        await interaction.message.edit(embed=embed, view=self)
-        
-        caller_mention = f"<@{self.user_id}>" if self.user_id else "המשתמש"
-        await interaction.followup.send(f"📢 חבר הצוות {interaction.user.mention} החל לטפל בפנייה של {caller_mention}! נא להמתין בסבלנות.")
-
-class BuyRoleModal(discord.ui.Modal, title="🛒 רכישת רול מחנות ה-XP"):
-    role_num = discord.ui.TextInput(label="הכנס את מספר הרול שברצונך לקנות (1-4)", placeholder="לדוגמה: 1", max_length=1, required=True)
+class BuyRoleModal(discord.ui.Modal, title="🛒 רכישת רול"):
+    role_num = discord.ui.TextInput(label="מספר רול (1-4)")
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
+
         data = load_xp()
         user_key = str(interaction.user.id)
         user_xp = data.get(user_key, {}).get("xp", 0)
-        
-        shop_items = {
-            "1": {"cost": 10000, "role_id": ROLE_LEVEL_1_ID, "name": "רול ראשון"},
-            "2": {"cost": 12000, "role_id": ROLE_LEVEL_2_ID, "name": "רול שני"},
-            "3": {"cost": 15000, "role_id": ROLE_LEVEL_3_ID, "name": "רול שלישי"},
-            "4": {"cost": 20000, "role_id": ROLE_LEVEL_4_ID, "name": "רול רביעי"}
+
+        shop = {
+            "1": (10000, ROLE_LEVEL_1_ID),
+            "2": (12000, ROLE_LEVEL_2_ID),
+            "3": (15000, ROLE_LEVEL_3_ID),
+            "4": (20000, ROLE_LEVEL_4_ID),
         }
-        
+
         choice = self.role_num.value.strip()
-        if choice not in shop_items:
-            return await interaction.followup.send("❌ מספר לא תקין! נא לבחור מספר בין 1 ל-4.", ephemeral=True)
-            
-        selected = shop_items[choice]
-        cost = selected["cost"]
-        role_id = selected["role_id"]
-        role_name = selected["name"]
-        
+
+        if choice not in shop:
+            return await interaction.followup.send("❌ בחירה לא תקינה", ephemeral=True)
+
+        cost, role_id = shop[choice]
+
         if user_xp < cost:
-            return await interaction.followup.send(f"❌ אין לך מספיק XP! הרול עולה `{cost:,} XP` וכרגע יש לך רק `{user_xp:,} XP`.", ephemeral=True)
-            
+            return await interaction.followup.send("❌ אין מספיק XP", ephemeral=True)
+
         role = interaction.guild.get_role(role_id)
+
         if not role:
-            return await interaction.followup.send("❌ שגיאה: הרול המבוקש לא הוגדר בצורה תקינה.", ephemeral=True)
-            
-        if role in interaction.user.roles:
-            return await interaction.followup.send(f"❌ כבר יש לך את הרול `{role.name}`!", ephemeral=True)
-            
+            return await interaction.followup.send("❌ רול לא נמצא", ephemeral=True)
+
         data[user_key]["xp"] -= cost
         save_xp(data)
-        
-        try:
-            await interaction.user.add_roles(role)
-            await interaction.followup.send(f"🎉 ברכות! רכשת בהצלחה את הרול **{role.name}** עבור `{cost:,} XP`!", ephemeral=True)
-            await interaction.channel.send(f"👑 כל הכבוד ל-{interaction.user.mention} שרכש את הרול **{role.name}** מהחנות עבור `{cost:,} XP`!")
-        except discord.Forbidden:
-            await interaction.followup.send(f"⚠️ לבוט אין מספיק הרשאות לתת את הרול פיזית בשרת.", ephemeral=True)
+
+        await interaction.user.add_roles(role)
+
+        await interaction.followup.send(f"✅ קנית את {role.name}")
 
 class XpShopNewView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Buy Role", style=discord.ButtonStyle.blurple, custom_id="buy_role_main_button_v2")
-    async def buy_button(self, interaction: discord.Interaction):
+    @discord.ui.button(label="Buy Role", style=discord.ButtonStyle.green)
+    async def buy(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(BuyRoleModal())
+
+# ================= HELP =================
+
+class HelpClaimView(discord.ui.View):
+    def __init__(self, user_id=None):
+        super().__init__(timeout=None)
+        self.user_id = user_id
+
+    @discord.ui.button(label="Claim", style=discord.ButtonStyle.blurple)
+    async def claim(self, interaction: discord.Interaction, button: discord.ui.Button):
+
+        staff_role = interaction.guild.get_role(STAFF_ROLE_ID)
+
+        if staff_role not in interaction.user.roles and not interaction.user.guild_permissions.administrator:
+            return await interaction.response.send_message("❌ אין הרשאה", ephemeral=True)
+
+        await interaction.response.defer()
+
+        embed = interaction.message.embeds[0]
+        embed.color = discord.Color.orange()
+
+        embed.add_field(
+            name="Claimed",
+            value=interaction.user.mention,
+            inline=False
+        )
+
+        for c in self.children:
+            c.disabled = True
+
+        await interaction.message.edit(embed=embed, view=self)
+
+        await interaction.followup.send("✔ נלקח לטיפול")
+
+# ================= STAFF FRIEND =================
 
 class StaffFriendView(discord.ui.View):
     def __init__(self, staff_id=None, target_id=None):
@@ -133,53 +142,79 @@ class StaffFriendView(discord.ui.View):
         self.staff_id = staff_id
         self.target_id = target_id
 
-    @discord.ui.button(label="✅ אשר בקשה", style=discord.ButtonStyle.green, custom_id="approve_friend_v2")
-    async def approve(self, interaction: discord.Interaction):
+    @discord.ui.button(label="אשר", style=discord.ButtonStyle.green)
+    async def approve(self, interaction: discord.Interaction, button: discord.ui.Button):
+
         admin_role = interaction.guild.get_role(ADMIN_ROLE_ID)
+
         if admin_role not in interaction.user.roles and not interaction.user.guild_permissions.administrator:
-            return await interaction.response.send_message("❌ רק הנהלת השרת הגבוהה מוסמכת לאשר בקשה זו!", ephemeral=True)
-        
+            return await interaction.response.send_message("❌ אין הרשאה", ephemeral=True)
+
         await interaction.response.defer()
-        target_member = interaction.guild.get_member(self.target_id) if self.target_id else None
-        
-        role_status = "אך לא הצלחתי לתת את הרול פיזית."
-        if target_member:
-            staff_role = interaction.guild.get_role(STAFF_ROLE_ID)
-            if staff_role:
-                try:
-                    await target_member.add_roles(staff_role)
-                    role_status = "והרול הוענק לו בהצלחה!"
-                except:
-                    pass
-        
-        embed = interaction.message.embeds
+
+        target = interaction.guild.get_member(self.target_id)
+        staff_role = interaction.guild.get_role(STAFF_ROLE_ID)
+
+        if target and staff_role:
+            await target.add_roles(staff_role)
+
+        embed = interaction.message.embeds[0]
         embed.color = discord.Color.green()
-        embed.title = "✅ בקשת סטאף פרנד - אושרה סופית!"
-        embed.set_field_at(3, name="סטטוס (טיקט סגור)", value=f"✅ הטיקט נסגר על ידי {interaction.user.mention}", inline=False)
 
-        
-        for child in self.children:
-            child.disabled = True
-            
+        for c in self.children:
+            c.disabled = True
+
         await interaction.message.edit(embed=embed, view=self)
-        target_mention = f"<@{self.target_id}>" if self.target_id else "המשתמש"
-        staff_mention = f"<@{self.staff_id}>" if self.staff_id else "הצוות הממליץ"
-        await interaction.followup.send(f"🎉 הבקשה אושרה! {target_mention} קיבל את הרול {role_status}\nחבר הצוות הממליץ: {staff_mention}")
 
-    @discord.ui.button(label="❌ דחה בקשה", style=discord.ButtonStyle.red, custom_id="deny_friend_v2")
-    async def deny(self, interaction: discord.Interaction):
+        await interaction.followup.send("✅ אושר")
+
+    @discord.ui.button(label="דחה", style=discord.ButtonStyle.red)
+    async def deny(self, interaction: discord.Interaction, button: discord.ui.Button):
+
         admin_role = interaction.guild.get_role(ADMIN_ROLE_ID)
+
         if admin_role not in interaction.user.roles and not interaction.user.guild_permissions.administrator:
-            return await interaction.response.send_message("❌ רק הנהלת השרת הגבוהה מוסמכת לדחות בקשה זו!", ephemeral=True)
-        
+            return await interaction.response.send_message("❌ אין הרשאה", ephemeral=True)
+
         await interaction.response.defer()
-        embed = interaction.message.embeds
+
+        embed = interaction.message.embeds[0]
         embed.color = discord.Color.red()
-        embed.set_field_at(3, name="סטטוס (טיקט סגור)", value=f"❌ הטיקט נסגר על ידי {interaction.user.mention}", inline=False)
-        embed.set_field_at(3, name="סטטוס (בקשה נדחתה)", value=f"❌ הבקשה נדחתה על ידי {interaction.user.mention}", inline=False)
+
+        for c in self.children:
+            c.disabled = True
+
+        await interaction.message.edit(embed=embed, view=self)
+
+        await interaction.followup.send("❌ נדחה")
+
+# ================= EVENTS =================
+
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user}")
-    await bot.tree.sync() # מפעיל ומעדכן את כל פקודות ה-/ בדיסקורד
+    await bot.tree.sync()
 
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    leveled_up, level = add_xp(message.author.id, random.randint(5, 15))
+
+    if leveled_up:
+        await message.channel.send(f"🎉 {message.author.mention} עלה לרמה {level}")
+
+    await bot.process_commands(message)
+
+# ================= COMMAND EXAMPLE =================
+
+@bot.command()
+async def shop(ctx):
+    embed = discord.Embed(title="XP Shop")
+    await ctx.send(embed=embed, view=XpShopNewView())
+
+# ================= RUN =================
+
+bot.run("TOKEN")
 bot.run(os.environ.get("DISCORD_TOKEN"))
