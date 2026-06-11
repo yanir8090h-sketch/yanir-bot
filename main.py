@@ -142,7 +142,8 @@ async def buy_item(ctx, item: str):
 # ==========================================
 
 class ClaimReasonModal(discord.ui.Modal, title="טיפול בבקשת סטאף פרנד"):
-    reason = discord.ui.TextInput(label="סיבה / הערות לטיפול (וויס/בדיקה)", style=discord.ui.TextStyle.paragraph, placeholder="רשום כאן פרטים על הטיפול או סיבת הבדיקה בוויס...", required=True)
+   reason = discord.ui.TextInput(label="סיבה / הערות לטיפול (וויס/בדיקה)", style=discord.TextStyle.paragraph, placeholder="רשום כאן פרטים על הטיפול או סיבת הבדיקה בוויס...", required=True)
+
     
     def __init__(self, staff_member, target_member, embed_msg):
         super().__init__()
