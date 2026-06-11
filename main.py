@@ -212,5 +212,6 @@ async def on_ready():
 async def check_xp(ctx, member: discord.Member = None):
     member = member or ctx.author
     data = load_xp()
+    user_key = str(member.id)
 
 bot.run(os.environ.get("DISCORD_TOKEN"))
