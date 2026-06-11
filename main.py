@@ -79,21 +79,47 @@ async def give_xp(ctx, member: discord.Member, amount: int):
     if leveled_up:
         await ctx.send(f"🎉 מזל טוב {member.mention}! עלית לרמה **{level}**!")
 
+        # תצוגת הכפתור שישלח את החנות לפרטי
+class ShopDMView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None) # כפתור קבוע שלא פג תוקפו
+
+    @discord.ui.button(label="🛒 כניסה לחנות הרולים (בפרטי)", style=discord.ButtonStyle.green, custom_id="open_shop_dm_button")
+    async def open_shop(self, interaction: discord.Interaction):
+        # 1. יצירת האמבד של החנות שיישלח בפרטי
+        embed = discord.Embed(
+            title="🛒 חנות הרולים הרשמית של השרת", 
+            description="שלום! כאן תוכל לראות את הרולים הזמינים לרכישה באמצעות ה-XP שלך.\n\n**איך לבצע את הרכישה?**\nחזור לצ'אט של השרת ורשום את הפקודה המתאימה מהרשימה:", 
+            color=discord.Color.purple()
+        )
+        embed.add_field(name="🥉 1. רול ראשון", value="💰 מחיר: `10,000 XP`\n⌨️ פקודה בשרת: `!buy level1`", inline=False)
+        embed.add_field(name="🥈 2. רול שני", value="💰 מחיר: `12,000 XP`\n⌨️ פקודה בשרת: `!buy level2`", inline=False)
+        embed.add_field(name="🥇 3. רול שלישי", value="💰 מחיר: `15,000 XP`\n⌨️ פקודה בשרת: `!buy level3`", inline=False)
+        embed.add_field(name="💎 4. רול רביעי", value="💰 מחיר: `20,000 XP`\n⌨️ פקודה בשרת: `!buy level4`", inline=False)
+        
+        if interaction.guild and interaction.guild.icon:
+            embed.set_thumbnail(url=interaction.guild.icon.url)
+            
+        # 2. שליחה לפרטי של המשתמש שלחץ
+        try:
+            await interaction.user.send(content=f"❓ **איזה רול אתה רוצה לקנות?** הנה הרשימה המלאה והמחירים:", embed=embed)
+            # תגובה זמנית ונסתרת (Ephemral) למשתמש בלבד, כדי שלא ייווצר עומס בצ'אט
+            await interaction.response.send_message("📬 שלחתי לך את החנות והרולים ישירות להודעות הפרטיות! כנס לבדוק.", ephemeral=True)
+        except discord.Forbidden:
+            # אם ההודעות הפרטיות שלו סגורות בדיסקורד
+            await interaction.response.send_message("❌ לא הצלחתי לשלוח לך הודעה בפרטי. ודא שההגדרות הפרטיות שלך (Allow Direct Messages) פתוחות בדיסקורד!", ephemeral=True)
+
+# הפקודה המרכזית בשרת שמציגה את הכפתור
 @bot.command(name="xp_shop")
 async def xp_shop(ctx):
     embed = discord.Embed(
-        title="🛒 חנות הרולים הרשמית של השרת", 
-        description="רכוש רולים יוקרתיים באמצעות נקודות ה-XP שצברת בצ'אט!\n\n**איך קונים?**\nחזור לצ'אט של השרת ורשום את הפקודה המתאימה מהרשימה למטה:", 
-        color=discord.Color.purple()
+        title="🛒 חנות הרולים של השרת",
+        description="רוצה לראות את הרולים, המחירים ולדעת מה אתה יכול לקנות?\nלחץ על הכפתור הירוק למטה והחנות תיפתח אצלך בפרטי!",
+        color=discord.Color.blue()
     )
-    embed.add_field(name="🥉 1. רול ראשון", value="מחיר: `10,000 XP`\nפקודה בשרת: `!buy level1`", inline=False)
-    embed.add_field(name="🥈 2. רול שני", value="מחיר: `12,000 XP`\nפקודה בשרת: `!buy level2`", inline=False)
-    embed.add_field(name="🥇 3. רול שלישי", value="מחיר: `15,000 XP`\nפקודה בשרת: `!buy level3`", inline=False)
-    embed.add_field(name="💎 4. רול רביעי", value="מחיר: `20,000 XP`\nפקודה בשרת: `!buy level4`", inline=False)
-    
-    if ctx.guild.icon:
-        embed.set_thumbnail(url=ctx.guild.icon.url)
-        
+    view = ShopDMView()
+    await ctx.send(embed=embed, view=view)
+
     try:
         await ctx.author.send(embed=embed)
         await ctx.send(f"📬 {ctx.author.mention}, שלחתי לך את חנות הרולים בפרטי! כנס לבדוק איזה רול תרצה לקנות.")
