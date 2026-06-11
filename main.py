@@ -62,7 +62,7 @@ class HelpClaimView(discord.ui.View):
             return await interaction.response.send_message("❌ רק חברי צוות בעלי רול @STAFF יכולים לטפל בקריאה זו!", ephemeral=True)
             
         await interaction.response.defer()
-        embed = interaction.message.embeds[0]
+        embed = interaction.message.embeds
         embed.color = discord.Color.orange()
         embed.add_field(name="🔒 מצב טיפול", value=f"🔶 הקריאה נלקחה לטיפול על ידי חבר הצוות: {interaction.user.mention}", inline=False)
         
@@ -152,7 +152,7 @@ class StaffFriendView(discord.ui.View):
                 except:
                     pass
         
-        embed = interaction.message.embeds[0]
+        embed = interaction.message.embeds
         embed.color = discord.Color.green()
         embed.title = "✅ בקשת סטאף פרנד - אושרה סופית!"
         embed.set_field_at(3, name="สถานะ (מצב בקשה)", value=f"💚 הבקשה אושרה על ידי ההנהלה הגבוהה ({interaction.user.mention})!", inline=False)
@@ -172,7 +172,7 @@ class StaffFriendView(discord.ui.View):
             return await interaction.response.send_message("❌ רק הנהלת השרת הגבוהה מוסמכת לדחות בקשה זו!", ephemeral=True)
         
         await interaction.response.defer()
-        embed = interaction.message.embeds[0]
+        embed = interaction.message.embeds
         embed.color = discord.Color.red()
         embed.title = "❌ בקשת סטאף פרנד - נדחתה"
         embed.set_field_at(3, name="สถานะ (מצב בקשה)", value=f"❤️ הבקשה נדחתה על ידי ההנהלה ({interaction.user.mention}).", inline=False)
@@ -191,7 +191,7 @@ class StaffFriendView(discord.ui.View):
             return await interaction.response.send_message("❌ רק חברי צוות בעלי רול @STAFF יכולים לקחת את הבקשה לטיפול!", ephemeral=True)
             
         await interaction.response.defer()
-        embed = interaction.message.embeds[0]
+        embed = interaction.message.embeds
         embed.color = discord.Color.orange()
         embed.set_field_at(3, name="สถานะ (מצב בקשה)", value=f"🔶 בטיפול ובבדיקת וויס על ידי: {interaction.user.mention}", inline=False)
         await interaction.message.edit(embed=embed)
@@ -212,4 +212,5 @@ async def on_ready():
 async def check_xp(ctx, member: discord.Member = None):
     member = member or ctx.author
     data = load_xp()
+
 bot.run(os.environ.get("DISCORD_TOKEN"))
