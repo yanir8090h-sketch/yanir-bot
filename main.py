@@ -5,9 +5,9 @@ import os
 import random
 from datetime import datetime
 
-# --- הגדרות קבועות (תחליף ל-ID האמיתיים של השרת שלך) ---
+# --- הגדרות קבועות ---
 STAFF_ROLE_ID = 1493335218004820180  # ID של רול הסטאף שלכם
-ADMIN_ROLE_ID =1485440480459227227  # תחליף ל-ID של רול ההנהלה הגבוהה שיכולה לאשר
+ADMIN_ROLE_ID = 1111111111111111111  # תחליף ל-ID של רול ההנהלה הגבוהה שיכולה לאשר
 
 # --- הגדרות ה-ID והמחירים המדויקים של הרולים לחנות לפי מה ששלחת ---
 ROLE_LEVEL_1_ID = 1484226514051665930  # מחיר: 10,000 XP
@@ -49,7 +49,7 @@ intents.message_content = True
 intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# --- הגדרות ה-Persistent Views לטעינה קבועה ---
+# --- הגדרות ה-Views לטעינה קבועה ---
 class HelpClaimView(discord.ui.View):
     def __init__(self, user_id=None):
         super().__init__(timeout=None)
@@ -199,16 +199,17 @@ class StaffFriendView(discord.ui.View):
 
 @bot.event
 async def on_ready():
-    # רישום כל ה-Views הקבועים כדי שלא יישברו לעולם
     bot.add_view(XpShopNewView())
     bot.add_view(HelpClaimView())
     bot.add_view(StaffFriendView())
-    print(f"🤖 הבוט {bot.user.name} עלה לאוויר ב-Railway פקודות האלפים והמשחקים תקינות!")
+    print(f"🤖 הבוט {bot.user.name} עלה לאוויר ב-Railway!")
 
 # ==========================================
 # פקודות מערכת ה-XP והחנות המעוצבת
 # ==========================================
 
-# --- הרצת הבוט בצורה מאובטחת מענן Railway ---
+@bot.command(name="xp")
+async def check_xp(ctx, member: discord.Member = None):
+    member = member or ctx.author
+    data = load_xp()
 bot.run(os.environ.get("DISCORD_TOKEN"))
-
