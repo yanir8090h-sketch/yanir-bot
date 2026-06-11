@@ -179,7 +179,9 @@ async def staff_request(ctx):
     await ctx.send("✅ בקשת הסטאף שלך נשלחה בהצלחה לחדר האישורים של הלנה!")
 
 # שימוש במשתנה המאובטח מה-Variables
+import os
 bot.run(os.environ.get("MTQ4MDMzMjIxMTQyODUyODI0OA.GS1nCR.6TvF-I5209vJ4XzZtMTAf7H2_y9ikdvp9N3b78"))
+
 
 
 
