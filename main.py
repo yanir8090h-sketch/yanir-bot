@@ -249,4 +249,99 @@ class StaffFriendView(discord.ui.View):
             return await interaction.response.send_message("❌ רק חברי צוות בעלי רול @STAFF יכולים לקחת את הבקשה לטיפול!", ephemeral=True)
             
         modal = ClaimReasonModal(self.staff_member, self.target_member, interaction.message)
+        import random
+
+# ==========================================
+# 4. מערכת משחקי אקפי (XP Games)
+# ==========================================
+
+# משחק 1: הימורי אקפי (רולטה / קוביות)
+@bot.command(name="gamble")
+async def gamble_xp(ctx, amount: int):
+    if amount <= 0:
+        return await ctx.send("❌ נא להזין כמות אקפי חוקית והגדולה מ-0!")
+        
+    data = load_xp()
+    user_key = str(ctx.author.id)
+    user_xp = data.get(user_key, {}).get("xp", 0)
+    
+    # בדיקה שיש לו מספיק אקפי להמר
+    if user_xp < amount:
+        return await ctx.send(f"❌ אין לך מספיק XP בשביל להמר על כמות זו! (יש לך כרגע `{user_xp:,}` XP).")
+        
+    # סיכוי של 50% לנצח
+    if random.choice([True, False]):
+        data[user_key]["xp"] += amount
+        save_xp(data)
+        await ctx.send(f"🎉 **ניצחת בהימור!** {ctx.author.mention} הגרלת קוביות מוצלחת והרווחת `{amount:,}` XP!")
+    else:
+        data[user_key]["xp"] -= amount
+        save_xp(data)
+        await ctx.send(f"📉 **הפסדת בהימור!** {ctx.author.mention} המזל לא היה איתך והפסדת `{amount:,}` XP.")
+
+# משחק 2: הטלת מטבע (עץ או פלי)
+@bot.command(name="coinflip")
+async def coin_flip(ctx, choice: str, amount: int):
+    choice = choice.strip()
+    if choice not in ["עץ", "פלי"]:
+        return await ctx.send("❌ נא לבצע בחירה תקינה! רשום `!coinflip עץ <כמות>` או `!coinflip פלי <כמות>`.")
+        
+    if amount <= 0:
+        return await ctx.send("❌ נא להזין כמות אקפי חוקית הגדולה מ-0!")
+        
+    data = load_xp()
+    user_key = str(ctx.author.id)
+    user_xp = data.get(user_key, {}).get("xp", 0)
+    
+    if user_xp < amount:
+        return await ctx.send(f"❌ אין לך מספיק XP בשביל להמר! (יש לך כרגע `{user_xp:,}` XP).")
+        
+    result = random.choice(["עץ", "פלי"])
+    
+    if choice == result:
+        data[user_key]["xp"] += amount
+        save_xp(data)
+        await ctx.send(f"🪙 המטבע נחת על **{result}**! {ctx.author.mention} צדקת וזכית ב-`{amount:,}` XP!")
+    else:
+        data[user_key]["xp"] -= amount
+        save_xp(data)
+        await ctx.send(f"🪙 המטבע נחת על **{result}**! {ctx.author.mention} טעית והפסדת `{amount:,}` XP.")
+
+# משחק 3: גלגל המזל יומי (פעם ביום / בדיקה חופשית ללא סיכון)
+@bot.command(name="wheel")
+@commands.cooldown(1, 3600, commands.BucketType.user) # הגבלת שימוש: פעם בשעה
+async def slots_wheel(ctx):
+    # רשימת פרסים או קנסות אפשריים בגלגל
+    outcomes = [
+        {"msg": "🎰 מטורף! הגלגל נעצר על הבונוס הגדול! זכית ב-`500` XP!", "xp": 500},
+        {"msg": "✨ נחמד מאד! הגלגל העניק לך `150` XP!", "xp": 150},
+        {"msg": "👍 זכית בפרס קטן של `50` XP.", "xp": 50},
+        {"msg": "💨 הגלגל נעצר על ריק... לא זכית בכלום הפעם.", "xp": 0},
+        {"msg": "💥 אאוץ'! הגלגל נעצר על פצצה והפסדת `100` XP!", "xp": -100}
+    ]
+    
+    selected = random.choice(outcomes)
+    reward = selected["xp"]
+    
+    data = load_xp()
+    user_key = str(ctx.author.id)
+    if user_key not in data:
+        data[user_key] = {"xp": 0, "level": 1}
+        
+    data[user_key]["xp"] += reward
+    # מניעת מצב שה-XP יורד מתחת ל-0
+    if data[user_key]["xp"] < 0:
+        data[user_key]["xp"] = 0
+        
+    save_xp(data)
+    await ctx.send(f"{ctx.author.mention} סובב את גלגל המזל... \n{selected['msg']}")
+
+# טיפול בשגיאת ה-Cooldown של גלגל המזל
+@slots_wheel.error
+async def wheel_error(ctx, error):
+    if isinstance(error, commands.CommandOnCooldown):
+        minutes = int(error.retry_after // 60)
+        seconds = int(error.retry_after % 60)
+        await ctx.send(f"⏳ {ctx.author.mention}, הגלגל עדיין חם! תוכל לסובב אותו שוב בעוד `{minutes}` דקות ו-`{seconds}` שניות.")
+
 bot.run(os.environ.get("DISCORD_TOKEN"))
