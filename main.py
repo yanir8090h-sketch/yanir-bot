@@ -4,11 +4,18 @@ import json
 import os
 from datetime import datetime
 
-# --- הגדרות קבועות (תחליף ל-ID האמיתיים של השרת שלך במידת הצורך) ---
-STAFF_ROLE_ID = 1493335218004820180  # ה-ID של הרול שיש להעניק / רול סטאף המבקש
+# --- הגדרות קבועות (תחליף ל-ID האמיתיים של השרת שלך) ---
+STAFF_ROLE_ID = 1493335218004820180  # ID של רול הסטאף המבקש / הרול שמוענק בסטאף פרנד
 ADMIN_ROLE_ID = 1111111111111111111  # תחליף ל-ID של רול ההנהלה הגבוהה שיכולה לאשר
 
-# --- סימולציית מסד נתונים ל-XP (שומר בקובץ מקומי בשרת) ---
+# --- הגדרות ה-ID של 5 הרולים לחנות (תחליף את ה-1111... ב-ID האמיתיים של הרולים בשרת שלך) ---
+ROLE_LEVEL_1_ID = 1111111111111111111  # ID לרול ארנב אקפי
+ROLE_LEVEL_2_ID = 2222222222222222222  # ID לרול חייל אקפי
+ROLE_LEVEL_3_ID = 3333333333333333333  # ID לרול לוחם אקפי
+ROLE_LEVEL_4_ID = 4444444444444444444  # ID לרול מאסטר אקפי
+ROLE_LEVEL_5_ID = 5555555555555555555  # ID לרול אלוהי אקפי
+
+# --- מערכת שמירת ה-XP בקובץ מקומי ---
 XP_FILE = "xp_data.json"
 
 def load_xp():
@@ -21,7 +28,6 @@ def save_xp(data):
     with open(XP_FILE, "w") as f:
         json.dump(data, f, indent=4)
 
-# פונקציית עזר להוספת XP (תוכל לקרוא לה בתוך אירוע on_message אם תרצה)
 def add_xp(user_id, amount):
     data = load_xp()
     user_key = str(user_id)
@@ -29,8 +35,7 @@ def add_xp(user_id, amount):
         data[user_key] = {"xp": 0, "level": 1}
     data[user_key]["xp"] += amount
     
-    # חישוב עליית רמות פשוט (כל 100 XP עולים רמה)
-    expected_level = (data[user_key]["xp"] // 100) + 1
+    expected_level = (data[user_key]["xp"] // 150) + 1  # עריכה: עליית רמה כל 150 XP
     if expected_level > data[user_key]["level"]:
         data[user_key]["level"] = expected_level
         save_xp(data)
@@ -39,10 +44,10 @@ def add_xp(user_id, amount):
     return False, data[user_key]["level"]
 
 # ==========================================
-# 1. מערכת XP, חנות ובדיקת אקספי
+# 1. פקודות מערכת ה-XP והחנות המעודכנת
 # ==========================================
 
-# פקודה לבדיקת ה-XP והרמה שלך או של חבר
+# פקודה לבדיקת ה-XP שלך או של חבר
 @bot.command(name="xp")
 async def check_xp(ctx, member: discord.Member = None):
     member = member or ctx.author
@@ -58,7 +63,7 @@ async def check_xp(ctx, member: discord.Member = None):
     embed.set_thumbnail(url=member.display_avatar.url)
     await ctx.send(embed=embed)
 
-# פקודה למנהלים להעניק XP למישהו (לצורך בדיקות ומבצעים)
+# פקודה למנהלים להעניק XP
 @bot.command(name="give_xp")
 @commands.has_permissions(administrator=True)
 async def give_xp(ctx, member: discord.Member, amount: int):
@@ -67,41 +72,66 @@ async def give_xp(ctx, member: discord.Member, amount: int):
     if leveled_up:
         await ctx.send(f"🎉 מזל טוב {member.mention}! עלית לרמה **{level}**!")
 
-# חנות ה-XP (דוגמה בסיסית - ניתן להרחיב)
+# חנות ה-XP עם המחירים המועלים
 @bot.command(name="xp_shop")
 async def xp_shop(ctx):
-    embed = discord.Embed(title="🛒 חנות ה-XP של השרת", description="רכוש פריטים ורולים באמצעות נקודות ה-XP שלך!", color=discord.Color.purple())
-    embed.add_field(name="👑 רול VIP", value="מחיר: `500 XP`\nלרכישה רשום: `!buy vip`", inline=False)
-    embed.add_field(name="🎨 שינוי צבע ניקודם", value="מחיר: `200 XP`\nלרכישה רשום: `!buy color`", inline=False)
+    embed = discord.Embed(
+        title="🛒 חנות הרולים הרשמית של השרת", 
+        description="רכוש רולים יוקרתיים באמצעות נקודות ה-XP שצברת בצ'אט!\nלקנייה רשום: `!buy <שם הרול>`", 
+        color=discord.Color.purple()
+    )
+    embed.add_field(name="🐰 1. רול: ארנב אקפי (XPRabbit)", value="מחיר: `500 XP`\nפקודה: `!buy rabbit`", inline=False)
+    embed.add_field(name="🎖️ 2. רול: חייל אקפי (XPSoldier)", value="מחיר: `1,500 XP`\nפקודה: `!buy soldier`", inline=False)
+    embed.add_field(name="⚔️ 3. רול: לוחם אקפי (XPFighter)", value="מחיר: `3,500 XP`\nפקודה: `!buy fighter`", inline=False)
+    embed.add_field(name="🔮 4. רול: מאסטר אקפי (XPMaster)", value="מחיר: `6,000 XP`\nפקודה: `!buy master`", inline=False)
+    embed.add_field(name="👑 5. רול: אלוהי אקפי (XPGod)", value="מחיר: `10,000 XP`\nפקודה: `!buy god`", inline=False)
+    
+    if ctx.guild.icon:
+        embed.set_thumbnail(url=ctx.guild.icon.url)
     await ctx.send(embed=embed)
 
+# פקודת הקנייה שמורידה XP ומעניקה את הרול בדיסקורד
 @bot.command(name="buy")
 async def buy_item(ctx, item: str):
     data = load_xp()
     user_key = str(ctx.author.id)
     user_xp = data.get(user_key, {}).get("xp", 0)
     
+    shop_items = {
+        "rabbit": {"cost": 500, "role_id": ROLE_LEVEL_1_ID, "name": "ארנב אקפי"},
+        "soldier": {"cost": 1500, "role_id": ROLE_LEVEL_2_ID, "name": "חייל אקפי"},
+        "fighter": {"cost": 3500, "role_id": ROLE_LEVEL_3_ID, "name": "לוחם אקפי"},
+        "master": {"cost": 6000, "role_id": ROLE_LEVEL_4_ID, "name": "מאסטר אקפי"},
+        "god": {"cost": 10000, "role_id": ROLE_LEVEL_5_ID, "name": "אלוהי אקפי"}
+    }
+    
     item = item.lower()
-    if item == "vip":
-        cost = 500
-        if user_xp < cost:
-            return await ctx.send("❌ אין לך מספיק XP בשביל לקנות את רול ה-VIP!")
+    if item not in shop_items:
+        return await ctx.send("❌ פריט זה לא קיים בחנות! רשום `!xp_shop` כדי לראות את הרשימה.")
         
-        data[user_key]["xp"] -= cost
-        save_xp(data)
-        # כאן תוכל להוסיף קוד שנותן את הרול פיזית למשתמש בשרת
-        await ctx.send(f"🎉 {ctx.author.mention} רכשת בהצלחה את רול ה-VIP עבור 500 XP!")
+    selected = shop_items[item]
+    cost = selected["cost"]
+    role_id = selected["role_id"]
+    role_name = selected["name"]
+    
+    if user_xp < cost:
+        return await ctx.send(f"❌ אין לך מספיק XP! הרול `{role_name}` עולה `{cost:,} XP` וכרגע יש לך רק `{user_xp:,} XP`.")
         
-    elif item == "color":
-        cost = 200
-        if user_xp < cost:
-            return await ctx.send("❌ אין לך מספיק XP בשביל שינוי צבע!")
-            
-        data[user_key]["xp"] -= cost
-        save_xp(data)
-        await ctx.send(f"🎨 {ctx.author.mention} רכשת בהצלחה שינוי צבע עבור 200 XP!")
-    else:
-        await ctx.send("❌ פריט זה לא קיים בחנות. רשום `!xp_shop` לצפייה בפריטים.")
+    role = ctx.guild.get_role(role_id)
+    if not role:
+        return await ctx.send("❌ שגיאה: הרול המבוקש לא הוגדר בצורה תקינה בקוד על ידי המנהל.")
+        
+    if role in ctx.author.roles:
+        return await ctx.send(f"❌ כבר יש לך את הרול `{role_name}`!")
+        
+    data[user_key]["xp"] -= cost
+    save_xp(data)
+    
+    try:
+        await ctx.author.add_roles(role)
+        await ctx.send(f"🎉 ברכות {ctx.author.mention}! רכשת בהצלחה את הרול **{role.name}** עבור `{cost:,} XP`!")
+    except discord.Forbidden:
+        await ctx.send(f"⚠️ ה-XP ירד, אך לבוט אין מספיק הרשאות כדי לתת לך את הרול (ודא שרול הבוט נמצא מעל הרול הנקנה בהגדרות השרת).")
 
 
 # ==========================================
@@ -110,7 +140,7 @@ async def buy_item(ctx, item: str):
 
 # חלון קופץ להזנת סיבה לכפתור ה"טפל כאן"
 class ClaimReasonModal(discord.ui.Modal, title="טיפול בבקשת סטאף פרנד"):
-    reason = discord.ui.TextInput(label="סיבה / הערות לטיפול בבקשה", style=discord.ui.TextStyle.paragraph, placeholder="רשום כאן את הסיבה או הערות לחבר הצוות...", required=True)
+    reason = discord.ui.TextInput(label="סיבה / הערות לטיפול (וויס/בדיקה)", style=discord.ui.TextStyle.paragraph, placeholder="רשום כאן פרטים על הטיפול או סיבת הבדיקה בוויס...", required=True)
     
     def __init__(self, staff_member, target_member, embed_msg):
         super().__init__()
@@ -120,53 +150,47 @@ class ClaimReasonModal(discord.ui.Modal, title="טיפול בבקשת סטאף �
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        # עדכון ההודעה המקורית שהיא בטיפול
         embed = self.embed_msg.embeds[0]
         embed.color = discord.Color.orange()
-        embed.set_footer(text=f"📜 בטיפול על ידי: {interaction.user.display_name} | סיבה: {self.reason.value}")
+        embed.set_field_at(3, name="สถานะ (מצב בקשה)", value=f"🔶 בטיפול בוויס על ידי: {interaction.user.mention}\n📝 הערה: {self.reason.value}", inline=False)
         
-        # עדכון הכפתורים (משאיר את כפתורי האישור והדחייה רק להנהלה הגבוהה)
         await self.embed_msg.edit(embed=embed)
-        await interaction.followup.send(f"📢 הבקשה נלקחה לטיפול על ידי {interaction.user.mention}.", ephemeral=False)
+        await interaction.followup.send(f"📢 הבקשה נלקחה לטיפול ובדיקת וויס על ידי {interaction.user.mention}.", ephemeral=False)
 
-# תצוגת הכפתורים שתופיע מתחת לבקשה
+# תצוגת הכפתורים שמתחת לבקשה
 class StaffFriendView(discord.ui.View):
     def __init__(self, staff_member, target_member):
-        super().__init__(timeout=None) # הופך את הכפתורים לקבועים (לא יפוג תוקפם)
+        super().__init__(timeout=None)
         self.staff_member = staff_member
         self.target_member = target_member
 
     @discord.ui.button(label="✅ אשר בקשה", style=discord.ButtonStyle.green, custom_id="approve_friend")
     async def approve(self, interaction: discord.Interaction):
-        # בדיקה האם ללוחץ יש את רול ההנהלה הגבוהה
         admin_role = interaction.guild.get_role(ADMIN_ROLE_ID)
         if admin_role not in interaction.user.roles and not interaction.user.guild_permissions.administrator:
             return await interaction.response.send_message("❌ רק הנהלת השרת הגבוהה מוסמכת לאשר בקשה זו!", ephemeral=True)
         
         await interaction.response.defer()
         
-        # הענקת הרול למשתמש שקיבל את ההמלצה
         staff_role = interaction.guild.get_role(STAFF_ROLE_ID)
+        role_status = "אך חסרה לבוט הרשאה להעניק את הרול פיזית."
         if staff_role:
             try:
                 await self.target_member.add_roles(staff_role)
-                role_status = "והקוד העניק לו את הרול בהצלחה!"
+                role_status = "והרול הוענק לו בהצלחה!"
             except:
-                role_status = "אך חסרה לבוט הרשאה להעניק את הרול פיזית."
+                pass
         
-        # עדכון ה-Embed שהבקשה אושרה
         embed = interaction.message.embeds[0]
         embed.color = discord.Color.green()
-        embed.title = "✅ בקשת סטאף פרנד - אושרה!"
+        embed.title = "✅ בקשת סטאף פרנד - אושרה סופית!"
+        embed.set_field_at(3, name="สถานะ (מצב בקשה)", value=f"💚 הבקשה אושרה על ידי ההנהלה הגבוהה ({interaction.user.mention})!", inline=False)
         embed.set_footer(text=f"אושר על ידי: {interaction.user.display_name} בשעה {datetime.now().strftime('%H:%M')}")
         
-        # כיבוי הכפתורים
         for child in self.children:
             child.disabled = True
             
         await interaction.message.edit(embed=embed, view=self)
-        
-        # שליחת הודעת עדכון לצוות ולחבר
         await interaction.followup.send(f"🎉 הבקשה אושרה! {self.target_member.mention} קיבל את הרול {role_status}\nחבר הצוות הממליץ: {self.staff_member.mention}")
 
     @discord.ui.button(label="❌ דחה בקשה", style=discord.ButtonStyle.red, custom_id="deny_friend")
@@ -180,40 +204,17 @@ class StaffFriendView(discord.ui.View):
         embed = interaction.message.embeds[0]
         embed.color = discord.Color.red()
         embed.title = "❌ בקשת סטאף פרנד - נדחתה"
+        embed.set_field_at(3, name="สถานะ (מצב בקשה)", value=f"❤️ הבקשה נדחתה על ידי ההנהלה ({interaction.user.mention}).", inline=False)
         embed.set_footer(text=f"נדחה על ידי: {interaction.user.display_name}")
         
         for child in self.children:
             child.disabled = True
             
         await interaction.message.edit(embed=embed, view=self)
-        await interaction.followup.send(f"📢 בקשתו של {self.staff_member.mention} להעניק סטאף פרנד ל-{self.target_member.mention} **נדחתה** על ידי ההנהלה.")
+        await interaction.followup.send(f"📢 בקשתו של {self.staff_member.mention} להעניק סטאף פרנד ל-{self.target_member.mention} **נדחתה**.")
 
     @discord.ui.button(label="🛠️ טפל כאן (סיבה/וויס)", style=discord.ButtonStyle.blurple, custom_id="claim_friend")
     async def claim(self, interaction: discord.Interaction):
-        # כל מי שהוא סטאף (בעל הרול) יכול ללחוץ על טפל כאן כדי לציין שהוא בודק את זה בוויס
         staff_role = interaction.guild.get_role(STAFF_ROLE_ID)
-        if staff_role not in interaction.user.roles and not interaction.user.guild_permissions.administrator:
-            return await interaction.response.send_message("❌ רק חברי צוות יכולים לקחת את הפקודה לטיפול!", ephemeral=True)
-            
-        # פתיחת החלון הקופץ להזנת סיבה/פרטי וויס
-        modal = ClaimReasonModal(self.staff_member, self.target_member, interaction.message)
-        await interaction.response.send_modal(modal)
 
-
-# הפקודה שחבר הסטאף מריץ כדי לבקש עבור חבר שלו
-@bot.command(name="staff_friend")
-async def staff_friend_req(ctx, member: discord.Member):
-    # 1. בדיקה שרק מי שיש לו את רול הסטאף (או אדמין) יכול להשתמש בפקודה
-    staff_role = ctx.guild.get_role(STAFF_ROLE_ID)
-    if staff_role not in ctx.author.roles and not ctx.author.guild_permissions.administrator:
-        return await ctx.send("❌ פקודה זו מיועדת לחברי צוות @STAFF בלבד!")
-        
-    # 2. תיוג הסטאף והגדרת ה-Embed
-    embed = discord.Embed(title="📜 בקשת סטאף פרנד חדשה!", color=discord.Color.gold(), timestamp=datetime.now())
-    embed.add_field(name="👤 חבר הצוות הממליץ", value=ctx.author.mention, inline=False)
-    embed.add_field(name="🎁 החבר המוצע לקבלת הרול", value=member.mention, inline=False)
-    embed.add_field(name="📌 הרול המבוקש", value=f"<@&{STAFF_ROLE_ID}>", inline=False)
-    embed.add_field(name="สถานะ (מצב בקשה)", value="⏳ ממתין להחלטת הנהלה עליונה או בדיקת וויס", inline=False)
-    
-    # שליחת ההודעה בדיוק באותו הערוץ שבו בוצעה הפקודה + תיוג ה-Staff
 bot.run(os.environ.get("DISCORD_TOKEN"))
