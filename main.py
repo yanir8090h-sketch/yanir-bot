@@ -4,12 +4,6 @@ import json
 import os
 import random
 from datetime import datetime
-# הגדרת ה-Intents (הרשאות הבוט לקרוא הודעות ותוכן)
-intents = discord.Intents.default()
-intents.message_content = True
-
-# יצירת הבוט והגדרת סימן הקידומת שלו (כאן הגדרתי סימן קריאה !)
-bot = commands.Bot(command_prefix="!", intents=intents)
 
 # --- הגדרות קבועות ---
 STAFF_ROLE_ID = 1493335218004820180  # ID של רול הסטאף שלכם
@@ -66,17 +60,14 @@ class HelpClaimView(discord.ui.View):
         staff_role = interaction.guild.get_role(STAFF_ROLE_ID)
         if staff_role not in interaction.user.roles and not interaction.user.guild_permissions.administrator:
             return await interaction.response.send_message("❌ רק חברי צוות בעלי רול @STAFF יכולים לטפל בקריאה זו!", ephemeral=True)
-       @bot.event
-async def on_ready():
-    print(f"Logged in as {bot.user}")
-    try:
-        synced = await bot.tree.sync()
-        print(f"Synced {len(synced)} commands.")
-    except Exception as e:
-        print(e)
-
-
-
+            
+        await interaction.response.defer()
+        embed = interaction.message.embeds
+        embed.color = discord.Color.orange()
+        embed.add_field(name="🔒 מצב טיפול", value=f"🔶 הקריאה נלקחה לטיפול על ידי חבר הצוות: {interaction.user.mention}", inline=False)
+        
+        for child in self.children:
+            child.disabled = True
             
         await interaction.message.edit(embed=embed, view=self)
         
@@ -184,43 +175,6 @@ class StaffFriendView(discord.ui.View):
         embed = interaction.message.embeds
         embed.color = discord.Color.red()
         embed.title = "❌ בקשת סטאף פרנד - נדחתה"
-        embed.set_field_at(3, name="สถานะ (מצב בקשה)", value=f"❤️ הבקשה נדחתה על ידי ההנהלה ({interaction.user.mention}).", inline=False)
-        
-        for child in self.children:
-            child.disabled = True
-            
-        await interaction.message.edit(embed=embed, view=self)
-        staff_mention = f"<@{self.staff_id}>" if self.staff_id else "חבר הצוות"
-        await interaction.followup.send(f"📢 בקשתו של {staff_mention} להעניק סטאף פרנד **נדחתה**.")
-
-    @discord.ui.button(label="🛠️ טפל כאן (וויס)", style=discord.ButtonStyle.blurple, custom_id="claim_friend_v2")
-    async def claim(self, interaction: discord.Interaction):
-        staff_role = interaction.guild.get_role(STAFF_ROLE_ID)
-        if staff_role not in interaction.user.roles and not interaction.user.guild_permissions.administrator:
-            return await interaction.response.send_message("❌ רק חברי צוות בעלי רול @STAFF יכולים לקחת את הבקשה לטיפול!", ephemeral=True)
-            
-        await interaction.response.defer()
-        embed = interaction.message.embeds
-        embed.color = discord.Color.orange()
-        embed.set_field_at(3, name="สถานะ (מצב בקשה)", value=f"🔶 בטיפול ובבדיקת וויס על ידי: {interaction.user.mention}", inline=False)
-        await interaction.message.edit(embed=embed)
-        await interaction.followup.send(f"📢 הבקשה נלקחה לבדיקת וויס על ידי {interaction.user.mention}.", ephemeral=False)
-
-@bot.event
-async def on_ready():
-    bot.add_view(XpShopNewView())
-    bot.add_view(HelpClaimView())
-    bot.add_view(StaffFriendView())
-    print(f"🤖 הבוט {bot.user.name} עלה לאוויר ב-Railway!")
-
-# ==========================================
-# פקודות מערכת ה-XP והחנות המעוצבת
-# ==========================================
-
-@bot.command(name="xp")
-async def check_xp(ctx, member: discord.Member = None):
-    member = member or ctx.author
-    data = load_xp()
-    user_key = str(member.id)
+        embed.set_field_at(3, name="สถานะ (מצב בקשה)", value=f"❤️ הבקשה נדחתה על ידי ההנהלה 
 
 bot.run(os.environ.get("DISCORD_TOKEN"))
