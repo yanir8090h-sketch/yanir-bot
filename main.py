@@ -83,14 +83,23 @@ async def give_xp(ctx, member: discord.Member, amount: int):
 async def xp_shop(ctx):
     embed = discord.Embed(
         title="🛒 חנות הרולים הרשמית של השרת", 
-        description="רכוש רולים יוקרתיים באמצעות נקודות ה-XP שצברת בצ'אט!\nלקנייה רשום: `!buy <שם הרול>`", 
+        description="רכוש רולים יוקרתיים באמצעות נקודות ה-XP שצברת בצ'אט!\n\n**איך קונים?**\nחזור לצ'אט של השרת ורשום את הפקודה המתאימה מהרשימה למטה:", 
         color=discord.Color.purple()
     )
-    embed.add_field(name="🥉 1. רול ראשון", value="מחיר: `10,000 XP`\nפקודה: `!buy level1`", inline=False)
-    embed.add_field(name="🥈 2. רול שני", value="מחיר: `12,000 XP`\nפקודה: `!buy level2`", inline=False)
-    embed.add_field(name="🥇 3. רול שלישי", value="מחיר: `15,000 XP`\nפקודה: `!buy level3`", inline=False)
-    embed.add_field(name="💎 4. רול רביעי", value="מחיר: `20,000 XP`\nפקודה: `!buy level4`", inline=False)
+    embed.add_field(name="🥉 1. רול ראשון", value="מחיר: `10,000 XP`\nפקודה בשרת: `!buy level1`", inline=False)
+    embed.add_field(name="🥈 2. רול שני", value="מחיר: `12,000 XP`\nפקודה בשרת: `!buy level2`", inline=False)
+    embed.add_field(name="🥇 3. רול שלישי", value="מחיר: `15,000 XP`\nפקודה בשרת: `!buy level3`", inline=False)
+    embed.add_field(name="💎 4. רול רביעי", value="מחיר: `20,000 XP`\nפקודה בשרת: `!buy level4`", inline=False)
     
+    if ctx.guild.icon:
+        embed.set_thumbnail(url=ctx.guild.icon.url)
+        
+    try:
+        await ctx.author.send(embed=embed)
+        await ctx.send(f"📬 {ctx.author.mention}, שלחתי לך את חנות הרולים בפרטי! כנס לבדוק איזה רול תרצה לקנות.")
+    except discord.Forbidden:
+        await ctx.send(f"❌ {ctx.author.mention}, הבוט לא הצליח לשלוח לך הודעה בפרטי. ודא שההגדרות הפרטיות שלך פתוחות בשרת זה!")
+
     if ctx.guild.icon:
         embed.set_thumbnail(url=ctx.guild.icon.url)
     await ctx.send(embed=embed)
