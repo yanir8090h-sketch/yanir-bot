@@ -142,8 +142,7 @@ async def buy_item(ctx, item: str):
 # ==========================================
 
 class ClaimReasonModal(discord.ui.Modal, title="טיפול בבקשת סטאף פרנד"):
-   reason = discord.ui.TextInput(label="סיבה / הערות לטיפול (וויס/בדיקה)", style=discord.TextStyle.paragraph, placeholder="רשום כאן פרטים על הטיפול או סיבת הבדיקה בוויס...", required=True)
-
+    reason = discord.ui.TextInput(label="סיבה / הערות לטיפול (וויס/בדיקה)", style=discord.TextStyle.paragraph, placeholder="רשום כאן פרטים על הטיפול או סיבת הבדיקה בוויס...", required=True)
     
     def __init__(self, staff_member, target_member, embed_msg):
         super().__init__()
@@ -153,7 +152,7 @@ class ClaimReasonModal(discord.ui.Modal, title="טיפול בבקשת סטאף �
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        embed = self.embed_msg.embeds
+        embed = self.embed_msg.embeds[0]
         embed.color = discord.Color.orange()
         embed.set_field_at(3, name="สถานะ (מצב בקשה)", value=f"🔶 בטיפול בוויס על ידי: {interaction.user.mention}\n📝 הערה: {self.reason.value}", inline=False)
         
