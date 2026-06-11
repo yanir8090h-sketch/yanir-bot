@@ -155,7 +155,7 @@ class StaffFriendView(discord.ui.View):
         embed = interaction.message.embeds
         embed.color = discord.Color.green()
         embed.title = "✅ בקשת סטאף פרנד - אושרה סופית!"
-            embed.set_field_at(3, name="סטטוס (טיקט סגור)", value=f"✅ הטיקט נסגר על ידי {interaction.user.mention}", inline=False)
+        embed.set_field_at(3, name="סטטוס (טיקט סגור)", value=f"✅ הטיקט נסגר על ידי {interaction.user.mention}", inline=False)
 
         
         for child in self.children:
