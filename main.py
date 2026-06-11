@@ -80,96 +80,89 @@ async def give_xp(ctx, member: discord.Member, amount: int):
         await ctx.send(f"🎉 מזל טוב {member.mention}! עלית לרמה **{level}**!")
 
         # תצוגת הכפתור שישלח את החנות לפרטי
-class ShopDMView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None) # כפתור קבוע שלא פג תוקפו
+# חלון קופץ (Modal) שנפתח בלחיצה על כפתור הקנייה
+class BuyRoleModal(discord.ui.Modal, title="🛒 רכישת רול מחנות ה-XP"):
+    role_num = discord.ui.TextInput(
+        label="הכנס את מספר הרול שברצונך לקנות (1-4)", 
+        placeholder="לדוגמה: 1", 
+        max_length=1, 
+        required=True
+    )
 
-    @discord.ui.button(label="🛒 כניסה לחנות הרולים (בפרטי)", style=discord.ButtonStyle.green, custom_id="open_shop_dm_button")
-    async def open_shop(self, interaction: discord.Interaction):
-        # 1. יצירת האמבד של החנות שיישלח בפרטי
-        embed = discord.Embed(
-            title="🛒 חנות הרולים הרשמית של השרת", 
-            description="שלום! כאן תוכל לראות את הרולים הזמינים לרכישה באמצעות ה-XP שלך.\n\n**איך לבצע את הרכישה?**\nחזור לצ'אט של השרת ורשום את הפקודה המתאימה מהרשימה:", 
-            color=discord.Color.purple()
-        )
-        embed.add_field(name="🥉 1. רול ראשון", value="💰 מחיר: `10,000 XP`\n⌨️ פקודה בשרת: `!buy level1`", inline=False)
-        embed.add_field(name="🥈 2. רול שני", value="💰 מחיר: `12,000 XP`\n⌨️ פקודה בשרת: `!buy level2`", inline=False)
-        embed.add_field(name="🥇 3. רול שלישי", value="💰 מחיר: `15,000 XP`\n⌨️ פקודה בשרת: `!buy level3`", inline=False)
-        embed.add_field(name="💎 4. רול רביעי", value="💰 מחיר: `20,000 XP`\n⌨️ פקודה בשרת: `!buy level4`", inline=False)
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
         
-        if interaction.guild and interaction.guild.icon:
-            embed.set_thumbnail(url=interaction.guild.icon.url)
+        data = load_xp()
+        user_key = str(interaction.user.id)
+        user_xp = data.get(user_key, {}).get("xp", 0)
+        
+        # מילון הרולים והמחירים המדויקים שלך
+        shop_items = {
+            "1": {"cost": 10000, "role_id": ROLE_LEVEL_1_ID, "name": "רול ראשון"},
+            "2": {"cost": 12000, "role_id": ROLE_LEVEL_2_ID, "name": "רול שני"},
+            "3": {"cost": 15000, "role_id": ROLE_LEVEL_3_ID, "name": "רול שלישי"},
+            "4": {"cost": 20000, "role_id": ROLE_LEVEL_4_ID, "name": "רול רביעי"}
+        }
+        
+        choice = self.role_num.value.strip()
+        if choice not in shop_items:
+            return await interaction.followup.send("❌ מספר לא תקין! נא לבחור מספר בין 1 ל-4 לפי הרשימה בחנות.", ephemeral=True)
             
-        # 2. שליחה לפרטי של המשתמש שלחץ
+        selected = shop_items[choice]
+        cost = selected["cost"]
+        role_id = selected["role_id"]
+        role_name = selected["name"]
+        
+        if user_xp < cost:
+            return await interaction.followup.send(f"❌ אין לך מספיק XP! הרול עולה `{cost:,} XP` וכרגע יש לך רק `{user_xp:,} XP`.", ephemeral=True)
+            
+        role = interaction.guild.get_role(role_id)
+        if not role:
+            return await interaction.followup.send("❌ שגיאה: הרול המבוקש לא הוגדר בצורה תקינה בקוד הבוט.", ephemeral=True)
+            
+        if role in interaction.user.roles:
+            return await interaction.followup.send(f"❌ כבר יש לך את הרול `{role.name}`!", ephemeral=True)
+            
+        data[user_key]["xp"] -= cost
+        save_xp(data)
+        
         try:
-            await interaction.user.send(content=f"❓ **איזה רול אתה רוצה לקנות?** הנה הרשימה המלאה והמחירים:", embed=embed)
-            # תגובה זמנית ונסתרת (Ephemral) למשתמש בלבד, כדי שלא ייווצר עומס בצ'אט
-            await interaction.response.send_message("📬 שלחתי לך את החנות והרולים ישירות להודעות הפרטיות! כנס לבדוק.", ephemeral=True)
+            await interaction.user.add_roles(role)
+            await interaction.followup.send(f"🎉 ברכות! רכשת בהצלחה את הרול **{role.name}** עבור `{cost:,} XP`!", ephemeral=True)
+            
+            channel = interaction.channel
+            await channel.send(f"👑 כל הכבוד ל-{interaction.user.mention} שרכש את הרול **{role.name}** מהחנות עבור `{cost:,} XP`!")
         except discord.Forbidden:
-            # אם ההודעות הפרטיות שלו סגורות בדיסקורד
-            await interaction.response.send_message("❌ לא הצלחתי לשלוח לך הודעה בפרטי. ודא שההגדרות הפרטיות שלך (Allow Direct Messages) פתוחות בדיסקורד!", ephemeral=True)
+            await interaction.followup.send(f"⚠️ ה-XP ירד, אך לבוט אין מספיק הרשאות כדי לתת לך את הרול פיזית בשרת.", ephemeral=True)
 
-# הפקודה המרכזית בשרת שמציגה את הכפתור
+# תצוגת הכפתור הכחול "Buy Role"
+class XpShopNewView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Buy Role", style=discord.ButtonStyle.blurple, custom_id="buy_role_main_button")
+    async def buy_button(self, interaction: discord.Interaction):
+        await interaction.response.send_modal(BuyRoleModal())
+
+# הפקודה המרכזית שמייצרת את החנות בדיוק כמו בתמונה
 @bot.command(name="xp_shop")
 async def xp_shop(ctx):
     embed = discord.Embed(
-        title="🛒 חנות הרולים של השרת",
-        description="רוצה לראות את הרולים, המחירים ולדעת מה אתה יכול לקנות?\nלחץ על הכפתור הירוק למטה והחנות תיפתח אצלך בפרטי!",
-        color=discord.Color.blue()
+        title="🛒 חנות הרולים של השרת", 
+        description="To buy a role click on the buttons!", 
+        color=discord.Color.from_rgb(47, 49, 54)
     )
-    view = ShopDMView()
-    await ctx.send(embed=embed, view=view)
-
-    try:
-        await ctx.author.send(embed=embed)
-        await ctx.send(f"📬 {ctx.author.mention}, שלחתי לך את חנות הרולים בפרטי! כנס לבדוק איזה רול תרצה לקנות.")
-    except discord.Forbidden:
-        await ctx.send(f"❌ {ctx.author.mention}, הבוט לא הצליח לשלוח לך הודעה בפרטי. ודא שההגדרות הפרטיות שלך פתוחות בשרת זה!")
-
+    
+    embed.add_field(name="(1)", value=f"<@&{ROLE_LEVEL_1_ID}> - **10,000 XP**", inline=False)
+    embed.add_field(name="(2)", value=f"<@&{ROLE_LEVEL_2_ID}> - **12,000 XP**", inline=False)
+    embed.add_field(name="(3)", value=f"<@&{ROLE_LEVEL_3_ID}> - **15,000 XP**", inline=False)
+    embed.add_field(name="(4)", value=f"<@&{ROLE_LEVEL_4_ID}> - **20,000 XP**", inline=False)
+    
     if ctx.guild.icon:
         embed.set_thumbnail(url=ctx.guild.icon.url)
-    await ctx.send(embed=embed)
-
-@bot.command(name="buy")
-async def buy_item(ctx, item: str):
-    data = load_xp()
-    user_key = str(ctx.author.id)
-    user_xp = data.get(user_key, {}).get("xp", 0)
-    
-    shop_items = {
-        "level1": {"cost": 10000, "role_id": ROLE_LEVEL_1_ID, "name": "רול ראשון"},
-        "level2": {"cost": 12000, "role_id": ROLE_LEVEL_2_ID, "name": "רול שני"},
-        "level3": {"cost": 15000, "role_id": ROLE_LEVEL_3_ID, "name": "רול שלישי"},
-        "level4": {"cost": 20000, "role_id": ROLE_LEVEL_4_ID, "name": "רול רביעי"}
-    }
-    
-    item = item.lower()
-    if item not in shop_items:
-        return await ctx.send("❌ פריט זה לא קיים בחנות! רשום `!xp_shop` כדי לראות את הרשימה.")
         
-    selected = shop_items[item]
-    cost = selected["cost"]
-    role_id = selected["role_id"]
-    role_name = selected["name"]
-    
-    if user_xp < cost:
-        return await ctx.send(f"❌ אין לך מספיק XP! הרול `{role_name}` עולה `{cost:,} XP` וכרגע יש לך רק `{user_xp:,} XP`.")
-        
-    role = ctx.guild.get_role(role_id)
-    if not role:
-        return await ctx.send("❌ שגיאה: הרול המבוקש לא הוגדר בצורה תקינה בקוד על ידי המנהל.")
-        
-    if role in ctx.author.roles:
-        return await ctx.send(f"❌ כבר יש לך את הרול `{role_name}`!")
-        
-    data[user_key]["xp"] -= cost
-    save_xp(data)
-    
-    try:
-        await ctx.author.add_roles(role)
-        await ctx.send(f"🎉 ברכות {ctx.author.mention}! רכשת בהצלחה את הרול **{role.name}** עבור `{cost:,} XP`!")
-    except discord.Forbidden:
-        await ctx.send(f"⚠️ ה-XP ירד, אך לבוט אין מספיק הרשאות כדי לתת לך את הרול (ודא שרול הבוט נמצא מעל הרול הנקנה בהגדרות השרת).")
+    view = XpShopNewView()
+    await ctx.send(embed=embed, view=view)
 
 
 # ==========================================
