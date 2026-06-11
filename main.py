@@ -177,5 +177,9 @@ class StaffFriendView(discord.ui.View):
         embed.color = discord.Color.red()
         embed.set_field_at(3, name="סטטוס (טיקט סגור)", value=f"❌ הטיקט נסגר על ידי {interaction.user.mention}", inline=False)
         embed.set_field_at(3, name="סטטוס (בקשה נדחתה)", value=f"❌ הבקשה נדחתה על ידי {interaction.user.mention}", inline=False)
+@bot.event
+async def on_ready():
+    print(f"Logged in as {bot.user}")
+    await bot.tree.sync() # מפעיל ומעדכן את כל פקודות ה-/ בדיסקורד
 
 bot.run(os.environ.get("DISCORD_TOKEN"))
