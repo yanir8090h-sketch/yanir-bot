@@ -72,14 +72,15 @@ class HelpClaimView(discord.ui.View):
         embed.color = discord.Color.orange()
         embed.add_field(name="🔒 מצב טיפול", value=f"🔶 הקריאה נלקחה לטיפול על ידי חבר הצוות: {interaction.user.mention}", inline=False)
         @bot.event
+        @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user}")
     try:
-        # מסנכרן את פקודות הסלאש עם דיסקורד
         synced = await bot.tree.sync()
         print(f"Synced {len(synced)} commands.")
     except Exception as e:
         print(e)
+
 
             
         await interaction.message.edit(embed=embed, view=self)
