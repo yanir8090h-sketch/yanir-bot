@@ -66,13 +66,7 @@ class HelpClaimView(discord.ui.View):
         staff_role = interaction.guild.get_role(STAFF_ROLE_ID)
         if staff_role not in interaction.user.roles and not interaction.user.guild_permissions.administrator:
             return await interaction.response.send_message("❌ רק חברי צוות בעלי רול @STAFF יכולים לטפל בקריאה זו!", ephemeral=True)
-            
-        await interaction.response.defer()
-        embed = interaction.message.embeds
-        embed.color = discord.Color.orange()
-        embed.add_field(name="🔒 מצב טיפול", value=f"🔶 הקריאה נלקחה לטיפול על ידי חבר הצוות: {interaction.user.mention}", inline=False)
-        @bot.event
-        @bot.event
+       @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user}")
     try:
@@ -80,6 +74,7 @@ async def on_ready():
         print(f"Synced {len(synced)} commands.")
     except Exception as e:
         print(e)
+
 
 
             
