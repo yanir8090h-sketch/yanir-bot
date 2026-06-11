@@ -209,9 +209,6 @@ async def on_ready():
 # פקודות מערכת ה-XP והחנות המעוצבת
 # ==========================================
 
-@bot.command(name="xp")
 # --- הרצת הבוט בצורה מאובטחת מענן Railway ---
 import os
 bot.run(os.environ.get("DISCORD_TOKEN"))
-
-
