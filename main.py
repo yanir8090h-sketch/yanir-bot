@@ -180,7 +180,9 @@ async def staff_request(ctx):
 
 # שימוש במשתנה המאובטח מה-Variables
 import os
-bot.run(os.environ.get("MTQ4MDMzMjIxMTQyODUyODI0OA.GS1nCR.6TvF-I5209vJ4XzZtMTAf7H2_y9ikdvp9N3b78"))
+bot.run(os.environ.get("MTQ4MDMzMjIxMTQyODUyODI0OA.G4K6e9.Y-dRiBvKE7gkIj5L9Cwt-hrxNv-O5pORj0zmnY"))
+
+
 
 
 
