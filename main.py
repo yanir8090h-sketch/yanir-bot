@@ -4,6 +4,12 @@ import json
 import os
 import random
 from datetime import datetime
+# הגדרת ה-Intents (הרשאות הבוט לקרוא הודעות ותוכן)
+intents = discord.Intents.default()
+intents.message_content = True
+
+# יצירת הבוט והגדרת סימן הקידומת שלו (כאן הגדרתי סימן קריאה !)
+bot = commands.Bot(command_prefix="!", intents=intents)
 
 # --- הגדרות קבועות ---
 STAFF_ROLE_ID = 1493335218004820180  # ID של רול הסטאף שלכם
