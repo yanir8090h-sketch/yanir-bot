@@ -210,5 +210,5 @@ async def on_ready():
 # ==========================================
 
 # --- הרצת הבוט בצורה מאובטחת מענן Railway ---
-import os
 bot.run(os.environ.get("DISCORD_TOKEN"))
+
