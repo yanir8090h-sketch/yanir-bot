@@ -202,7 +202,7 @@ class TicketDropdown(discord.ui.Select):
         super().__init__(placeholder="בחר אפשרות...", min_values=1, max_values=1, options=options)
 
 import os
-bot.run(os.getenv('MTQ4MDMzMjIxMTQyODUyODI0OA.GHu1o-.pFVryxdK2-DmoCfum8897T9ZJ_LPs2bUPhlJpg'))
+bot.run(os.getenv('DISCORD_TOKEN'))
 
 
 
