@@ -201,25 +201,41 @@ class XpShopView(discord.ui.View):
             button.callback = self.create_callback(role_name, price)
             self.add_item(button)
 
-    def create_callback(self, role_name, price):
-        async def button_callback(interaction: discord.Interaction):
-            guild = interaction.guild
-            member = interaction.user
-            role = discord.utils.get(guild.roles, name=role_name)
-            
-            if not role:
-                await interaction.response.send_message(f"❌ הרול `{role_name}` לא נמצא בשרת.", ephemeral=True)
-                return
-            if role in member.roles:
-                await interaction.response.send_message(f"אל דאגה, כבר יש לך את הרול `{role_name}`!", ephemeral=True)
-                return
-                
-            try:
-                await member.add_roles(role)
-                await interaction.response.send_message(f"🎉 קיבלת את הרול **{role_name}** בהצלחה!", ephemeral=True)
-            except discord.Forbidden:
-                await interaction.response.send_message(f"❌ אין לי הרשאה לתת את הרול הזה. תעלה את הרול של הבוט גבוה יותר בהגדרות השרת.", ephemeral=True)
-        return button_callback
+       @discord.ui.button(label="קניית VIP (500 XP)", style=discord.ButtonStyle.green, custom_id="buy_vip_btn")
+    async def buy_vip(self, interaction: discord.Interaction, button: discord.ui.Button):
+        guild = interaction.guild
+        member = interaction.user
+        role = discord.utils.get(guild.roles, name="VIP")
+        
+        if not role:
+            await interaction.response.send_message("❌ הרול `VIP` לא נמצא בשרת.", ephemeral=True)
+            return
+        if role in member.roles:
+            await interaction.response.send_message("כבר יש לך את הרול `VIP`!", ephemeral=True)
+            return
+        try:
+            await member.add_roles(role)
+            await interaction.response.send_message("🎉 תתחדש! קיבלת את הרול **VIP** בהצלחה!", ephemeral=True)
+        except discord.Forbidden:
+            await interaction.response.send_message("❌ אין לבוט הרשאה לתת רולים. תעלה אותו גבוה יותר בהגדרות.", ephemeral=True)
+
+    @discord.ui.button(label="קניית תואר אלוף (1500 XP)", style=discord.ButtonStyle.green, custom_id="buy_aluf_btn")
+    async def buy_aluf(self, interaction: discord.Interaction, button: discord.ui.Button):
+        guild = interaction.guild
+        member = interaction.user
+        role = discord.utils.get(guild.roles, name="תואר_אלוף")
+        
+        if not role:
+            await interaction.response.send_message("❌ הרול `תואר_אלוף` לא נמצא בשרת.", ephemeral=True)
+            return
+        if role in member.roles:
+            await interaction.response.send_message("כבר יש לך את הרול `תואר_אלוף`!", ephemeral=True)
+            return
+        try:
+            await member.add_roles(role)
+            await interaction.response.send_message("🎉 תתחדש! קיבלת את הרול **תואר אלוף** בהצלחה!", ephemeral=True)
+        except discord.Forbidden:
+            await interaction.response.send_message("❌ אין לבוט הרשאה לתת רולים. תעלה אותו גבוה יותר בהגדרות.", ephemeral=True)
 
 @bot.command(name="shop")
 async def send_shop(ctx):
@@ -228,8 +244,9 @@ async def send_shop(ctx):
         description="שלום, כאן תוכל לרכוש רולים ותארים מהשרת עם נקודות ה-XP שלך!\n\n**הרולים הזמינים לרכישה:**",
         color=discord.Color.purple()
     )
-    for role_name, price in SHOP_ROLES.items():
-        embed.add_field(name=f"💰 {price} XP", value=f"רול: **{role_name.replace('_', ' ')}**", inline=False)
+    embed.add_field(name="💰 500 XP", value="רול: **VIP**", inline=False)
+    embed.add_field(name="💰 1500 XP", value="רול: **תואר אלוף**", inline=False)
+    
     await ctx.send(embed=embed, view=XpShopView())
 
 # =============================================================
