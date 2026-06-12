@@ -177,30 +177,64 @@ class VerifyView(discord.ui.View):
             await interaction.response.send_message("🎉 אימות עבר בהצלחה!", ephemeral=True)
         except: pass
 
-class ShopPurchaseView(discord.ui.View):
+# ==================== קוד חנות ה-XP החדשה ====================
+
+SHOP_ROLES = {
+    SHOP_ROLES = {
+    "VIP": 500,
+    "תואר_אלוף": 1500,
+    "VIP_פלוס": 3000,
+    "תואר_אגדה": 5000,
+    "מלך_השרת": 10000
+}
+
+
+class XpShopView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
+        for role_name, price in SHOP_ROLES.items():
+            button = discord.ui.Button(
+                label=f"קניית {role_name.replace('_', ' ')}", 
+                style=discord.ButtonStyle.green, 
+                custom_id=f"buy_{role_name}"
+            )
+            button.callback = self.create_callback(role_name, price)
+            self.add_item(button)
 
-    @discord.ui.button(label="קנייה מחנות ה-XP", style=discord.ButtonStyle.primary, custom_id="shop_buy_dx_btn")
-    async def buy_dx_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        user = interaction.user
-        dm_embed = discord.Embed(title="🛒 חנות השרת", description=f"שלום {user.mention}, כאן תוכל לרכוש מוצרים עם נקודות ה-XP שלך.", color=discord.Color.purple())
-        
-        # לולאה שמציגה את הפריטים המקוריים שלך
-        for item, price in SHOP_ITEMS.items():
-            dm_embed.add_field(name=item, value=f"{price} XP", inline=False)
+    def create_callback(self, role_name, price):
+        async def button_callback(interaction: discord.Interaction):
+            guild = interaction.guild
+            member = interaction.user
+            role = discord.utils.get(guild.roles, name=role_name)
             
-        try:
-            await user.send(embed=dm_embed)
-            await interaction.response.send_message("החנות נשלחה אליך לפרטי!", ephemeral=True)
-        except:
-            pass
+            if not role:
+                await interaction.response.send_message(f"❌ הרול `{role_name}` לא נמצא בשרת.", ephemeral=True)
+                return
+            if role in member.roles:
+                await interaction.response.send_message(f"אל דאגה, כבר יש לך את הרול `{role_name}`!", ephemeral=True)
+                return
+                
+            try:
+                await member.add_roles(role)
+                await interaction.response.send_message(f"🎉 קיבלת את הרול **{role_name}** בהצלחה!", ephemeral=True)
+            except discord.Forbidden:
+                await interaction.response.send_message(f"❌ אין לי הרשאה לתת את הרול הזה. תעלה את הרול של הבוט גבוה יותר בהגדרות השרת.", ephemeral=True)
+        return button_callback
 
-# ====== פקודת החנות בצ'אט ======
+@bot.command(name="shop")
+async def send_shop(ctx):
+    embed = discord.Embed(
+        title="🛒 חנות השרת - XP SHOP",
+        description="שלום, כאן תוכל לרכוש רולים ותארים מהשרת עם נקודות ה-XP שלך!\n\n**הרולים הזמינים לרכישה:**",
+        color=discord.Color.purple()
+    )
+    for role_name, price in SHOP_ROLES.items():
+        embed.add_field(name=f"💰 {price} XP", value=f"רול: **{role_name.replace('_', ' ')}**", inline=False)
+    await ctx.send(embed=embed, view=XpShopView())
+
+# =============================================================
+
 @bot.command()
-async def shop(ctx):
-    embed = discord.Embed(title="🛒 חנות ה-XP של השרת", description="לחצו על הכפתור למטה כדי לפתוח את החנות שלכם!", color=discord.Color.gold())
-    await ctx.send(embed=embed, view=ShopPurchaseView())
 
 
 class TicketSetupView(discord.ui.View):
