@@ -1,103 +1,100 @@
 import discord
 from discord.ext import commands
-import json
-import os
 import random
-from datetime import datetime
+import os
+import asyncio
 
-STAFF_ROLE_ID = 1493335218004820180
-ADMIN_ROLE_ID = 1485440480459227227
-
-ROLE_LEVEL_1_ID = 1484226514051665930
-ROLE_LEVEL_2_ID = 1491063689502003360
-ROLE_LEVEL_3_ID = 1490894966262726687
-ROLE_LEVEL_4_ID = 1490894817373196388
-
-XP_FILE = "xp_data.json"
-
-def load_xp():
-    if os.path.exists(XP_FILE):
-        with open(XP_FILE, "r") as f:
-            return json.load(f)
-    return {}
-
-def save_xp(data):
-    with open(XP_FILE, "w") as f:
-        json.dump(data, f, indent=4)
-
-def add_xp(user_id, amount):
-    data = load_xp()
-    user_key = str(user_id)
-
-    if user_key not in data:
-        data[user_key] = {"xp": 0, "level": 1}
-
-    data[user_key]["xp"] += amount
-
-    expected_level = (data[user_key]["xp"] // 150) + 1
-    if expected_level > data[user_key]["level"]:
-        data[user_key]["level"] = expected_level
-
-    save_xp(data)
-    return False, data[user_key]["level"]
-
+# הגדרות הרשאות ובוט
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
-
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# ================= פקודה שהוספתי לך =================
+# מאגרי נתונים זמניים בזיכרון (מתאפס בריסטארט)
+xp_data = {}  # user_id: xp
+inventory = {}  # user_id: [items]
 
-@bot.command()
-async def test(ctx):
-    await ctx.send("✅ הבוט עובד ומגיב לפקודות!")
-
-# ================= HELP =================
-
-class HelpClaimView(discord.ui.View):
-    def __init__(self, user_id=None):
-        super().__init__(timeout=None)
-        self.user_id = user_id
-
-    @discord.ui.button(label="Claim", style=discord.ButtonStyle.blurple)
-    async def claim(self, interaction: discord.Interaction, button: discord.ui.Button):
-
-        staff_role = interaction.guild.get_role(STAFF_ROLE_ID)
-
-        if staff_role not in interaction.user.roles and not interaction.user.guild_permissions.administrator:
-            return await interaction.response.send_message("❌ אין הרשאה", ephemeral=True)
-
-        await interaction.response.defer()
-
-        embed = interaction.message.embeds[0]
-        embed.color = discord.Color.orange()
-
-        embed.add_field(
-            name="Claimed",
-            value=interaction.user.mention,
-            inline=False
-        )
-
-        for c in self.children:
-            c.disabled = True
-
-        await interaction.message.edit(embed=embed, view=self)
-
-        await interaction.followup.send("✔ נלקח לטיפול")
-
-# ================= START =================
+# מחירי חנות ה-XP
+SHOP_ITEMS = {
+    "צבע_לשם_זהב": 500,
+    "רול_VIP": 1500,
+    "תואר_אלוף": 3000
+}
 
 @bot.event
 async def on_ready():
-    print(f"Logged in as {bot.user}")
-    await bot.tree.sync()
+    print(f"🤖 הבוט {bot.user.name} עלה לאוויר בהצלחה ב-Railway!")
 
-@bot.event
-async def on_message(message):
-    if message.author.bot:
-        return
+# ---- מערכת XP ו-SHOP ----
+def add_xp(user_id, amount):
+    xp_data[user_id] = xp_data.get(user_id, 0) + amount
 
-    await bot.process_commands(message)  # 🔥 חובה כדי שפקודות יעבדו
+@bot.command(name="xp")
+async def show_xp(ctx, member: discord.Member = None):
+    member = member or ctx.author
+    user_xp = xp_data.get(member.id, 0)
+    embed = discord.Embed(title="✨ פרופיל XP", description=f"למשתמש {member.mention} יש `{user_xp}` נקודות XP!", color=discord.Color.blue())
+    await ctx.send(embed=embed)
 
-bot.run("TOKEN")
+@bot.command(name="shop")
+async def show_shop(ctx):
+    embed = discord.Embed(title="🛒 חנות ה-XP הגדולה", description="קנה רולים ועיצובים באמצעות ה-XP שלך!\nשימוש: `!buy [שם הפריט]`", color=discord.Color.purple())
+    for item, price in SHOP_ITEMS.items():
+        embed.add_field(name=item, value=f"💰 מחיר: `{price}` XP", inline=False)
+    await ctx.send(embed=embed)
+
+@bot.command(name="buy")
+async def buy_item(ctx, *, item_name: str):
+    user_xp = xp_data.get(ctx.author.id, 0)
+    if item_name not in SHOP_ITEMS:
+        return await ctx.send("❌ הפריט לא קיים בחנות. בדוק שרשמת נכון!")
+    
+    price = SHOP_ITEMS[item_name]
+    if user_xp < price:
+        return await ctx.send(f"❌ אין לך מספיק XP! חסר לך `{price - user_xp}` XP.")
+    
+    xp_data[ctx.author.id] -= price
+    inventory.setdefault(ctx.author.id, []).append(item_name)
+    await ctx.send(f"🎉 תתחדש! קנית את **{item_name}** בהצלחה ומנוכו ממך `{price}` XP.")
+
+# ---- פקודת עזרה מעוצבת ----
+@bot.command(name="h")
+async def help_command(ctx):
+    embed = discord.Embed(title="❓ תפריט עזרה ופקודות", description="הנה כל הפקודות הזמינות בבוט:", color=discord.Color.gold())
+    embed.add_field(name="💰 מערכת XP", value="`!xp` - בדיקת ה-XP שלך\n`!shop` - חנות ה-XP\n`!buy [פריט]` - קנייה מהחנות", inline=False)
+    embed.add_field(name="🎮 משחקים (מעל 4 משחקים!)", value="`!dice` - קוביות\n`!coin` - מטבע\n`!slots` - מכונת מזל\n`!gamma` - משחק הגמא הסודי", inline=False)
+    embed.add_field(name="🎫 תמיכה וצוות", value="`!ticket` - פתיחת קריאת שירות מעוצבת\n`!staff_req` - שליחת בקשת הצטרפות לצוות", inline=False)
+    await ctx.send(embed=embed)
+
+# ---- 4 משחקים מובנים ----
+@bot.command(name="dice")
+async def game_dice(ctx):
+    user = random.randint(1, 6)
+    bot_num = random.randint(1, 6)
+    win = user > bot_num
+    if win: add_xp(ctx.author.id, 50)
+    msg = f"🎲 קובייה שלך: `{user}` | קובייה שלי: `{bot_num}`\n" + ("🏆 ניצחת וקיבלת 50 XP!" if win else "💥 הפסדת!")
+    await ctx.send(msg)
+
+@bot.command(name="coin")
+async def game_coin(ctx, choice: str):
+    if choice not in ["עץ", "פלי"]: return await ctx.send("יש לבחור `!coin עץ` או `!coin פלי`")
+    result = random.choice(["עץ", "פלי"])
+    win = choice == result
+    if win: add_xp(ctx.author.id, 30)
+    msg = f"🪙 יצא: `{result}`! " + ("🏆 צדקת! קיבלת 30 XP!" if win else "💥 טעית!")
+    await ctx.send(msg)
+
+@bot.command(name="slots")
+async def game_slots(ctx):
+    emojis = ["🍒", "🍇", "🍊", "💎"]
+    r1, r2, r3 = random.choice(emojis), random.choice(emojis), random.choice(emojis)
+    win = r1 == r2 == r3
+    if win: add_xp(ctx.author.id, 500)
+    msg = f"🎰 [ {r1} | {r2} | {r3} ]\n" + ("💎 ג'קפוט מטורף! זכית ב-500 XP!" if win else "ניסיון יפה, נסה שוב!")
+    await ctx.send(msg)
+
+@bot.command(name="gamma")
+async def game_gamma(ctx):
+    secret = random.randint(1, 10)
+    await ctx.send("🔮 ברוך הבא ל-XP Gamma! ניחשתי מספר בין 1 ל-10. יש לך 15 שניות לרשום מספר בצ'אט!")
