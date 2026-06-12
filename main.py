@@ -248,11 +248,12 @@ async def ticket(ctx):
         await interaction.response.send_message("הכרטיס שלך נוצר בהצלחה!", ephemeral=True)
 
 # ====== פקודת הכרטיסים בצ'אט ======
-# פקודת הטיקטים היחידה והתקינה שלך
+# למחוק את כל השורות האלו:
 @bot.command()
 async def ticket(ctx):
-    embed = discord.Embed(title="יצירת כרטיס תמיכה", description="לחצו על הכפתור למטה כדי לפתוח פנייה למנהלים.", color=discord.Color.blue())
+    embed = discord.Embed(title="יצירת כרטיס תמיכה"...)
     await ctx.send(embed=embed, view=TicketSetupView())
+
 
 
 # ====== הרצת הבוט בצורה מאובטחת ======
