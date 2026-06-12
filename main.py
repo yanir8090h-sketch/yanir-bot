@@ -178,16 +178,30 @@ class VerifyView(discord.ui.View):
         except: pass
 
 class ShopPurchaseView(discord.ui.View):
-    def __init__(self): super().__init__(timeout=None)
-    @discord.ui.button(label="🛒 לחץ לקנייה מחנות ה-XP", style=discord.ButtonStyle.primary, custom_id="shop_buy_dm_btn")
-    async def buy_in_dm_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="קנייה מחנות ה-XP", style=discord.ButtonStyle.primary, custom_id="shop_buy_dx_btn")
+    async def buy_dx_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         user = interaction.user
-        dm_embed = discord.Embed(title="🛒 חנות", description=f"ה-XP שלך: `{xp_data.get(user.id, 0)}`", color=discord.Color.purple())
-        for item, price in SHOP_ITEMS.items(): dm_embed.add_field(name=item, value=f"`{price}` XP", inline=False)
+        dm_embed = discord.Embed(title="🛒 חנות השרת", description=f"שלום {user.mention}, כאן תוכל לרכוש מוצרים עם נקודות ה-XP שלך.", color=discord.Color.purple())
+        
+        # לולאה שמציגה את הפריטים המקוריים שלך
+        for item, price in SHOP_ITEMS.items():
+            dm_embed.add_field(name=item, value=f"{price} XP", inline=False)
+            
         try:
             await user.send(embed=dm_embed)
-            await interaction.response.send_message("📥 שלחנו לך הודעה בפרטי!", ephemeral=True)
-        except: pass
+            await interaction.response.send_message("החנות נשלחה אליך לפרטי!", ephemeral=True)
+        except:
+            pass
+
+# ====== פקודת החנות בצ'אט ======
+@bot.command()
+async def shop(ctx):
+    embed = discord.Embed(title="🛒 חנות ה-XP של השרת", description="לחצו על הכפתור למטה כדי לפתוח את החנות שלכם!", color=discord.Color.gold())
+    await ctx.send(embed=embed, view=ShopPurchaseView())
+
 
 class TicketSetupView(discord.ui.View):
     def __init__(self):
@@ -197,10 +211,20 @@ class TicketSetupView(discord.ui.View):
 class TicketDropdown(discord.ui.Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label="יצירת כרטיס", emoji="🎫")
+            discord.SelectOption(label="יצירת כרטיס תמיכה", emoji="🎫", description="לחץ כאן כדי לפתוח פנייה לצוות המנהלים")
         ]
-        super().__init__(placeholder="בחר אפשרות...", min_values=1, max_values=1, options=options)
+        super().__init__(placeholder="בחר אפשרות לפתיחת כרטיס...", min_values=1, max_values=1, options=options)
 
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.send_message("הכרטיס שלך נוצר בהצלחה!", ephemeral=True)
+
+# ====== פקודת הכרטיסים בצ'אט ======
+@bot.command()
+async def ticket(ctx):
+    embed = discord.Embed(title="🎫 מערכת התמיכה והכרטיסים", description="צריכים עזרה מהצוות? בחרו באפשרות מהתפריט למטה כדי לפתוח כרטיס חדש.", color=discord.Color.blue())
+    await ctx.send(embed=embed, view=TicketSetupView())
+
+# ====== הרצת הבוט בצורה מאובטחת ======
 import os
 bot.run(os.getenv('DISCORD_TOKEN'))
 
