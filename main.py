@@ -3,6 +3,14 @@ from discord.ext import commands
 import random
 import os
 import asyncio
+from flask import Flask
+import threading
+
+app = Flask('')
+@app.route('/')
+def home(): return "Bot is Alive!"
+
+threading.Thread(target=lambda: app.run(host='0.0.0.0', port=10000)).start()
 
 # הגדרות הרשאות ובוט
 intents = discord.Intents.default()
