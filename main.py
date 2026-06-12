@@ -254,8 +254,6 @@ async def ticket(ctx):
     embed = discord.Embed(title="יצירת כרטיס תמיכה", description="לחצו על הכפתור למטה כדי לפתוח פנייה למנהלים.", color=discord.Color.blue())
     await ctx.send(embed=embed, view=TicketSetupView())
 
-import os
-bot.run(os.getenv('DISCORD_TOKEN'))
 
 # ====== הרצת הבוט בצורה מאובטחת ======
 import os
