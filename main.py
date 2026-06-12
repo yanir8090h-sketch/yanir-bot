@@ -249,10 +249,15 @@ async def ticket(ctx):
 
 # ====== פקודת הכרטיסים בצ'אט ======
 # למחוק את כל השורות האלו:
+
+   # =============================================================
+
 @bot.command()
 async def ticket(ctx):
-    embed = discord.Embed(title="יצירת כרטיס תמיכה"...)
+    embed = discord.Embed(title="יצירת כרטיס תמיכה", description="לחצו על הכפתור למטה כדי לפתוח פנייה למנהלים.", color=discord.Color.blue())
     await ctx.send(embed=embed, view=TicketSetupView())
+
+
 
 
 
