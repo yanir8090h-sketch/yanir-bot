@@ -248,17 +248,14 @@ async def ticket(ctx):
         await interaction.response.send_message("הכרטיס שלך נוצר בהצלחה!", ephemeral=True)
 
 # ====== פקודת הכרטיסים בצ'אט ======
+# פקודת הטיקטים היחידה והתקינה שלך
 @bot.command()
 async def ticket(ctx):
-    embed = discord.Embed(title="🎫 מערכת התמיכה והכרטיסים", description="צריכים עזרה מהצוות? בחרו באפשרות מהתפריט למטה כדי לפתוח כרטיס חדש.", color=discord.Color.blue())
+    embed = discord.Embed(title="יצירת כרטיס תמיכה", description="לחצו על הכפתור למטה כדי לפתוח פנייה למנהלים.", color=discord.Color.blue())
     await ctx.send(embed=embed, view=TicketSetupView())
-# למחוק את כל השורות האלו מסוף הקובץ:
-import discord
-from discord.ext import commands
 
-intents = discord.Intents.default()
-intents.message_content = True 
-bot = commands.Bot(command_prefix='!', intents=intents)
+import os
+bot.run(os.getenv('DISCORD_TOKEN'))
 
 # ====== הרצת הבוט בצורה מאובטחת ======
 import os
