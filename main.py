@@ -188,7 +188,6 @@ SHOP_ROLES = {
 }
 
 
-
 class XpShopView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -198,9 +197,8 @@ class XpShopView(discord.ui.View):
         guild = interaction.guild
         member = interaction.user
         role = discord.utils.get(guild.roles, name="VIP")
-        
         if not role:
-            await interaction.response.send_message("❌ הרול `VIP` לא נמצא בשרת בהגדרות.", ephemeral=True)
+            await interaction.response.send_message("❌ הרול `VIP` לא נמצא בשרת.", ephemeral=True)
             return
         if role in member.roles:
             await interaction.response.send_message("כבר יש לך את הרול `VIP`!", ephemeral=True)
@@ -209,16 +207,15 @@ class XpShopView(discord.ui.View):
             await member.add_roles(role)
             await interaction.response.send_message("🎉 תתחדש! קיבלת את הרול **VIP** בהצלחה!", ephemeral=True)
         except discord.Forbidden:
-            await interaction.response.send_message("❌ אין לבוט הרשאה לתת רולים. תעלה את הרול של הבוט גבוה יותר בהגדרות השרת.", ephemeral=True)
+            await interaction.response.send_message("❌ אין לבוט הרשאה. תעלה את הרול שלו גבוה יותר בהגדרות השרת.", ephemeral=True)
 
     @discord.ui.button(label="קניית תואר אלוף (1500 XP)", style=discord.ButtonStyle.green, custom_id="buy_aluf_btn")
     async def buy_aluf(self, interaction: discord.Interaction, button: discord.ui.Button):
         guild = interaction.guild
         member = interaction.user
         role = discord.utils.get(guild.roles, name="תואר_אלוף")
-        
         if not role:
-            await interaction.response.send_message("❌ הרול `תואר_אלוף` לא נמצא בשרת בהגדרות.", ephemeral=True)
+            await interaction.response.send_message("❌ הרול `תואר_אלוף` לא נמצא בשרת.", ephemeral=True)
             return
         if role in member.roles:
             await interaction.response.send_message("כבר יש לך את הרול `תואר_אלוף`!", ephemeral=True)
@@ -227,7 +224,7 @@ class XpShopView(discord.ui.View):
             await member.add_roles(role)
             await interaction.response.send_message("🎉 תתחדש! קיבלת את הרול **תואר אלוף** בהצלחה!", ephemeral=True)
         except discord.Forbidden:
-            await interaction.response.send_message("❌ אין לבוט הרשאה לתת רולים. תעלה את הרול של הבוט גבוה יותר בהגדרות השרת.", ephemeral=True)
+            await interaction.response.send_message("❌ אין לבוט הרשאה. תעלה את הרול שלו גבוה יותר בהגדרות השרת.", ephemeral=True)
 
 @bot.command(name="shop")
 async def send_shop(ctx):
@@ -238,42 +235,14 @@ async def send_shop(ctx):
     )
     embed.add_field(name="💰 500 XP", value="רול: **VIP**", inline=False)
     embed.add_field(name="💰 1500 XP", value="רול: **תואר אלוף**", inline=False)
-    
-    await ctx.send(embed=embed, view=XpShopView())
-
-            await member.add_roles(role)
-            await interaction.response.send_message("🎉 תתחדש! קיבלת את הרול **תואר אלוף** בהצלחה!", ephemeral=True)
-        except discord.Forbidden:
-            await interaction.response.send_message("❌ אין לבוט הרשאה לתת רולים. תעלה אותו גבוה יותר בהגדרות.", ephemeral=True)
-
-@bot.command(name="shop")
-async def send_shop(ctx):
-    embed = discord.Embed(
-        title="🛒 חנות השרת - XP SHOP",
-        description="שלום, כאן תוכל לרכוש רולים ותארים מהשרת עם נקודות ה-XP שלך!\n\n**הרולים הזמינים לרכישה:**",
-        color=discord.Color.purple()
-    )
-    embed.add_field(name="💰 500 XP", value="רול: **VIP**", inline=False)
-    embed.add_field(name="💰 1500 XP", value="רול: **תואר אלוף**", inline=False)
-    
     await ctx.send(embed=embed, view=XpShopView())
 
 # =============================================================
 
 @bot.command()
-
-
-class TicketSetupView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-        self.add_item(TicketDropdown())
-
-class TicketDropdown(discord.ui.Select):
-    def __init__(self):
-        options = [
-            discord.SelectOption(label="יצירת כרטיס תמיכה", emoji="🎫", description="לחץ כאן כדי לפתוח פנייה לצוות המנהלים")
-        ]
-        super().__init__(placeholder="בחר אפשרות לפתיחת כרטיס...", min_values=1, max_values=1, options=options)
+async def ticket(ctx):
+    embed = discord.Embed(title="יצירת כרטיס תמיכה", description="לחצו על הכפתור למטה כדי לפתוח פנייה למנהלים.", color=discord.Color.blue())
+    await ctx.send(embed=embed, view=TicketSetupView())
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.send_message("הכרטיס שלך נוצר בהצלחה!", ephemeral=True)
