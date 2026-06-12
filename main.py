@@ -180,13 +180,13 @@ class VerifyView(discord.ui.View):
 # ==================== קוד חנות ה-XP החדשה ====================
 
 SHOP_ROLES = {
-    SHOP_ROLES = {
     "VIP": 500,
     "תואר_אלוף": 1500,
     "VIP_פלוס": 3000,
     "תואר_אגדה": 5000,
     "מלך_השרת": 10000
 }
+
 
 
 class XpShopView(discord.ui.View):
