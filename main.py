@@ -223,6 +223,12 @@ class TicketDropdown(discord.ui.Select):
 async def ticket(ctx):
     embed = discord.Embed(title="🎫 מערכת התמיכה והכרטיסים", description="צריכים עזרה מהצוות? בחרו באפשרות מהתפריט למטה כדי לפתוח כרטיס חדש.", color=discord.Color.blue())
     await ctx.send(embed=embed, view=TicketSetupView())
+import discord
+from discord.ext import commands
+
+intents = discord.Intents.default()
+intents.message_content = True  # שורה זו חובה!
+bot = commands.Bot(command_prefix='!', intents=intents)
 
 # ====== הרצת הבוט בצורה מאובטחת ======
 import os
