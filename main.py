@@ -201,4 +201,5 @@ async def on_message(message):
         return
 
   
-bot.run("DISCORD_TOKEN")
+import os
+bot.run(os.getenv("DISCORD_TOKEN"))
