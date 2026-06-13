@@ -136,28 +136,14 @@ async def setup_ticket(ctx):
         await ctx.message.delete()
     except discord.NotFound:
         pass
-    embed = discord.Embed(title="🎫 פתיחת טיקט תמיכה", description="צריך עזרה או יש לך שאלה לצוות המנהלים?\nלחץ על הכפתור למטה כדי לפתוח טיקט פרטי!", color=discord.Color.blue())
+    embed = discord.Embed(
+        title="🎫 פתיחת טיקט תמיכה", 
+        description="צריך עזרה או יש לך שאלה לצוות המנהלים?\nלחץ על הכפתור למטה כדי לפתוח טיקט פרטי!", 
+        color=discord.Color.blue()
+    )
     await ctx.send(embed=embed, view=TicketOpenView())
 
 # ==========================================
-# 3. מערכת אימות (Verification) בכפתור
-# ==========================================
-class VerifyView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @discord.ui.button(label="להתחלת אימות 🛡️", style=discord.ButtonStyle.green, custom_id="verify_user_persistent")
-    async def verify_button(interaction: discord.Interaction, button: discord.ui.Button):
-        guild = interaction.guild
-        member = interaction.user
-        verified_role = discord.utils.get(guild.roles, name="Verified")
-        if not verified_role:
-            verified_role = await guild.create_role(name="Verified")
-
-        if verified_role in member.roles:
-            await interaction.response.send_message("❌ אתה כבר מאומת בשרת!", ephemeral=True)
-        else:
-           # ==========================================
 # קוד Flask לשמירה על הבוט דלוק בחינם ב-Render
 # ==========================================
 app = Flask('')
@@ -176,7 +162,7 @@ def keep_alive():
 keep_alive()
 
 # ==========================================
-# פקודות הניהול והמערכות המעוצבות
+# פקודות הניהול והמערכות המעוצבות הנוספות
 # ==========================================
 @bot.command()
 @commands.has_permissions(administrator=True)
