@@ -1,8 +1,10 @@
 import discord
 from discord.ext import commands
 import os
+import random
+import asyncio
 
-# הגדרות בסיס ואינטנטים מיושרים
+# הגדרות בסיס ואינטנטים
 intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
@@ -204,8 +206,6 @@ async def h(ctx, *, reason: str = None):
         return
 
     await ctx.message.delete()
-    HELP_BANNER_URL = "https://imgur.com"
-
 
 
 
