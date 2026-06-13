@@ -208,72 +208,97 @@ class TicketView(discord.ui.View):
         # שינוי שם הערוץ והודעה חגיגית שהטיקט בטיפול
         await interaction.channel.edit(name=f"🔒-בטיפול-{interaction.user.name}")
         
-        # יצירת אמבד מעוצב המודיע מי לקח את הפנייה
-        embed = discord.Embed(
-            title="🔒 הטיקט ננעל לטיפול!",
-            description=f"הפנייה נלקחה לטיפול על ידי איש הצוות: {interaction.user.mention}\nנא להמתין למענה סבלני.",
-            color=discord.Color.from_rgb(47, 49, 54)
-        )
-        
-        # השבתת כפתור הלקיחה לאחר שנלחץ כדי שלא ילחצו שוב
-        button.disabled = True
-        button.label = "בטיפול הצוות 🔒"
-        button.style = discord.ButtonStyle.secondary
-        
-        await interaction.message.edit(view=self)
-        await interaction.response.send_message(embed=embed, ephemeral=False)
+       # ==========================================
+# פקודות הניהול המעוצבות לעבודה מכל ערוץ
+# ==========================================
 
-    # כפתור סגירת ומחיקת הטיקט
-    @discord.ui.button(label="סגור טיקט ❌", style=discord.ButtonStyle.red, custom_id="close_ticket_persistent")
-    async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("⚠️ הטיקט ייסגר ויימחק מהשרת בעוד 5 שניות...")
-        await asyncio.sleep(5)
-        await interaction.channel.delete()
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def setup_shop(ctx, target_channel: discord.TextChannel = None):
+    """פקודה להצבת החנות - מריצים כך: setup_shop #ערוץ_החנות!"""
+    try: await ctx.message.delete()
+    except discord.NotFound: pass
+    channel_to_send = target_channel if target_channel else ctx.channel
+    
+    guild = ctx.guild
+    embed = discord.Embed(
+        title=f"🎁 חנות ה-XP הרשמית - {guild.name}",
+        description=f"🛍️ **חנות הרולים של השרת**\n\n"
+                    f"👑 <@&{ROLE_1_ID}> — 30,000 XP\n"
+                    f"💎 <@&{ROLE_2_ID}> — 20,000 XP\n"
+                    f"🔥 <@&{ROLE_3_ID}> — 10,000 XP\n"
+                    f"⚡ <@&{ROLE_4_ID}> — 5,000 XP\n"
+                    f"✨ <@&{ROLE_5_ID}> — 2,500 XP",
+        color=discord.Color.from_rgb(142, 201, 57)
+    )
+    if guild.icon: embed.set_image(url=guild.icon.url)
+    await channel_to_send.send(embed=embed, view=ShopView())
 
-class TicketDropdown(discord.ui.Select):
-    def __init__(self):
-        options = [
-            discord.SelectOption(label="עזרה כללית 🛠️", description="פתיחת פנייה בנושא כללי", value="general_help"),
-            discord.SelectOption(label="בחינה לצוות 📝", description="פתיחת פנייה להגשת מועמדות", value="staff_apply"),
-            discord.SelectOption(label="עזרה מהנהלה 👑", description="פנייה דחופה ישירות לדרג הגבוה", value="admin_help"),
-        ]
-        super().__init__(placeholder="בחר סוג טיקט...", min_values=1, max_values=1, options=options, custom_id="ticket_select_persistent")
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def setup_ticket(ctx, target_channel: discord.TextChannel = None):
+    """פקודת טיקטים - מריצים כך: setup_ticket #ערוץ_הטיקטים!"""
+    try: await ctx.message.delete()
+    except discord.NotFound: pass
+    channel_to_send = target_channel if target_channel else ctx.channel
+    
+    embed = discord.Embed(
+        title="תמיכה טכנית 🎫", 
+        description="בחר את סוג הפנייה שברצונך לפתוח מתוך תפריט הבחירה שלמטה.\nצוות המנהלים יתפנה אליך בהקדם האפשרי!", 
+        color=discord.Color.from_rgb(47, 49, 54)
+    )
+    if ctx.guild.icon: embed.set_image(url=ctx.guild.icon.url)
+    await channel_to_send.send(embed=embed, view=TicketDropdownView())
 
-    async def callback(self, interaction: discord.Interaction):
-        selected_type = self.values
-        guild = interaction.guild
-        member = interaction.user
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def setup_verify(ctx, target_channel: discord.TextChannel = None):
+    """פקודת אימות - מריצים כך: setup_verify #ערוץ_האימות!"""
+    try: await ctx.message.delete()
+    except discord.NotFound: pass
+    channel_to_send = target_channel if target_channel else ctx.channel
+    
+    embed = discord.Embed(
+        title="🔒 אימות חשבון - Verification", 
+        description="ברוך הבא לשרת!\nכדי לקבל גישה לשאר הערוצים, לחץ על הכפתור הירוק למטה.", 
+        color=discord.Color.green()
+    )
+    if ctx.guild.icon: embed.set_thumbnail(url=ctx.guild.icon.url)
+    await channel_to_send.send(embed=embed, view=VerifyView())
 
-        ticket_names = {
-            "general_help": f"🛠️-{member.name}",
-            "staff_apply": f"📝-{member.name}",
-            "admin_help": f"👑-{member.name}"
-        }
-        channel_name = ticket_names.get(selected_type, f"ticket-{member.name}")
+# ==========================================
+# הפעלת ה-Views הקבועים ואירועים קריטיים
+# ==========================================
+@bot.event
+async def on_ready():
+    # רישום מאוחד ומלא של כל ה-Views כדי שיעבדו קבוע בשרת לתמיד!
+    bot.add_view(ShopView())
+    bot.add_view(TicketView())
+    bot.add_view(TicketDropdownView())
+    bot.add_view(VerifyView())
+    bot.add_view(StaffFriendReview(0))
+    print(f'🤖 הבוט מחובר בהצלחה ומפעיל את כל הכפתורים כאל: {bot.user.name}')
 
-        overwrites = {
-            guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            member: discord.PermissionOverwrite(read_messages=True, send_messages=True, attach_files=True),
-            guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True)
-        }
+@bot.event
+async def on_message(message):
+    if message.author.bot: return
+    # משחרר את החסימה ומבטיח שכל פקודה בשרת תענה מיידית
+    await bot.process_commands(message)
 
-        ticket_channel = await guild.create_text_channel(name=channel_name, overwrites=overwrites)
+# ==========================================
+# קוד Flask לשמירה על הבוט דלוק בחינם ב-Render
+# ==========================================
+app = Flask('')
 
-        embed = discord.Embed(
-            title="🎫 טיקט תמיכה חדש!",
-            description=f"שלום {member.mention},\nצוות השרת עודכן ויענה לך בהקדם בקשר לפנייתך.\nלחץ על הכפתור למטה כדי שאיש צוות יתחיל לטפל בך!",
-            color=discord.Color.from_rgb(47, 49, 54)
-        )
-        if guild.icon:
-            embed.set_thumbnail(url=guild.icon.url)
-            
-        await ticket_channel.send(embed=embed, view=TicketView())
-        await interaction.response.send_message(f"✅ הטיקט שלך נפתח בהצלחה! לחץ כאן: {ticket_channel.mention}", ephemeral=True)
+@app.route('/')
+def home(): return "הבוט דלוק ובאוויר!"
 
-class TicketDropdownView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-        self.add_item(TicketDropdown())
+def run(): app.run(host='0.0.0.0', port=8080)
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+keep_alive()
 
 import os
 bot.run(os.getenv("DISCORD_TOKEN"))
