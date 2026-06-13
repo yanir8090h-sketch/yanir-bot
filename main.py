@@ -193,7 +193,24 @@ class TicketDropdown(discord.ui.Select):
             }
 
 
-            
+            # פונקציה שתופסת את כל ההודעות ועונה אם הפקודה לא קיימת
+@bot.event
+async def on_message(message):
+    # אם הבוט עצמו שלח את ההודעה, נתעלם ממנה
+    if message.author == bot.user:
+        return
+
+    # בודק אם ההודעה מתחילה בפרפיקס של הבוט
+    if message.content.startswith("!"):
+        command_name = message.content[1:].split()[0]
+        
+        # אם הפקודה לא רשומה בבוט, הוא יענה
+        if command_name not in bot.commands:
+            await message.channel.send(f"❌ פקודה לא מוכרת: `!{command_name}`. נסה את `!xp` כדי לפתוח את החנות.")
+            return
+
+    # שורה חובה כדי ששאר הפקודות הרגילות (כמו !xp) ימשיכו לעבוד
+    await bot.process_commands(message)
 
 
 
