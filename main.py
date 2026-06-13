@@ -9,8 +9,8 @@ intents.messages = True
 intents.members = True
 intents.message_content = True
 
-# הגדרת הקידומת לסימן קריאה (!)
-bot = commands.Bot(command_prefix="!", intents=intents)
+# הגדרת הבוט עם ביטול פקודת העזרה המובנית למניעת התנגשויות
+bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 # --- ניהול מאגר נתונים פשוט של XP בקובץ JSON ---
 XP_FILE = "xp_data.json"
@@ -31,19 +31,14 @@ user_xp = load_xp()
 async def on_ready():
     print(f'-----------------------------------------')
     print(f'הבוט מחובר בהצלחה בתור {bot.user.name}')
-    print(f'מוכן לקבלת פקודות סימן קריאה (!) בשרת')
     print(f'-----------------------------------------')
 
-# הוספת XP אוטומטית על כל הודעה שנשלחת בצ'אט
+# מערכת קריאת הודעות ישירה שעוקפת כל בעיית פקודות
 @bot.event
 async def on_message(message):
-    # מדפיס ללוגים של רנדר בכל פעם שהבוט מזהה הודעה כלשהי בשרת (לבדיקה)
-    print(f"[LOG] הודעה התקבלה מ-{message.author.name}: {message.content}")
-
     if message.author.bot:
         return
 
-    # הוספת ה-XP למשתמש
     user_id = str(message.author.id)
     if user_id not in user_xp:
         user_xp[user_id] = 0
@@ -51,7 +46,52 @@ async def on_message(message):
     user_xp[user_id] += 5
     save_xp(user_xp)
 
-    # שורה קריטית: מאלצת את הבוט לבדוק אם ההודעה הזו היא פקודה (כמו !xp) ולא לעצור כאן
+    # בדיקה ישירה של פקודות טקסט ללא תלות במערכת הדינמית
+    if message.content.strip() == "!xp":
+        points = user_xp.get(user_id, 0)
+        embed = discord.Embed(title="📊 סטטיסטיקת נקודות ה-XP שלך", color=0x57F287)
+        embed.add_field(name="👤 משתמש:", value=message.author.mention, inline=True)
+        embed.add_field(name="✨ נקודות ניסיון (XP):", value=f"**{points} XP**", inline=True)
+        embed.set_thumbnail(url=message.author.display_avatar.url)
+        await message.channel.send(embed=embed)
+        return
+
+    if message.content.strip() == "!send_shop":
+        if message.author.guild_permissions.administrator:
+            embed = discord.Embed(title="🛒 חנות ה-XP של Voice Chat Server", description="כאן אתם יכולים לבזבז את נקודות ה-XP שצברתם מהודעות בצ'אט ומשחקים כדי לקנות תפקידים יוקרתיים בשרת!\n\n**לחצו על הכפתורים למטה כדי לרכוש:**", color=0xFEE75C)
+            embed.add_field(name="💎 רול VIP", value="מחיר: **500 XP**", inline=False)
+            embed.add_field(name="🌟 רול ProBot", value="מחיר: **1000 XP**", inline=False)
+            embed.set_footer(text="הקנייה היא אוטומטית ומורידה נקודות מהחשבון.")
+            try:
+                await message.delete()
+            except:
+                pass
+            await message.channel.send(embed=embed, view=XpShopView())
+        return
+
+    if message.content.startswith("!h"):
+        args = message.content[2:].strip()
+        if not args or "|" not in args:
+            await message.channel.send("❌ **שימוש שגוי!** יש לכתוב את הפקודה בצורה הבאה:\n`!h סיבה | מיקום` (הפרד בין הסיבה למיקום בעזרת הקו `|`)")
+            return
+
+        reason, location = args.split("|", 1)
+        reason = reason.strip()
+        location = location.strip()
+
+        guild = message.guild
+        staff_role = discord.utils.get(guild.roles, name="Staff")
+        
+        embed = discord.Embed(title="🚨 קריאת עזרה דחופה", color=0x5865F2)
+        embed.add_field(name="📍 מיקום הפנייה / וויס:", value=location, inline=False)
+        embed.add_field(name="📝 סיבה שצויינה:", value=reason, inline=False)
+        embed.add_field(name="👤 אחראי:", value=message.author.mention, inline=False)
+        embed.set_footer(text="אנא המתן בסבלנות, הצוות יסייע לך בהקדם האפשרי!")
+
+        staff_mention = staff_role.mention if staff_role else "@Staff"
+        await message.channel.send(content=staff_mention, embed=embed)
+        return
+
     await bot.process_commands(message)
 
 # ==========================================
@@ -158,50 +198,6 @@ class TicketDropdown(discord.ui.Select):
             category = discord.utils.get(guild.categories, id=category_id)
             overwrites = {
                 guild.default_role: discord.PermissionOverwrite(view_channel=False),
-                member: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_message_history=True)
-            }
-            ticket_channel = await guild.create_text_channel(name=ticket_name, category=category, overwrites=overwrites)
-            await ticket_channel.send(content=member.mention, embeds=embeds_to_send)
-            await interaction.followup.send(f"הטיקט שלך נפתח בהצלחה! לחץ כאן כדי לעבור אליו: {ticket_channel.mention}", ephemeral=True)
-
-class TicketView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-        self.add_item(TicketDropdown())
-
-# ==========================================
-# חלק 3: מערכת חנות ה-XP (XP SHOP)
-# ==========================================
-class XpShopView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    async def buy_role(self, interaction: discord.Interaction, role_name: str, cost: int):
-        user_id = str(interaction.user.id)
-        current_xp = user_xp.get(user_id, 0)
-
-        if current_xp < cost:
-            await interaction.response.send_message(f"❌ אין לך מספיק נקודות! הרול הזה עולה **{cost} XP** וכרגע יש לך רק **{current_xp} XP**.", ephemeral=True)
-            return
-
-        guild = interaction.guild
-        role = discord.utils.get(guild.roles, name=role_name)
-
-        if not role:
-            await interaction.response.send_message(f"❌ שגיאה: הרול '{role_name}' לא נמצא בהגדרות השרת, פנה למנהל.", ephemeral=True)
-            return
-
-        if role in interaction.user.roles:
-            await interaction.response.send_message(f"אתה כבר מחזיק ברול **{role_name}**!", ephemeral=True)
-            return
-
-        try:
-            user_xp[user_id] -= cost
-            save_xp(user_xp)
-            await interaction.user.add_roles(role)
-            await interaction.response.send_message(f"🎉 תתחדש! קנית את הרול **{role_name}** בתמורה ל-**{cost} XP**!\nהיתרה החדשה שלך: **{user_xp[user_id]} XP**.", ephemeral=True)
-        except Exception as e:
-            await interaction.response.send_message("התרחשה שגיאה בהענקת הרול. ודא שהבוט נמצא מעליו בהגדרות השרת.", ephemeral=True)
 
 
 
