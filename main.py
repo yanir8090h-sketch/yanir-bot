@@ -200,30 +200,5 @@ async def on_message(message):
     if message.author == bot.user:
         return
 
-    @bot.event
-async def on_command_error(ctx, error):
-    if isinstance(error, commands.CommandNotFound):
-        await ctx.send("❌ פקודה לא קיימת.")
-    # ... שאר הקוד של השגיאות ושל ה-bot.run בסוף בסוף
   
-
-
-@bot.event
-async def on_command_error(ctx, error):
-    if isinstance(error, commands.CommandNotFound):
-        await ctx.send("❌ הפקודה לא קיימת.")
-    elif isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send(f"❌ חסר ארגומנט: {error.param.name}")
-    else:
-        await ctx.send(f"⚠️ שגיאה: {error}")
-
-     
-
-
-# ====== הרצת הבוט בצורה מאובטחת ======
-import os
-bot.run(os.getenv('DISCORD_TOKEN'))
-
-
-
-
+bot.run("DISCORD_TOKEN")
