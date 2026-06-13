@@ -65,6 +65,9 @@ class VerifyButton(discord.ui.View):
 class TicketDropdown(discord.ui.Select):
     def __init__(self):
         options = [
+            class TicketDropdown(discord.ui.Select):
+    def __init__(self):
+        options = [
             discord.SelectOption(label="עזרה כללית", description="לפניות ותמיכה כללית בשרת", emoji="📁"),
             discord.SelectOption(label="בחינה לצוות", description="טופס הגשת מועמדות לצוות השרת", emoji="📝"),
             discord.SelectOption(label="עזרה מההנהלה", description="פניות רגישות ודחופות להנהלה הגבוהה", emoji="👑")
@@ -77,7 +80,6 @@ class TicketDropdown(discord.ui.Select):
         guild = interaction.guild
         member = interaction.user
         
-        # ה-ID של קטגוריית הטיקטים ששלחת
         category_id = 1480327808445059072
         category = guild.get_channel(category_id)
         
@@ -94,7 +96,8 @@ class TicketDropdown(discord.ui.Select):
         ticket_name = f"🎫-{clean_name}-{member.name}"
         
         channel = await guild.create_text_channel(name=ticket_name, category=category, overwrites=overwrites)
-                if selected_value == "בחינה לצוות":
+        
+        if selected_value == "בחינה לצוות":
             embed = discord.Embed(
                 title="📝 טופס מועמדות לצוות השרת - Voice Chat Server",
                 description=f"שלום {member.mention},\nעל מנת להגיש מועמדות לצוות, **אנא העתק את השאלות הבאות, וענה עליהן בצורה מפורשת ומושקעת כאן בצ'אט:**\n\n"
@@ -119,7 +122,6 @@ class TicketDropdown(discord.ui.Select):
                 embed.set_thumbnail(url=guild.icon.url)
             await channel.send(embed=embed)
         else:
-
             embed = discord.Embed(
                 title="🎯 פנייתך התקבלה בהצלחה",
                 description=f"שלום {member.mention},\nנפתח עבורך חדר טיקט בנושא **{selected_value}**.\nאנא פרט את פנייתך בצורה ברורה, ונציג מצוות השרת יתפנה אליך בהקדם.",
@@ -140,6 +142,7 @@ class TicketDropdownView(discord.ui.View):
 @commands.has_permissions(administrator=True)
 async def setup_tickets(ctx):
     await ctx.message.delete()
+    
     embed = discord.Embed(
         title="תמיכה ופניות • הגשת מועמדות",
         description="צריך עזרה? רוצה להגיש מועמדות לצוות השרת?\nבחר את הקטגוריה המתאימה ביותר בתפריט למטה והבוט יפתח לך חדר פרטי מיידית.\n\n⚠️ **חוקי המערכת:**\n• אין לפתוח טיקטים ללא סיבה מוצדקת.\n• הגשת טופס מועמדות שקרי או מזלזל תיפסל מיידית.",
@@ -147,6 +150,7 @@ async def setup_tickets(ctx):
     )
     if ctx.guild.icon:
         embed.set_image(url=ctx.guild.icon.url)
+        
     await ctx.send(embed=embed, view=TicketDropdownView())
 
 # ==========================================
