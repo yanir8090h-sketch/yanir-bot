@@ -5,14 +5,13 @@ from threading import Thread
 import asyncio
 import os
 
-# הגדרת הרשאות הבוט (Intents) כפי שדיסקורד דורש
+# 1. הגדרת הבוט והרשאות Intents
 intents = discord.Intents.all()
 intents.message_content = True
-
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # ==========================================
-# הגדרות ומשתנים קבועים (הרולים והמחירים שלך)
+# הגדרות ומשתנים קבועים עבור הרולים שלך
 # ==========================================
 ROLE_1_ID = 1484226514051665930  # רול 1 - 30,000
 ROLE_2_ID = 1491063689502003360  # רול 2 - 20,000
@@ -20,11 +19,11 @@ ROLE_3_ID = 1490894966262726687  # שלישי - 10,000
 ROLE_4_ID = 1490894895618195577  # רביעי - 5,000
 ROLE_5_ID = 1490894817373196388  # חמישי - 2,500
 
-STAFF_ROLE_ID = 1490894966262726687  # ID של תפקיד הצוות (לניהול טיקטים ועזרה)
+STAFF_ROLE_ID = 1490894966262726687  # ID של תפקיד הצוות לניהול טיקטים
 STAFF_FRIENDS_LOG_CHANNEL_ID = 123456789012345678  # ערוץ לוגים לבקשות Staff Friend
 
 # ==========================================
-# 1. מערכת חנות ה-XP (תפריט נפתח)
+# 2. רכיבי מערכת חנות ה-XP
 # ==========================================
 class ShopDropdown(discord.ui.Select):
     def __init__(self):
@@ -39,18 +38,11 @@ class ShopDropdown(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         role_id = int(self.values)
-        guild = interaction.guild
-        member = interaction.user
-        role = guild.get_role(role_id)
-
-        if not role:
-            await interaction.response.send_message("❌ שגיאה: התפקיד הזה לא נמצא בשרת!", ephemeral=True)
+        role = interaction.guild.get_role(role_id)
+        if not role or role in interaction.user.roles:
+            await interaction.response.send_message("❌ שגיאה: התפקיד לא קיים או שאתה כבר מחזיק בו!", ephemeral=True)
             return
-        if role in member.roles:
-            await interaction.response.send_message(f"❌ אתה כבר מחזיק בתפקיד {role.mention}!", ephemeral=True)
-            return
-
-        await member.add_roles(role)
+        await interaction.user.add_roles(role)
         await interaction.response.send_message(f"🎉 תתחדש! רכשת בהצלחה את התפקיד {role.mention}!", ephemeral=True)
 
 class ShopView(discord.ui.View):
@@ -59,7 +51,7 @@ class ShopView(discord.ui.View):
         self.add_item(ShopDropdown())
 
 # ==========================================
-# 2. מערכת הטיקטים (ניהול פנימי ופתיחה)
+# 3. רכיבי מערכת הטיקטים
 # ==========================================
 class TicketView(discord.ui.View):
     def __init__(self):
@@ -105,7 +97,7 @@ class TicketOpenView(discord.ui.View):
         await interaction.response.send_message(f"הטיקט שלך נפתח בהצלחה! לחץ כאן: {ticket_channel.mention}", ephemeral=True)
 
 # ==========================================
-# 3. מערכת אימות (Verification) בכפתור
+# 4. רכיבי מערכת אימות (Verification)
 # ==========================================
 class VerifyView(discord.ui.View):
     def __init__(self):
@@ -126,7 +118,7 @@ class VerifyView(discord.ui.View):
             await interaction.response.send_message("✅ האימות בוצע בהצלחה! כעת נפתחו עבורך הערוצים.", ephemeral=True)
 
 # ==========================================
-# 4. מערכת בקשות Staff Friend (עם אישור/דחייה)
+# 5. רכיבי מערכת בקשות Staff Friend
 # ==========================================
 class StaffFriendReview(discord.ui.View):
     def __init__(self, applicant_id: int):
@@ -160,7 +152,7 @@ class StaffFriendReview(discord.ui.View):
         await interaction.response.send_message("❌ הבקשה נדחתה.", ephemeral=True)
 
 # ==========================================
-# פקודות הניהול והמערכות המעוצבות
+# 6. פקודת ההרצה בדיסקורד (Commands)
 # ==========================================
 @bot.command()
 @commands.has_permissions(administrator=True)
@@ -192,8 +184,8 @@ async def setup_ticket(ctx):
     except discord.NotFound:
         pass
     embed = discord.Embed(
-        title="🎫 פתיחת טיקט תמיכה", 
-        description="צריך עזרה או יש לך שאלה לצוות המנהלים?\nלחץ על הכפתור למטה כדי לפתוח טיקט פרטי!", 
+        title="🎫 פתיחת טיקט תמיכה",
+        description="צריך עזרה או יש לך שאלה לצוות המנהלים?\nלחץ על הכפתור למטה כדי לפתוח טיקט פרטי!",
         color=discord.Color.blue()
     )
     await ctx.send(embed=embed, view=TicketOpenView())
@@ -214,8 +206,6 @@ async def setup_verify(ctx):
 async def apply_staff_friend(ctx):
     log_channel = bot.get_channel(STAFF_FRIENDS_LOG_CHANNEL_ID)
     if not log_channel:
-
-
-# הפעלת הבוט ישירות עם הטוקן המקורי שלך
-bot.run("DISCORD_TOKEN")
-
+        await ctx.send("❌ ערוץ הלוגים לא הוגדר כראוי בקוד.", ephemeral=True)
+        return
+    embed = discord.Embed(title="🛠️ בקשת Staff Friend חדשה", color=discord.Color.purple())
