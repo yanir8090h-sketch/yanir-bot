@@ -211,12 +211,7 @@ async def setup_shop(ctx):
         await ctx.message.delete()
     except discord.NotFound:
         pass
-        try:
-            await ctx.message.delete()
-        except discord.NotFound:
-            pass
-
-class TicketView(discord.ui.View):
+    class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
@@ -229,6 +224,25 @@ class TicketView(discord.ui.View):
     async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message("הטיקט ייסגר ויימחק בעוד מספר שניות...")
         await interaction.channel.delete()
+
+from flask import Flask
+from threading import Thread
+
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "הבוט דלוק ובאוויר!"
+
+def run():
+    app.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+keep_alive()
+
 
 
 import os
