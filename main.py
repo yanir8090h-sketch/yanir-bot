@@ -210,20 +210,6 @@ async def setup_verify(ctx):
 
 @bot.command()
 async def apply_staff_friend(ctx):
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def setup_verify(ctx):
-    try:
-        await ctx.message.delete()
-    except discord.NotFound:
-        pass
-    embed = discord.Embed(title="🔒 אימות חשבון - Verification", description="ברוך הבא לשרת!\nכדי לקבל גישה לשאר הערוצים, לחץ על הכפתור הירוק למטה.", color=discord.Color.green())
-    if ctx.guild.icon:
-        embed.set_thumbnail(url=ctx.guild.icon.url)
-    await ctx.send(embed=embed, view=VerifyView())
-
-@bot.command()
-async def apply_staff_friend(ctx):
     log_channel = bot.get_channel(STAFF_FRIENDS_LOG_CHANNEL_ID)
     if not log_channel:
         await ctx.send("❌ ערוץ הלוגים לא הוגדר.", ephemeral=True)
