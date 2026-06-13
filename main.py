@@ -59,62 +59,8 @@ class VerifyButton(discord.ui.View):
             await interaction.followup.send("❌ לבוט אין הרשאה לתת רולים!", ephemeral=True)
 
 # ==========================================
-# 📝 מערכת טיקטים וטופס מועמדות לצוות
+# 📝 מערכת טיקטים (TICKETS SYSTEM WITH ALL QUESTIONS)
 # ==========================================
-class StaffFormModal(discord.ui.Modal, title="📝 טופס מועמדות לצוות השרת"):
-    name_input = discord.ui.TextInput(label="שם מלא / כינוי בדיסקורד", placeholder="ישראל ישראלי", required=True)
-    age_input = discord.ui.TextInput(label="גיל", placeholder="למשל: 16", required=True)
-    time_input = discord.ui.TextInput(label="כמה זמן אתה בשרת שלנו?", placeholder="למשל: חודשיים", required=True)
-    exp_input = discord.ui.TextInput(label="ניסיון קודם בניהול? (פרט בקצרה)", style=discord.TextStyle.long, required=True)
-    why_input = discord.ui.TextInput(label="למה דווקא אתה מתאים לצוות?", style=discord.TextStyle.long, required=True)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True)
-        guild = interaction.guild
-        member = interaction.user
-        category_id = 1245448484859227227
-
-        category = discord.utils.get(guild.categories, id=category_id)
-        if not category:
-            await interaction.followup.send("❌ שגיאה: קטגוריית הטיקטים לא נמצאה בשרת. ודא שה-ID נכון בקוד!", ephemeral=True)
-            return
-
-        overwrites = {
-            guild.default_role: discord.PermissionOverwrite(view_channel=False),
-            member: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_message_history=True)
-        }
-
-        channel = await guild.create_text_channel(name=f"📝-צוות-{member.name}", category=category, overwrites=overwrites)
-
-        embed = discord.Embed(title="📝 הגשת מועמדות חדשה לצוות", color=0x9b59b6)
-        embed.set_thumbnail(url=member.display_avatar.url)
-        embed.add_field(name="👤 מגיש הטופס", value=member.mention, inline=False)
-        embed.add_field(name="1. שם מלא / כינוי", value=self.name_input.value, inline=True)
-        embed.add_field(name="2. גיל", value=self.age_input.value, inline=True)
-        embed.add_field(name="3. זמן בשרת", value=self.time_input.value, inline=True)
-        embed.add_field(name="4. ניסיון קודם", value=self.exp_input.value, inline=False)
-        embed.add_field(name="13. למה מתאים", value=self.why_input.value, inline=False)
-        embed.set_footer(text=f"Staff System • {guild.name}")
-
-        await channel.send(embed=embed)
-
-        continued_questions = (
-            f"👋 שלום {member.mention}, החלק הראשון של הטופס נשלח בהצלחה לצוות!\n"
-            f"על מנת להשלים את המועמדות שלך, **אנא ענה כאן בחדר על שאר השאלות הבאות:**\n\n"
-            "**5.** איך אתה מגדיר צוות טוב? מה בעינייך התכונות שצריכות להיות לחבר צוות?\n"
-            "**6.** בתור צוות, מה היית עושה במידה ויש סיטואציה פחות נעימה בחדרי השרת (ריבים, מישהו מתחצף)? תן דוגמה.\n"
-            "**7.** איך היית מגיב אם איש צוות מתחתיך תוקף אותך? ואיך היית מגיב אם הוא היה מעליך?\n"
-            "**8.** כמה זמן בשבוע/כל יום תוכל להשקיע לטובת השרת?\n"
-            "**9.** במידה והשרת מראה חוסר פעילות, איך לדעתך תוכל לשנות את המצב?\n"
-            "**10.** באיזה תחומים תרצה לעזור בשרת?\n"
-            "**11.** איך תוכל לתרום לשרת, וכמה רחוק אתה שואף להגיע?\n"
-            "**12.** מאיפה הרצון להצטרף לצוות?\n"
-            "**14.** האם יש לך אבטחת 2FA מופעלת בדיסקורד?\n\n"
-            "*יש לך רעיון נוסף לשיפור השרת? רשום אותו כאן בסוף!*"
-        )
-        await channel.send(continued_questions)
-        await interaction.followup.send(f"✅ הטיקט שלך נפתח! לחץ כאן למעבר: {channel.mention}", ephemeral=True)
-
 class TicketDropdown(discord.ui.Select):
     def __init__(self):
         options = [
@@ -125,39 +71,69 @@ class TicketDropdown(discord.ui.Select):
         super().__init__(placeholder="בחר את סוג הפנייה שלך מתוך הרשימה...", min_values=1, max_values=1, options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        selected_value = self.values[0]
-        
-        if selected_value == "בחינה לצוות":
-            await interaction.response.send_modal(StaffFormModal())
-            return
-
         await interaction.response.defer(ephemeral=True)
+        selected_value = self.values[0]
         guild = interaction.guild
         member = interaction.user
-        category_id = 1245448484859227227
         
-        clean_name = selected_value.replace(" ", "-")
-        ticket_name = f"🎫-{clean_name}-{member.name}"
+        # ID של קטגוריית הטיקטים שלך
+        category_id = 1245448484859227227
         category = discord.utils.get(guild.categories, id=category_id)
         
         if not category:
-            await interaction.followup.send("❌ שגיאה: קטגוריית הטיקטים לא נמצאה בשרת.", ephemeral=True)
+            await interaction.followup.send("❌ שגיאה: קטגוריית הטיקטים לא נמצאה בשרת. פנה למנהל שיבדוק את ה-ID בקוד!", ephemeral=True)
             return
 
+        # הגדרת הרשאות לערוץ החדש
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(view_channel=False),
             member: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_message_history=True)
         }
         
+        clean_name = selected_value.replace(" ", "-")
+        ticket_name = f"🎫-{clean_name}-{member.name}"
+        
+        # יצירת הערוץ בפועל
         channel = await guild.create_text_channel(name=ticket_name, category=category, overwrites=overwrites)
         
-        embed = discord.Embed(
-            title="🎯 פנייתך התקבלה בהצלחה",
-            description=f"שלום {member.mention},\nנפתח עבורך חדר טיקט בנושא **{selected_value}**.\nאנא פרט את פנייתך בצורה ברורה, ונציג מצוות השרת יתפנה אליך בהקדם.",
-            color=0x004245
-        )
-        await channel.send(embed=embed)
-        await interaction.followup.send(f"✅ הטיקט שלך נוצר! לחץ כאן למעבר: {channel.mention}", ephemeral=True)
+        # אם המשתמש בחר בבחינה לצוות - נשלח את כל 14 השאלות שלך בתוך החדר!
+        if selected_value == "בחינה לצוות":
+            embed = discord.Embed(
+                title="📝 טופס מועמדות לצוות השרת - Voice Chat Server",
+                description=f"שלום {member.mention},\nעל מנת להגיש מועמדות לצוות, **אנא העתק את השאלות הבאות, וענה עליהן בצורה מפורשת ומושקעת כאן בצ'אט:**\n\n"
+                            "**1.** שם מלא (שלך) / כינוי בדיסקורד:\n"
+                            "**2.** גיל:\n"
+                            "**3.** כמה זמן אתה בשרת שלנו?\n"
+                            "**4.** ניסיון קודם בצוות ניהול / מודרטור? ספר קצת.. ואם עזבת אז מדוע? (שלח הוכחה במידה ויש)\n"
+                            "**5.** איך אתה מגדיר צוות טוב? מה בעינייך התכונות שצריכות להיות לחבר צוות?\n"
+                            "**6.** בתור צוות, מה היית עושה במידה ויש סיטואציה פחות נעימה בחדרי השרת / הוויס (מישהו מתחצף/עובר על החוקים, ריבים)? תן דוגמה:\n"
+                            "**7.** איך היית מגיב אם איש צוות מתחתיך תוקף אותך? ואיך היית מגיב אם הוא היה מעליך?\n"
+                            "**8.** כמה זמן בערך אתה חושב שתוכל לתנת ממך למען השרת בשבוע כל יום?\n"
+                            "**9.** במידה והשרת מתחיל טיפה להראות חוסר פעילות האם לדעתך תוכל לשנות את המצב? איך?\n"
+                            "**10.** באיזה תחומים אתה רוצה לעזור בשרת?\n"
+                            "**11.** איך אתה חושב שתוכל לתרום לשרת, וכמה רחוק אתה חושב שתוכל להגיע?\n"
+                            "**12.** מאיפה הרצון להצטרף לצוות?\n"
+                            "**13.** למה דווקא אתה מתאים לצוות שלנו? יש לך רעיון לשיפור השרת?\n"
+                            "**14.** האם יש לך אבטחת 2FA מופעלת בדיסקורד?\n\n"
+                            "📌 *צוות הניהול הגבוה יעבור על התשובות שלך וייתן לך תשובה בהקדם! בהצלחה!*",
+                color=0x9b59b6
+            )
+            if guild.icon:
+                embed.set_thumbnail(url=guild.icon.url)
+            await channel.send(embed=embed)
+        
+        else:
+            # הודעת טיקט רגילה (עזרה כללית / עזרה מההנהלה)
+            embed = discord.Embed(
+                title="🎯 פנייתך התקבלה בהצלחה",
+                description=f"שלום {member.mention},\nנפתח עבורך חדר טיקט בנושא **{selected_value}**.\nאנא פרט את פנייתך בצורה ברורה, ונציג מצוות השרת יתפנה אליך בהקדם.",
+                color=0x004245
+            )
+            if guild.icon:
+                embed.set_thumbnail(url=guild.icon.url)
+            await channel.send(embed=embed)
+            
+        await interaction.followup.send(f"✅ הטיקט שלך נוצר בהצלחה! לחץ כאן למעבר: {channel.mention}", ephemeral=True)
 
 class TicketDropdownView(discord.ui.View):
     def __init__(self):
@@ -174,15 +150,11 @@ async def setup_tickets(ctx):
         description="צריך עזרה? רוצה להגיש מועמדות לצוות השרת?\nבחר את הקטגוריה המתאימה ביותר בתפריט למטה והבוט יפתח לך חדר פרטי מיידית.\n\n⚠️ **חוקי המערכת:**\n• אין לפתוח טיקטים ללא סיבה מוצדקת.\n• הגשת טופס מועמדות שקרי או מזלזל תיפסל מיידית.",
         color=0x004245
     )
-    # תיקון: משיכת לוגו השרת באופן אוטומטי ללא צורך בלינקים חיצוניים פגומים
     if ctx.guild.icon:
         embed.set_image(url=ctx.guild.icon.url)
         
     await ctx.send(embed=embed, view=TicketDropdownView())
 
-# ==========================================
-# 🚨 פקודת עזרה (HELP STAFF COMMAND)
-# ==========================================
 # ==========================================
 # 🚨 פקודת עזרה (HELP STAFF COMMAND)
 # ==========================================
@@ -239,6 +211,11 @@ async def h(ctx, *, reason: str = None):
     embed.set_footer(text=f"Help System • {ctx.guild.name}")
 
     await ctx.send(embed=embed, view=HelpStaffView())
+
+# ==========================================
+# 📊 פקודת רמות (XP COMMAND)
+# ==========================================
+@bot.command(name="xp")
 
 
 
