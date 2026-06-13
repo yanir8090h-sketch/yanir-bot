@@ -186,19 +186,94 @@ def keep_alive():
     t.start()
 
 keep_alive()
-@bot.command(name="h")
-async def help_ticket_info(ctx, *, reason: str = "לא צוינה סיבה"):
-    try: await ctx.message.delete()
-    except discord.NotFound: pass
-    guild = ctx.guild
-    embed = discord.Embed(title="⚙️ בקשת עזרה", color=discord.Color.from_rgb(47, 49, 54))
-    embed.add_field(name="👥 צוות מתוייג:", value=f"<@&{STAFF_ROLE_ID}>", inline=True)
-    embed.add_field(name="📝 סיבה:", value=f"`{reason}`", inline=True)
-    embed.add_field(name="📅 זמן פתיחה:", value=discord.utils.format_dt(ctx.message.created_at), inline=False)
-    embed.add_field(name="🌐 וייס / מיקום:", value="🔈 `(🔒) Private Voice`", inline=False)
-    embed.add_field(name="🔒 נלקח לטיפול על ידי:", value=f"{ctx.author.mention} · <@&{ROLE_3_ID}>", inline=False)
-    embed.set_image(url="https://discordapp.net")
-    await ctx.send(embed=embed)
+# ==========================================
+# מערכת הטיקטים המלאה - עם כפתור לקיחה וסגירה
+# ==========================================
+class TicketView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    # כפתור לקיחת הטיקט המעוצב בסטייל של השרת שלך
+    @discord.ui.button(label="טפל כאן 🔓", style=discord.ButtonStyle.green, custom_id="claim_ticket_persistent")
+    async def claim(self, interaction: discord.Interaction, button: discord.ui.Button):
+        global STAFF_ROLE_ID
+        
+        # בדיקה האם המשתמש שלחץ הוא אכן איש צוות
+        if STAFF_ROLE_ID:
+            staff_role = interaction.guild.get_role(STAFF_ROLE_ID)
+            if staff_role and staff_role not in interaction.user.roles:
+                await interaction.response.send_message("❌ שגיאה: רק אנשי צוות מורשים לטפל בטיקט זה!", ephemeral=True)
+                return
+                
+        # שינוי שם הערוץ והודעה חגיגית שהטיקט בטיפול
+        await interaction.channel.edit(name=f"🔒-בטיפול-{interaction.user.name}")
+        
+        # יצירת אמבד מעוצב המודיע מי לקח את הפנייה
+        embed = discord.Embed(
+            title="🔒 הטיקט ננעל לטיפול!",
+            description=f"הפנייה נלקחה לטיפול על ידי איש הצוות: {interaction.user.mention}\nנא להמתין למענה סבלני.",
+            color=discord.Color.from_rgb(47, 49, 54)
+        )
+        
+        # השבתת כפתור הלקיחה לאחר שנלחץ כדי שלא ילחצו שוב
+        button.disabled = True
+        button.label = "בטיפול הצוות 🔒"
+        button.style = discord.ButtonStyle.secondary
+        
+        await interaction.message.edit(view=self)
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+
+    # כפתור סגירת ומחיקת הטיקט
+    @discord.ui.button(label="סגור טיקט ❌", style=discord.ButtonStyle.red, custom_id="close_ticket_persistent")
+    async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("⚠️ הטיקט ייסגר ויימחק מהשרת בעוד 5 שניות...")
+        await asyncio.sleep(5)
+        await interaction.channel.delete()
+
+class TicketDropdown(discord.ui.Select):
+    def __init__(self):
+        options = [
+            discord.SelectOption(label="עזרה כללית 🛠️", description="פתיחת פנייה בנושא כללי", value="general_help"),
+            discord.SelectOption(label="בחינה לצוות 📝", description="פתיחת פנייה להגשת מועמדות", value="staff_apply"),
+            discord.SelectOption(label="עזרה מהנהלה 👑", description="פנייה דחופה ישירות לדרג הגבוה", value="admin_help"),
+        ]
+        super().__init__(placeholder="בחר סוג טיקט...", min_values=1, max_values=1, options=options, custom_id="ticket_select_persistent")
+
+    async def callback(self, interaction: discord.Interaction):
+        selected_type = self.values
+        guild = interaction.guild
+        member = interaction.user
+
+        ticket_names = {
+            "general_help": f"🛠️-{member.name}",
+            "staff_apply": f"📝-{member.name}",
+            "admin_help": f"👑-{member.name}"
+        }
+        channel_name = ticket_names.get(selected_type, f"ticket-{member.name}")
+
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            member: discord.PermissionOverwrite(read_messages=True, send_messages=True, attach_files=True),
+            guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True)
+        }
+
+        ticket_channel = await guild.create_text_channel(name=channel_name, overwrites=overwrites)
+
+        embed = discord.Embed(
+            title="🎫 טיקט תמיכה חדש!",
+            description=f"שלום {member.mention},\nצוות השרת עודכן ויענה לך בהקדם בקשר לפנייתך.\nלחץ על הכפתור למטה כדי שאיש צוות יתחיל לטפל בך!",
+            color=discord.Color.from_rgb(47, 49, 54)
+        )
+        if guild.icon:
+            embed.set_thumbnail(url=guild.icon.url)
+            
+        await ticket_channel.send(embed=embed, view=TicketView())
+        await interaction.response.send_message(f"✅ הטיקט שלך נפתח בהצלחה! לחץ כאן: {ticket_channel.mention}", ephemeral=True)
+
+class TicketDropdownView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(TicketDropdown())
 
 import os
 bot.run(os.getenv("DISCORD_TOKEN"))
