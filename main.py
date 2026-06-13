@@ -73,7 +73,7 @@ class TicketDropdown(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        selected_value = self.values[0]  # תיקון: משיכת הערך בצורה נקייה
+        selected_value = self.values
         guild = interaction.guild
         member = interaction.user
         
@@ -146,7 +146,11 @@ class TicketDropdownView(discord.ui.View):
 @bot.command(name="setup_tickets")
 @commands.has_permissions(administrator=True)
 async def setup_tickets(ctx):
-    await ctx.message.delete()
+    try:
+        await ctx.message.delete()
+    except discord.NotFound:
+        pass
+        
     embed = discord.Embed(
         title="תמיכה ופניות • הגשת מועמדות",
         description="צריך עזרה? רוצה להגיש מועמדות לצוות השרת?\nבחר את הקטגוריה המתאימה ביותר בתפריט למטה והבוט יפתח לך חדר פרטי מיידית.\n\n⚠️ **חוקי המערכת:**\n• אין לפתוח טיקטים ללא סיבה מוצדקת.\n• הגשת טופס מועמדות שקרי או מזלזל תיפסל מיידית.",
@@ -203,9 +207,12 @@ class ShopView(discord.ui.View):
 @bot.command(name="setup_shop")
 @commands.has_permissions(administrator=True)
 async def setup_shop(ctx):
-    await ctx.message.delete()
-    embed = discord.Embed(
-        title="🛒 חנות הרולים הרשמית של השרת",
+    try:
+        await ctx.message.delete()
+    except discord.NotFound:
+        pass
+        
+
 
 import os
 bot.run(os.getenv("DISCORD_TOKEN"))
