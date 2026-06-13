@@ -1,10 +1,13 @@
+import discord
+from discord.ext import commands
+from flask import Flask
+from threading import Thread
+
 # ==========================================
 # מערכת Staff Friend מעוצבת אחד לאחד כמו בתמונה
 # ==========================================
 class StaffFriendReview(discord.ui.View):
-    def __init__(self, applicant_id: int):
-        super().__init__(timeout=None)
-        self.applicant_id = applicant_id
+
 
     @discord.ui.button(label="Accept 🟢", style=discord.ButtonStyle.green, custom_id="staff_friend_accept_persistent")
     async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
