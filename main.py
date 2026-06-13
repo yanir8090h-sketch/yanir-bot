@@ -9,7 +9,6 @@ intents.messages = True
 intents.members = True
 intents.message_content = True
 
-# הגדרת הבוט עם ביטול פקודת העזרה המובנית למניעת התנגשויות
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 # --- ניהול מאגר נתונים פשוט של XP בקובץ JSON ---
@@ -29,9 +28,9 @@ user_xp = load_xp()
 
 @bot.event
 async def on_ready():
-    print(f'-----------------------------------------')
+    print('-----------------------------------------')
     print(f'הבוט מחובר בהצלחה בתור {bot.user.name}')
-    print(f'-----------------------------------------')
+    print('-----------------------------------------')
 
 # מערכת קריאת הודעות ישירה
 @bot.event
@@ -158,7 +157,7 @@ class TicketDropdown(discord.ui.Select):
             ticket_name = f"💡-בחינות-{member.name}"
 
             embed1 = discord.Embed(title="📋 טופס מועמדות לצוות השרת - חלק א'", description=f"שלום {member.mention}, אנא ענה על השאלות הבאות בהודעה מפורטת אחת:", color=0x5865F2)
-            embed1.add_field(name="1. פרטים אישיים", value="שם מלא (שלך) / כינוי בדיסקורד:", inline=False)
+            embed1.add_field(name="1. פרטים אישיים", value="שם מלא (שלך) / כינוי בדיסکورד:", inline=False)
             embed1.add_field(name="2. גיל", value="מה הגיל שלך?", inline=False)
             embed1.add_field(name="3. ותק בשרת", value="כמה זמן אתה בשרת שלנו?", inline=False)
             embed1.add_field(name="4. ניסיון קודם", value="ניסיון קודם בצוות ניהול / מודרטור? ספר קצת.. ואם עזבת אז מדוע? (שלח הוכחה במידה ויש)", inline=False)
@@ -168,7 +167,7 @@ class TicketDropdown(discord.ui.Select):
 
             embed2 = discord.Embed(title="📋 טופס מועמדות לצוות השרת - חלק ב'", color=0x5865F2)
             embed2.add_field(name="8. זמינות וזמן השקעה", value="כמה זמן בערך אתה חושב שתוכל לתת ממך למען השרת בשבוע כל יום?", inline=False)
-            embed2.add_field(name="9. התמודדותstyle לחוסר פעילות", value="במידה והשרת מתחיל טיפה להראות חוסר פעילות האם לדעתך תוכל לשנות את המצב? איך?", inline=False)
+            embed2.add_field(name="9. התמודדות לחוסר פעילות", value="במידה והשרת מתחיל טיפה להראות חוסר פעילות האם לדעתך תוכל לשנות את המצב? איך?", inline=False)
             embed2.add_field(name="10. תחומי עניין", value="באיזה תחומים אתה רוצה לעזור בשרת?", inline=False)
             embed2.add_field(name="11. תרומה ושאיפות", value="איך אתה חושב שתוכל לתרום לשרת, וכמה רחוק אתה חושב שתוכל להגיע?", inline=False)
             embed2.add_field(name="12. מוטיבציה", value="מאיפה הרצון להצטרף לצוות?", inline=False)
@@ -196,9 +195,11 @@ class TicketDropdown(discord.ui.Select):
 
         if category_id:
             category = discord.utils.get(guild.categories, id=category_id)
-            # תיקון הסוגר המסולסל שהיה חסר בשורה הבאה:
-            overwrites = {
-
+            
+            # מבנה הגדרות הרשאות נקי מבוסס פונקציות פייתון (מבטל סיכוי לשגיאת סוגריים)
+            overwrites = discord.PermissionOverwrite()
+            overwrites.view_channel = False
+            
 
 
 
