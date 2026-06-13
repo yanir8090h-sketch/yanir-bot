@@ -3,16 +3,14 @@ from discord.ext import commands
 import json
 import os
 
-# הגדרת ה-Intents
 intents = discord.Intents.default()
 intents.messages = True
 intents.members = True
 intents.message_content = True
 
-# הגדרת הקידומת של הבוט לסימן קריאה (!) עבור כל הפקודות
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# --- ניהול מאגר נתונים פשוט של XP בקובץ JSON ---
+# --- ניהול מאגר נתונים פשוט של XP ---
 XP_FILE = "xp_data.json"
 
 def load_xp():
@@ -29,9 +27,8 @@ user_xp = load_xp()
 
 @bot.event
 async def on_ready():
-    print(f'הבוט מחובר בהצלחה בתור {bot.user.name} ומוכן לפקודות סימן קריאה (!)')
+    print(f'הבוט מחובר בהצלחה בתור {bot.user.name} ומוכן לפקודות!')
 
-# הוספת XP אוטומטית על כל הודעה שנשלחת בצ'אט
 @bot.event
 async def on_message(message):
     if message.author.bot:
@@ -41,10 +38,9 @@ async def on_message(message):
     if user_id not in user_xp:
         user_xp[user_id] = 0
         
-    user_xp[user_id] += 5  # מעניק 5 נקודות XP על כל הודעה
+    user_xp[user_id] += 5
     save_xp(user_xp)
 
-    # שורה חובה כדי שפקודות ה-! יעבדו בצורה תקינה
     await bot.process_commands(message)
 
 # ==========================================
@@ -76,7 +72,20 @@ class VerifyView(discord.ui.View):
             await member.add_roles(*guild_roles)
             await interaction.response.send_message("אימות הצליח! קיבלת את הרולים: **Member, Staff, Friend** ופתחת את הגישה לשרת. 🎉", ephemeral=True)
         except Exception as e:
-            await interaction.response.send_message("התרחשה שגיאה בהענקת הרולים. ודא שהרול של הבוט נמצא בראש הרשימה בהגדרות השרת.", ephemeral=True)
+            await interaction.response.send_message("התרחשה שגיאה בהענקת הרולים. ודא שהבוט נמצא מעליהם ברשימה.", ephemeral=True)
+
+# פקודה לשליחת הודעת האימות (למנהלים בלבד): !setup_verify
+@bot.command(name="setup_verify")
+@commands.has_permissions(administrator=True)
+async def setup_verify(ctx):
+    embed = discord.Embed(
+        title="🔒 מערכת אימות וסינון המשתמשים",
+        description="ברוכים הבאים לשרת!\nעל מנת לקבל גישה מלאה לכל החדרים, הערוצים ומערכות הוויס,\nעליכם לעבור את מערכת הסינון האוטומטית.\n\n**לחצו על הכפתור הירוק למטה כדי לקבל את תפקידי החבר!**",
+        color=0x2F3136
+    )
+    embed.set_footer(text="Voice Chat Server Verification")
+    await ctx.message.delete()
+    await ctx.send(embed=embed, view=VerifyView())
 
 # ==========================================
 # חלק 2: מערכת הטיקטים (תפריט בחירה Dropdown)
@@ -106,7 +115,7 @@ class TicketDropdown(discord.ui.Select):
         ticket_name = ""
         embeds_to_send = []
 
-        if self.values[0] == "team_apply":
+        if self.values == "team_apply":
             category_id = 1485440385206456452
             ticket_name = f"💡-בחינות-{member.name}"
 
@@ -131,7 +140,7 @@ class TicketDropdown(discord.ui.Select):
 
             embeds_to_send = [embed1, embed2]
 
-        elif self.values[0] == "general_help":
+        elif self.values == "general_help":
             category_id = 1488259168593772554
             ticket_name = f"🎫-עזרה-{member.name}"
 
@@ -139,7 +148,7 @@ class TicketDropdown(discord.ui.Select):
             embed.set_footer(text="Voice Chat Server Support")
             embeds_to_send = [embed]
 
-        elif self.values[0] == "admin_help":
+        elif self.values == "admin_help":
             category_id = 1485440480459227227
             ticket_name = f"👑-הנהלה-{member.name}"
 
@@ -162,6 +171,18 @@ class TicketView(discord.ui.View):
         super().__init__(timeout=None)
         self.add_item(TicketDropdown())
 
+# פקודה לשליחת תפריט הטיקטים (למנהלים בלבד): !setup_ticket
+@bot.command(name="setup_ticket")
+@commands.has_permissions(administrator=True)
+async def setup_ticket(ctx):
+    embed = discord.Embed(
+        title="תמיכה טכנית / פניות הנהלה",
+        description="בחר את סוג הפנייה שלך מהתפריט למטה שאתה צריך, וצוות המשרת יטפל בזה בהקדם!\n\n⚠️ **לפני שפותחים טיקט:**\n• תנו כותרת / תיאור מפורט.\n• אל תתייגו סתם מנהלים על אותו נושא.\n• הכינו מראש צילומי מסך, קבצים וכל הוכחה רלוונטית.",
+        color=0x2F3136
+    )
+    await ctx.message.delete()
+    await ctx.send(embed=embed, view=TicketView())
+
 # ==========================================
 # חלק 3: מערכת חנות ה-XP (XP SHOP)
 # ==========================================
@@ -182,23 +203,7 @@ class XpShopView(discord.ui.View):
 
         if not role:
             await interaction.response.send_message(f"❌ שגיאה: הרול '{role_name}' לא נמצא בהגדרות השרת, פנה למנהל.", ephemeral=True)
-            return
 
-        if role in interaction.user.roles:
-            await interaction.response.send_message(f"אתה כבר מחזיק ברול **{role_name}**!", ephemeral=True)
-            return
-
-        try:
-            user_xp[user_id] -= cost
-            save_xp(user_xp)
-            await interaction.user.add_roles(role)
-            await interaction.response.send_message(f"🎉 תתחדש! קנית את הרול **{role_name}** בתמורה ל-**{cost} XP**!\nהיתרה החדשה שלך: **{user_xp[user_id]} XP**.", ephemeral=True)
-        except Exception as e:
-            await interaction.response.send_message("התרחשה שגיאה בהענקת הרול. ודא שהבוט נמצא מעליו בהגדרות השרת.", ephemeral=True)
-
-    @discord.ui.button(label="קנה רול VIP (מחיר: 500 XP)", style=discord.ButtonStyle.blurple, custom_id="shop_vip")
-    async def buy_vip(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.buy_role(interaction, "VIP", 500)
 
 
 # ====== הרצת הבוט בצורה מאובטחת ======
