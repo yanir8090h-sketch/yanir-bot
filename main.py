@@ -211,7 +211,8 @@ async def setup_shop(ctx):
         await ctx.message.delete()
     except discord.NotFound:
         pass
-        const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
+    const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
+
 
 // יצירת הכפתורים
 const row = new ActionRowBuilder()
