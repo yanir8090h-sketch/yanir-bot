@@ -19,7 +19,7 @@ ROLE_3_ID = 1490894966262726687 # שלישי - 10,000
 ROLE_4_ID = 1490894895618195577  # רביעי - 5,000
 ROLE_5_ID = 1490894817373196388  # חמישי - 2,500
 
-STAFF_ROLE_ID = 1485440480459227227  # ID של תפקיד הצוות לניהול
+STAFF_ROLE_ID = 1488259168593772554  # ID של תפקיד הצוות לניהול
 STAFF_FRIENDS_LOG_CHANNEL_ID = 1499531407859388496  # ערוץ לוגים לבקשות סגל
 
 # ==========================================
@@ -186,5 +186,19 @@ def keep_alive():
     t.start()
 
 keep_alive()
+@bot.command(name="h")
+async def help_ticket_info(ctx, *, reason: str = "לא צוינה סיבה"):
+    try: await ctx.message.delete()
+    except discord.NotFound: pass
+    guild = ctx.guild
+    embed = discord.Embed(title="⚙️ בקשת עזרה", color=discord.Color.from_rgb(47, 49, 54))
+    embed.add_field(name="👥 צוות מתוייג:", value=f"<@&{STAFF_ROLE_ID}>", inline=True)
+    embed.add_field(name="📝 סיבה:", value=f"`{reason}`", inline=True)
+    embed.add_field(name="📅 זמן פתיחה:", value=discord.utils.format_dt(ctx.message.created_at), inline=False)
+    embed.add_field(name="🌐 וייס / מיקום:", value="🔈 `(🔒) Private Voice`", inline=False)
+    embed.add_field(name="🔒 נלקח לטיפול על ידי:", value=f"{ctx.author.mention} · <@&{ROLE_3_ID}>", inline=False)
+    embed.set_image(url="https://discordapp.net")
+    await ctx.send(embed=embed)
+
 import os
 bot.run(os.getenv("DISCORD_TOKEN"))
