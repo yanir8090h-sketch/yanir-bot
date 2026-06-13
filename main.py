@@ -56,7 +56,10 @@ class VerifyButton(discord.ui.View):
                     welcome_embed.set_image(url=guild.icon.url)
                 welcome_embed.set_footer(text=f"משתמש מספר {guild.member_count} בשרת")
                 await welcome_channel.send(embed=welcome_embed)
-      # ==========================================
+        except discord.Forbidden:
+            await interaction.followup.send("❌ לבוט אין הרשאה לתת רולים!", ephemeral=True)
+
+# ==========================================
 # 📝 מערכת טיקטים (TICKETS SYSTEM)
 # ==========================================
 class TicketDropdown(discord.ui.Select):
@@ -74,6 +77,7 @@ class TicketDropdown(discord.ui.Select):
         guild = interaction.guild
         member = interaction.user
         
+        # ה-ID של קטגוריית הטיקטים ששלחת
         category_id = 1480327808445059072
         category = guild.get_channel(category_id)
         
@@ -136,7 +140,6 @@ class TicketDropdownView(discord.ui.View):
 @commands.has_permissions(administrator=True)
 async def setup_tickets(ctx):
     await ctx.message.delete()
-    
     embed = discord.Embed(
         title="תמיכה ופניות • הגשת מועמדות",
         description="צריך עזרה? רוצה להגיש מועמדות לצוות השרת?\nבחר את הקטגוריה המתאימה ביותר בתפריט למטה והבוט יפתח לך חדר פרטי מיידית.\n\n⚠️ **חוקי המערכת:**\n• אין לפתוח טיקטים ללא סיבה מוצדקת.\n• הגשת טופס מועמדות שקרי או מזלזל תיפסל מיידית.",
@@ -144,12 +147,6 @@ async def setup_tickets(ctx):
     )
     if ctx.guild.icon:
         embed.set_image(url=ctx.guild.icon.url)
-        
-    await ctx.send(embed=embed, view=TicketDropdownView())
-
-    if ctx.guild.icon:
-        embed.set_image(url=ctx.guild.icon.url)
-        
     await ctx.send(embed=embed, view=TicketDropdownView())
 
 # ==========================================
@@ -185,12 +182,11 @@ class ShopButton(discord.ui.Button):
             await interaction.user.add_roles(role)
             await interaction.followup.send(f"🎉 תתחדש! רכשת בהצלחה את הרול **{role.name}** עבור `{self.cost:,}` XP!", ephemeral=True)
         except discord.Forbidden:
-            await interaction.followup.send("❌ לבוט אין הרשאה להעניק רולים. ודא שהתפקיד של הבוט נמצא גבוה יותר ב-Roles.", ephemeral=True)
+            await interaction.followup.send("❌ לבוט אין הרשאה להעניק רולים.", ephemeral=True)
 
 class ShopView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
-        # הוספת 5 הכפתורים עם ה-IDs והמחירים המדויקים ששלחת
         self.add_item(ShopButton("רול 1", 1491063689502003360, 5000, "shop_role_1"))
         self.add_item(ShopButton("רול 2", 1490894966262726687, 15000, "shop_role_2"))
         self.add_item(ShopButton("רול 3", 1490894895618195577, 20000, "shop_role_3"))
@@ -208,6 +204,9 @@ async def setup_shop(ctx):
     )
     if ctx.guild.icon:
         embed.set_thumbnail(url=ctx.guild.icon.url)
+    embed.set_footer(text=f"XP Shop • {ctx.guild.name}")
+    await ctx.send(embed=embed, view=ShopView())
+
 
 
 import os
