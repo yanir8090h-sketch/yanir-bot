@@ -213,41 +213,22 @@ async def setup_shop(ctx):
         pass
     const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
 
+import discord
+from discord.ext import commands
 
-// יצירת הכפתורים
-const row = new ActionRowBuilder()
-    .addComponents(
-        new ButtonBuilder()
-            .setCustomId('claim_ticket')
-            .setLabel('לקיחת טיקט')
-            .setStyle(ButtonStyle.Success), // כפתור ירוק
-        new ButtonBuilder()
-            .setCustomId('close_ticket')
-            .setLabel('סגירת טיקט')
-            .setStyle(ButtonStyle.Danger) // כפתור אדום
-    );
+class TicketView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
 
-const embed = new EmbedBuilder()
-    .setTitle('טיקט חדש נפתח!')
-    .setDescription('אנא המתן למענה מהצוות. באפשרותך ללחוץ על הכפתורים למטה.');
+    @discord.ui.button(label="לקיחת טיקט 🔒", style=discord.ButtonStyle.green, custom_id="claim_ticket")
+    async def claim(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.channel.edit(name=f"claimed-{interaction.user.name}")
+        await interaction.response.send_message(f"הטיקט נלקח לטיפול על ידי {interaction.user.mention}!", ephemeral=False)
 
-// שליחת ההודעה לערוץ הטיקט
-await channel.send({ embeds: [embed], components: [row] });
-client.on('interactionCreate', async interaction => {
-    if (!interaction.isButton()) return;
-
-    if (interaction.customId === 'claim_ticket') {
-        // שינוי שם הערוץ או הוספת חבר צוות
-        await interaction.channel.setName(`claimed-${interaction.user.username}`);
-        await interaction.reply({ content: `הטיקט נלקח על ידי ${interaction.user}!`, ephemeral: false });
-    }
-
-    if (interaction.customId === 'close_ticket') {
-        await interaction.reply('הטיקט ייסגר בעוד מספר שניות...');
-        setTimeout(() => interaction.channel.delete(), 5000); // מחיקת הערוץ
-    }
-});
-
+    @discord.ui.button(label="סגירת טיקט ❌", style=discord.ButtonStyle.red, custom_id="close_ticket")
+    async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("הטיקט ייסגר ויימחק בעוד מספר שניות...")
+        await interaction.channel.delete()
 
 
 import os
