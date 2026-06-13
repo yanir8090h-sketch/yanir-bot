@@ -57,9 +57,15 @@ async def on_message(message):
 
     if message.content.strip() == "!send_shop":
         if message.author.guild_permissions.administrator:
-            embed = discord.Embed(title="🛒 חנות ה-XP של Voice Chat Server", description="כאן אתם יכולים לבזבז את נקודות ה-XP שצברתם מהודעות בצ'אט ומשחקים כדי לקנות תפקידים יוקרתיים בשרת!\n\n**לחצו על הכפתורים למטה כדי לרכוש:**", color=0xFEE75C)
-            embed.add_field(name="💎 רול VIP", value="מחיר: **500 XP**", inline=False)
-            embed.add_field(name="🌟 רול ProBot", value="מחיר: **1000 XP**", inline=False)
+            embed = discord.Embed(
+                title="🛒 חנות ה-XP של Voice Chat Server", 
+                description="כאן אתם יכולים לבזבז את נקודות ה-XP שצברתם מהודעות בצ'אט ומשחקים כדי לקנות תפקידים יוקרתיים בשרת!\n\n**לחצו על הכפתורים למטה כדי לרכוש:**", 
+                color=0xFEE75C
+            )
+            embed.add_field(name="💎 רול VIP", value="מחיר: **2,500 XP**", inline=False)
+            embed.add_field(name="⭐ רול Pro", value="מחיר: **5,000 XP**", inline=False)
+            embed.add_field(name="👑 רול King", value="מחיר: **10,000 XP**", inline=False)
+            embed.add_field(name="🏆 רול Legend", value="מחיר: **25,000 XP**", inline=False)
             embed.set_footer(text="הקנייה היא אוטומטית ומורידה נקודות מהחשבון.")
             try:
                 await message.delete()
@@ -157,7 +163,7 @@ class TicketDropdown(discord.ui.Select):
             ticket_name = f"💡-בחינות-{member.name}"
 
             embed1 = discord.Embed(title="📋 טופס מועמדות לצוות השרת - חלק א'", description=f"שלום {member.mention}, אנא ענה על השאלות הבאות בהודעה מפורטת אחת:", color=0x5865F2)
-            embed1.add_field(name="1. פרטים אישיים", value="שם מלא (שלך) / כינוי בדיסکورד:", inline=False)
+            embed1.add_field(name="1. פרטים אישיים", value="שם מלא (שלך) / כינוי בדיסקורד:", inline=False)
             embed1.add_field(name="2. גיל", value="מה הגיל שלך?", inline=False)
             embed1.add_field(name="3. ותק בשרת", value="כמה זמן אתה בשרת שלנו?", inline=False)
             embed1.add_field(name="4. ניסיון קודם", value="ניסיון קודם בצוות ניהול / מודרטור? ספר קצת.. ואם עזבת אז מדוע? (שלח הוכחה במידה ויש)", inline=False)
@@ -194,11 +200,7 @@ class TicketDropdown(discord.ui.Select):
             embeds_to_send = [embed]
 
         if category_id:
-            category = discord.utils.get(guild.categories, id=category_id)
-            
-            # מבנה הגדרות הרשאות נקי מבוסס פונקציות פייתון (מבטל סיכוי לשגיאת סוגריים)
-            overwrites = discord.PermissionOverwrite()
-            overwrites.view_channel = False
+
             
 
 
