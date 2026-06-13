@@ -206,18 +206,76 @@ class StaffFriendReview(discord.ui.View):
 # ==========================================
 # פקודות סטאפ להרצה בדיסקורד
 # ==========================================
+# ==========================================
+# פקודת העזרה המעוצבת המוכרת (!h) עם סיבה דינמית
+# ==========================================
+@bot.command(name="h")
+async def help_ticket_info(ctx, *, reason: str = "לא צוינה סיבה"):
+    try:
+        await ctx.message.delete()
+    except discord.NotFound:
+        pass
+
+    guild = ctx.guild
+    embed = discord.Embed(title="⚠️ בקשת עזרה", color=discord.Color.from_rgb(47, 49, 54))
+    
+    # הצגת הנתונים והרולים בדיוק כמו בתמונה ששלחת
+    embed.add_field(name="👥 צוות מתוייג:", value=f"<@&{STAFF_ROLE_ID}>", inline=False)
+    embed.add_field(name="📝 סיבה:", value=reason, inline=False)
+    embed.add_field(name="🌐 וייס:", value="🔈 (🔒) Private", inline=False)
+    embed.add_field(name="🔒 נלקח על ידי:", value=f"@{ctx.author.name} · <@&{ROLE_3_ID}>", inline=False)
+
+    if guild.icon:
+        embed.set_image(url=guild.icon.url)
+    
+    await ctx.send(embed=embed)
+
+# ==========================================
+# פקודת חנות ה-XP המעוצבת
+# ==========================================
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def setup_shop(ctx):
-    await ctx.message.delete()
+    try:
+        await ctx.message.delete()
+    except discord.NotFound:
+        pass
     guild = ctx.guild
     embed = discord.Embed(
         title=f"🎁 חנות ה-XP הרשמית - {guild.name}",
-        description=f"🛍️ **חנות הרולים של השרת**\n\n👑 <@&{ROLE_1_ID}> — 30,000 XP\n"
-                    f"💎 <@&{ROLE_2_ID}> — 20,000 XP\n🔥 <@&{ROLE_3_ID}> — 10,000 XP\n"
-                    f"⚡ <@&{ROLE_4_ID}> — 5,000 XP\n  ✨ <@&{ROLE_5_ID}> — 2,500 XP",
+        description=f"🛍️ **חנות הרולים של השרת**\n\n"
+                    f"👑 <@&{ROLE_1_ID}> — 30,000 XP\n"
+                    f"💎 <@&{ROLE_2_ID}> — 20,000 XP\n"
+                    f"🔥 <@&{ROLE_3_ID}> — 10,000 XP\n"
+                    f"⚡ <@&{ROLE_4_ID}> — 5,000 XP\n"
+                    f"✨ <@&{ROLE_5_ID}> — 2,500 XP",
         color=discord.Color.from_rgb(142, 201, 57)
     )
+    if guild.icon:
+        embed.set_image(url=guild.icon.url)
+    await ctx.send(embed=embed, view=ShopView())
 
+# ==========================================
+# קוד Flask לשמירה על הבוט דלוק בחינם ב-Render
+# ==========================================
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "הבוט דלוק ובאוויר!"
+
+def run():
+    app.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+# הפעלת שרת האינטרנט
+keep_alive()
+
+# ==========================================
+# שורות ההפעלה הסופיות של הבוט
+# ==========================================
 import os
 bot.run(os.getenv("DISCORD_TOKEN"))
