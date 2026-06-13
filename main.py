@@ -188,17 +188,7 @@ class ShopView(discord.ui.View):
         self.add_item(ShopDropdown())
 
 # ==========================================
-# 2. מערכת הטיקטים (ניהול פנימי)
-# ==========================================
-class TicketView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @discord.ui.button(label="לקיחת טיקט 🔒", style=discord.ButtonStyle.green, custom_id="claim_ticket")
-    async def claim(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if STAFF_ROLE_ID:
-            # ==========================================
-# 5. קוד Flask לשמירה על הבוט דלוק בחינם ב-Render
+# קוד Flask לשמירה על הבוט דלוק בחינם ב-Render
 # ==========================================
 app = Flask('')
 
@@ -216,7 +206,7 @@ def keep_alive():
 keep_alive()
 
 # ==========================================
-# 6. פקודות הניהול והמערכות המעוצבות
+# פקודות הניהול והמערכות המעוצבות
 # ==========================================
 @bot.command()
 @commands.has_permissions(administrator=True)
@@ -284,7 +274,7 @@ async def help_ticket_info(ctx, *, reason: str = "לא צוינה סיבה"):
     await ctx.send(embed=embed)
 
 # ==========================================
-# 7. הפעלת ה-Views הקבועים ב-on_ready
+# הפעלת ה-Views הקבועים ב-on_ready
 # ==========================================
 @bot.event
 async def on_ready():
@@ -296,6 +286,3 @@ async def on_ready():
 
 import os
 bot.run(os.getenv("DISCORD_TOKEN"))
-
-
-
