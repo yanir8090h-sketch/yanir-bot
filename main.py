@@ -201,6 +201,9 @@ async def on_message(message):
         
     await bot.process_commands(message)
 
-  
+@bot.command(name="shop")
+async def shop(ctx):
+    await ctx.send("הנה החנות שלך!")
+
 import os
 bot.run(os.getenv("DISCORD_TOKEN"))
