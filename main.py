@@ -2,14 +2,14 @@ import discord
 from discord.ext import commands
 import os
 
-# 1. הגדרות בסיס ואינטנטים (מתוקן לאותיות קטנות)
+# הגדרות בסיס ואינטנטים מיושרים
 intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-# מילון ה-XP המקורי מהקוד שלך (מומלץ לחבר לקובץ JSON בהמשך)
+# מילון ה-XP המקורי
 user_xp = {}
 
 # ==========================================
@@ -44,7 +44,7 @@ class VerifyButton(discord.ui.View):
             if welcome_channel:
                 welcome_embed = discord.Embed(
                     title=f"👋 ברוכים הבאים ל- {guild.name}!",
-                    description=f"המבוט המוכשר {member.mention} עבר את האימות בהצלחה והצטרף אלינו! 🎉\nתתחיל לדבר בצ'אט ולצבור XP!",
+                    description=f"המשתמש {member.mention} עבר את האימות בהצלחה והצטרף אלינו! 🎉\nתתחיל לדבר בצ'אט ולצבור XP!",
                     color=0x2ecc71
                 )
                 welcome_embed.set_thumbnail(url=member.display_avatar.url)
@@ -53,11 +53,12 @@ class VerifyButton(discord.ui.View):
                 welcome_embed.set_footer(text=f"משתמש מספר {guild.member_count} בשרת")
                 await welcome_channel.send(embed=welcome_embed)
         except discord.Forbidden:
-            await interaction.followup.send("❌ לבוט אין הרשאה לתת רולים! תעלה את הרול של הבוט מעל הרול Member.", ephemeral=True)
+            await interaction.followup.send("❌ לבוט אין הרשאה לתת רולים!", ephemeral=True)
 
 # ==========================================
-# 📝 מערכת טיקטים וטופס מועמדות לצוות (TICKETS & STAFF FORM)
+# 📝 מערכת טיקטים וטופס מועמדות לצוות
 # ==========================================
+class StaffFormModal(discord.ui.Modal, title="📝 טופס מועמדות לצוות השרת"):
     name_input = discord.ui.TextInput(label="שם מלא / כינוי בדיסקורד", placeholder="ישראל ישראלי", required=True)
     age_input = discord.ui.TextInput(label="גיל", placeholder="למשל: 16", required=True)
     time_input = discord.ui.TextInput(label="כמה זמן אתה בשרת שלנו?", placeholder="למשל: חודשיים", required=True)
@@ -68,7 +69,7 @@ class VerifyButton(discord.ui.View):
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
         member = interaction.user
-        category_id = 1245448484859227227  # ה-ID של קטגוריית הטיקטים שלך
+        category_id = 1245448484859227227
 
         category = discord.utils.get(guild.categories, id=category_id)
         overwrites = {
@@ -78,7 +79,6 @@ class VerifyButton(discord.ui.View):
 
         channel = await guild.create_text_channel(name=f"📝-צוות-{member.name}", category=category, overwrites=overwrites)
 
-        # יצירת ה-Embed עם חלק א' של התשובות מהחלון הקופץ
         embed = discord.Embed(title="📝 הגשת מועמדות חדשה לצוות", color=0x9b59b6)
         embed.set_thumbnail(url=member.display_avatar.url)
         embed.add_field(name="👤 מגיש הטופס", value=member.mention, inline=False)
@@ -91,7 +91,6 @@ class VerifyButton(discord.ui.View):
 
         await channel.send(embed=embed)
 
-        # שליחת שאר השאלות לתוך החדר כדי שהמשתמש ימשיך לענות בטקסט
         continued_questions = (
             f"👋 שלום {member.mention}, החלק הראשון של הטופס נשלח בהצלחה לצוות!\n"
             f"על מנת להשלים את המועמדות שלך, **אנא ענה כאן בחדר על שאר השאלות הבאות:**\n\n"
@@ -107,7 +106,7 @@ class VerifyButton(discord.ui.View):
             "*יש לך רעיון נוסף לשיפור השרת? רשום אותו כאן בסוף!*"
         )
         await channel.send(continued_questions)
-        await interaction.followup.send(f"✅ הטיקט שלך נפתח! לחץ כאן למעבר ומילוי שאר השאלות: {channel.mention}", ephemeral=True)
+        await interaction.followup.send(f"✅ הטיקט שלך נפתח! לחץ כאן למעבר: {channel.mention}", ephemeral=True)
 
 class TicketDropdown(discord.ui.Select):
     def __init__(self):
@@ -119,12 +118,10 @@ class TicketDropdown(discord.ui.Select):
         super().__init__(placeholder="בחר את סוג הפנייה שלך מתוך הרשימה...", min_values=1, max_values=1, options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        # אם המשתמש בחר בבחינה לצוות - נפתח לו את החלון הקופץ המיוחד
         if self.values == "בחינה לצוות":
             await interaction.response.send_modal(StaffFormModal())
             return
 
-        # טיקטים רגילים (עזרה כללית / הנהלה)
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
         member = interaction.user
@@ -157,15 +154,11 @@ class TicketDropdownView(discord.ui.View):
 @commands.has_permissions(administrator=True)
 async def setup_tickets(ctx):
     await ctx.message.delete()
-    TICKET_BANNER_URL = "https://imgur.com"  # החלף בקישור לבאנר שלך
+    TICKET_BANNER_URL = "https://imgur.com"
     
     embed = discord.Embed(
         title="תמיכה ופניות • הגשת מועמדות",
-        description="צריך עזרה? רוצה להגיש מועמדות לצוות השרת?\n"
-                    "בחר את הקטגוריה המתאימה ביותר עבורך בתפריט למטה והבוט יפתח לך חדר פרטי מיידית.\n\n"
-                    "⚠️ **חוקי המערכת:**\n"
-                    "• אין לפתוח טיקטים ללא סיבה מוצדקת (פתיחת ספאם תגרור הרחקה).\n"
-                    "• הגשת טופס מועמדות שקרי או מזלזל תיפסל מיידית.",
+        description="צריך עזרה? רוצה להגיש מועמדות לצוות השרת?\nבחר את הקטגוריה המתאימה ביותר בתפריט למטה והבוט יפתח לך חדר פרטי מיידית.\n\n⚠️ **חוקי המערכת:**\n• אין לפתוח טיקטים ללא סיבה מוצדקת.\n• הגשת טופס מועמדות שקרי או מזלזל תיפסל מיידית.",
         color=0x004245
     )
     embed.set_image(url=TICKET_BANNER_URL)
@@ -196,6 +189,23 @@ class HelpStaffView(discord.ui.View):
                 
         if not field_updated:
             embed.add_field(name="🤝 נלקח על ידי", value=f"{interaction.user.mention}", inline=False)
+
+        embed.color = discord.Color.green()
+        for child in self.children:
+            child.disabled = True
+            
+        await interaction.message.edit(embed=embed, view=self)
+        await interaction.channel.send(f"⚡ הפנייה של המשתמש נלקחה לטיפול על ידי {interaction.user.mention}!")
+
+@bot.command(name="h", aliases=["help"])
+async def h(ctx, *, reason: str = None):
+    if not reason:
+        await ctx.send("⚠️ נא לציין את סיבת הפנייה! דוגמה: `!h יש בעיה בצ'אט`")
+        return
+
+    await ctx.message.delete()
+    HELP_BANNER_URL = "https://imgur.com"
+
 
 
 
