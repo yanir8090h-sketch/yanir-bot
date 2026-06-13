@@ -197,109 +197,27 @@ class TicketView(discord.ui.View):
     @discord.ui.button(label="לקיחת טיקט 🔒", style=discord.ButtonStyle.green, custom_id="claim_ticket")
     async def claim(self, interaction: discord.Interaction, button: discord.ui.Button):
         if STAFF_ROLE_ID:
-            staff_role = interaction.guild.get_role(STAFF_ROLE_ID)
-            if staff_role not in interaction.user.roles:
-                await interaction.response.send_message("❌ רק אנשי צוות יכולים לקחת טיקט זה!", ephemeral=True)
-                return
-        await interaction.channel.edit(name=f"claimed-{interaction.user.name}")
-        await interaction.response.send_message(f"🔒 הטיקט נלקח לטיפול על ידי {interaction.user.mention}!", ephemeral=False)
+            # ==========================================
+# 5. קוד Flask לשמירה על הבוט דלוק בחינם ב-Render
+# ==========================================
+app = Flask('')
 
-    @discord.ui.button(label="סגירת טיקט ❌", style=discord.ButtonStyle.red, custom_id="close_ticket")
-    async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("⚠️ הטיקט ייסגר ויימחק בעוד מספר שניות...")
-        await interaction.channel.delete()
+@app.route('/')
+def home():
+    return "הבוט דלוק ובאוויר!"
 
-bot = client  # התיקון שיפתור את ה-NameError
+def run():
+    app.run(host='0.0.0.0', port=8080)
 
-import asyncio
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+keep_alive()
 
 # ==========================================
-# הגדרות ומשתנים קבועים
+# 6. פקודות הניהול והמערכות המעוצבות
 # ==========================================
-ROLE_1_ID = 1484226514051665930  
-ROLE_2_ID = 1491063689502003360  
-ROLE_3_ID = 1490894966262726687  
-ROLE_4_ID = 1490894895618195577  
-ROLE_5_ID = 1490894817373196388  
-
-STAFF_ROLE_ID = 1490894966262726687  
-STAFF_FRIENDS_LOG_CHANNEL_ID = 123456789012345678  
-
-# ==========================================
-# 1. מערכת חנות ה-XP (תפריט נפתח + באנר שרת)
-# ==========================================
-class ShopDropdown(discord.ui.Select):
-    def __init__(self):
-        options = [
-            discord.SelectOption(label="רול ראשון 🥇", description="מחיר: 30,000 XP", value=str(ROLE_1_ID)),
-            discord.SelectOption(label="רול שני 🥈", description="מחיר: 20,000 XP", value=str(ROLE_2_ID)),
-            discord.SelectOption(label="רול שלישי 🥉", description="מחיר: 10,000 XP", value=str(ROLE_3_ID)),
-            discord.SelectOption(label="רול רביעי 🎖️", description="מחיר: 5,000 XP", value=str(ROLE_4_ID)),
-            discord.SelectOption(label="רול חמישי 🏅", description="מחיר: 2,500 XP", value=str(ROLE_5_ID)),
-        ]
-        super().__init__(placeholder="בחר תפקיד לקנייה מהחנות...", min_values=1, max_values=1, options=options, custom_id="shop_select_persistent")
-
-    async def callback(self, interaction: discord.Interaction):
-        role_id = int(self.values)
-        guild = interaction.guild
-        member = interaction.user
-        role = guild.get_role(role_id)
-
-        if not role or role in member.roles:
-            await interaction.response.send_message("❌ שגיאה: התפקיד לא נמצא או שאתה כבר מחזיק בו!", ephemeral=True)
-            return
-        await member.add_roles(role)
-        await interaction.response.send_message(f"🎉 תתחדש! רכשת בהצלחה את התפקיד {role.mention}!", ephemeral=True)
-
-class ShopView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-        self.add_item(ShopDropdown())
-
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def setup_shop(ctx):
-    try:
-        await ctx.message.delete()
-    except discord.NotFound:
-        pass
-    guild = ctx.guild
-    embed = discord.Embed(
-        title=f"🎁 חנות ה-XP הרשמית - {guild.name}",
-        description=f"🛍️ **חנות הרולים של השרת**\n\n"
-                    f"👑 <@&{ROLE_1_ID}> — 30,000 XP\n"
-                    f"💎 <@&{ROLE_2_ID}> — 20,000 XP\n"
-                    f"🔥 <@&{ROLE_3_ID}> — 10,000 XP\n"
-                    f"⚡ <@&{ROLE_4_ID}> — 5,000 XP\n"
-                    f"✨ <@&{ROLE_5_ID}> — 2,500 XP",
-        color=discord.Color.from_rgb(142, 201, 57)
-    )
-    if guild.icon:
-        embed.set_image(url=guild.icon.url)
-    await ctx.send(embed=embed, view=ShopView())
-
-# ==========================================
-# 2. מערכת הטיקטים
-# ==========================================
-class TicketView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @discord.ui.button(label="לקיחת טיקט 🔒", style=discord.ButtonStyle.green, custom_id="claim_ticket_persistent")
-    async def claim(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if STAFF_ROLE_ID:
-            staff_role = interaction.guild.get_role(STAFF_ROLE_ID)
-            if staff_role not in interaction.user.roles:
-                await interaction.response.send_message("❌ רק אנשי צוות יכולים לקחת טיקט זה!", ephemeral=True)
-                return
-        await interaction.channel.edit(name=f"claimed-{interaction.user.name}")
-        await interaction.response.send_message(f"🔒 הטיקט נלקח לטיפול על ידי {interaction.user.mention}!", ephemeral=False)
-
-    @discord.ui.button(label="סגירת טיקט ❌", style=discord.ButtonStyle.red, custom_id="close_ticket_persistent")
-    async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("⚠️ הטיקט ייסגר ויימחק בעוד 5 שניות...")
-        await asyncio.sleep(5)
-        await interaction.channel.delete()
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def setup_shop(ctx):
@@ -365,9 +283,19 @@ async def help_ticket_info(ctx, *, reason: str = "לא צוינה סיבה"):
         embed.set_image(url=guild.icon.url)
     await ctx.send(embed=embed)
 
-import os
+# ==========================================
+# 7. הפעלת ה-Views הקבועים ב-on_ready
+# ==========================================
+@bot.event
+async def on_ready():
+    bot.add_view(ShopView())
+    bot.add_view(TicketView())
+    bot.add_view(TicketOpenView())
+    bot.add_view(VerifyView())
+    print(f'🤖 הבוט מחובר בהצלחה כאל: {bot.user.name}')
 
-# הפעלת הבוט באמצעות הטוקן המוגדר ב-Render
+import os
 bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
