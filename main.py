@@ -56,16 +56,10 @@ class VerifyButton(discord.ui.View):
                     welcome_embed.set_image(url=guild.icon.url)
                 welcome_embed.set_footer(text=f"משתמש מספר {guild.member_count} בשרת")
                 await welcome_channel.send(embed=welcome_embed)
-        except discord.Forbidden:
-            await interaction.followup.send("❌ לבוט אין הרשאה לתת רולים!", ephemeral=True)
-
-# ==========================================
+      # ==========================================
 # 📝 מערכת טיקטים (TICKETS SYSTEM)
 # ==========================================
 class TicketDropdown(discord.ui.Select):
-    def __init__(self):
-        options = [
-            class TicketDropdown(discord.ui.Select):
     def __init__(self):
         options = [
             discord.SelectOption(label="עזרה כללית", description="לפניות ותמיכה כללית בשרת", emoji="📁"),
@@ -76,7 +70,7 @@ class TicketDropdown(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        selected_value = self.values[0]
+        selected_value = self.values
         guild = interaction.guild
         member = interaction.user
         
@@ -148,6 +142,11 @@ async def setup_tickets(ctx):
         description="צריך עזרה? רוצה להגיש מועמדות לצוות השרת?\nבחר את הקטגוריה המתאימה ביותר בתפריט למטה והבוט יפתח לך חדר פרטי מיידית.\n\n⚠️ **חוקי המערכת:**\n• אין לפתוח טיקטים ללא סיבה מוצדקת.\n• הגשת טופס מועמדות שקרי או מזלזל תיפסל מיידית.",
         color=0x004245
     )
+    if ctx.guild.icon:
+        embed.set_image(url=ctx.guild.icon.url)
+        
+    await ctx.send(embed=embed, view=TicketDropdownView())
+
     if ctx.guild.icon:
         embed.set_image(url=ctx.guild.icon.url)
         
