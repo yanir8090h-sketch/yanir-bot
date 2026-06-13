@@ -5,16 +5,14 @@ from threading import Thread
 import asyncio
 import os
 
-# ==========================================
-# הגדרות הבוט וההרשאות (Intents)
-# ==========================================
+# הגדרת הרשאות הבוט (Intents) כפי שדיסקורד דורש
 intents = discord.Intents.all()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # ==========================================
-# הגדרות ה-ID של הרולים והמחירים שלך
+# הגדרות ומשתנים קבועים (הרולים והמחירים שלך)
 # ==========================================
 ROLE_1_ID = 1484226514051665930  # רול 1 - 30,000
 ROLE_2_ID = 1491063689502003360  # רול 2 - 20,000
@@ -26,7 +24,7 @@ STAFF_ROLE_ID = 1490894966262726687  # ID של תפקיד הצוות (לניהו
 STAFF_FRIENDS_LOG_CHANNEL_ID = 123456789012345678  # ערוץ לוגים לבקשות Staff Friend
 
 # ==========================================
-# 1. מערכת חנות ה-XP (תפריט נפתח + באנר שרת)
+# 1. מערכת חנות ה-XP (תפריט נפתח)
 # ==========================================
 class ShopDropdown(discord.ui.Select):
     def __init__(self):
@@ -162,22 +160,8 @@ class StaffFriendReview(discord.ui.View):
         await interaction.response.send_message("❌ הבקשה נדחתה.", ephemeral=True)
 
 # ==========================================
-# פקודות ההצבה והניהול (Commands)
+# פקודות הניהול והמערכות המעוצבות
 # ==========================================
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def setup_ticket(ctx):
-    try:
-        await ctx.message.delete()
-    except discord.NotFound:
-        pass
-    embed = discord.Embed(
-        title="🎫 פתיחת טיקט תמיכה", 
-        description="צריך עזרה או יש לך שאלה לצוות המנהלים?\nלחץ על הכפתור למטה כדי לפתוח טיקט פרטי!", 
-        color=discord.Color.blue()
-    )
-    await ctx.send(embed=embed, view=TicketOpenView())
-
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def setup_shop(ctx):
@@ -202,6 +186,20 @@ async def setup_shop(ctx):
 
 @bot.command()
 @commands.has_permissions(administrator=True)
+async def setup_ticket(ctx):
+    try:
+        await ctx.message.delete()
+    except discord.NotFound:
+        pass
+    embed = discord.Embed(
+        title="🎫 פתיחת טיקט תמיכה", 
+        description="צריך עזרה או יש לך שאלה לצוות המנהלים?\nלחץ על הכפתור למטה כדי לפתוח טיקט פרטי!", 
+        color=discord.Color.blue()
+    )
+    await ctx.send(embed=embed, view=TicketOpenView())
+
+@bot.command()
+@commands.has_permissions(administrator=True)
 async def setup_verify(ctx):
     try:
         await ctx.message.delete()
@@ -214,6 +212,9 @@ async def setup_verify(ctx):
 
 @bot.command()
 async def apply_staff_friend(ctx):
+    log_channel = bot.get_channel(STAFF_FRIENDS_LOG_CHANNEL_ID)
+    if not log_channel:
+
 
 # הפעלת הבוט ישירות עם הטוקן המקורי שלך
 bot.run("DISCORD_TOKEN")
