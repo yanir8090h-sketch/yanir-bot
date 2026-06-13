@@ -237,6 +237,26 @@ async def on_command_error(ctx, error):
         print(f"שגיאה שהתרחשה: {error}") # מדפיס את השגיאה גם ל-Logs ב-Render
 
 
+# קוד קטן שמשתלט על הכל ועונה אוטומטית לכל פקודה שקיימת אצלך
+@bot.event
+async def on_message(message):
+    # מונע מהבוט לענות לעצמו
+    if message.author == bot.user:
+        return
+
+    # בודק אם ההודעה מתחילה ב-!
+    if message.content.startswith("!"):
+        # לוקח את שם הפקודה שרשמת (למשל "xp")
+        command_name = message.content[1:].split()[0]
+
+        # הוא בודק אוטומטית אם הפקודה הזו קיימת אצלך בקוד
+        if bot.get_command(command_name):
+            # אם היא קיימת, הוא משתלט, מפעיל אותה ועונה בדיוק מה שהיא צריכה לעשות!
+            await bot.process_commands(message)
+            return
+        else:
+            # אם רשמת משהו שלא קיים, הוא לא יעשה כלום
+            return
 
 
 # ====== הרצת הבוט בצורה מאובטחת ======
