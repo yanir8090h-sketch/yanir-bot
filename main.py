@@ -1,5 +1,4 @@
 import discord
-from discord import app_commands
 from discord.ext import commands
 import json
 import os
@@ -10,6 +9,7 @@ intents.messages = True
 intents.members = True
 intents.message_content = True
 
+# הגדרת הקידומת של הבוט לסימן קריאה (!) עבור כל הפקודות
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # --- ניהול מאגר נתונים פשוט של XP בקובץ JSON ---
@@ -29,12 +29,7 @@ user_xp = load_xp()
 
 @bot.event
 async def on_ready():
-    print(f'הבוט מחובר בהצלחה בתור {bot.user.name}')
-    try:
-        synced = await bot.tree.sync()
-        print(f"סונכרנו {len(synced)} פקודות בהצלחה.")
-    except Exception as e:
-        print(f"שגיאה בסנכרון פקודות: {e}")
+    print(f'הבוט מחובר בהצלחה בתור {bot.user.name} ומוכן לפקודות סימן קריאה (!)')
 
 # הוספת XP אוטומטית על כל הודעה שנשלחת בצ'אט
 @bot.event
@@ -49,6 +44,7 @@ async def on_message(message):
     user_xp[user_id] += 5  # מעניק 5 נקודות XP על כל הודעה
     save_xp(user_xp)
 
+    # שורה חובה כדי שפקודות ה-! יעבדו בצורה תקינה
     await bot.process_commands(message)
 
 # ==========================================
@@ -110,7 +106,7 @@ class TicketDropdown(discord.ui.Select):
         ticket_name = ""
         embeds_to_send = []
 
-        if self.values == "team_apply":
+        if self.values[0] == "team_apply":
             category_id = 1485440385206456452
             ticket_name = f"💡-בחינות-{member.name}"
 
@@ -135,7 +131,7 @@ class TicketDropdown(discord.ui.Select):
 
             embeds_to_send = [embed1, embed2]
 
-        elif self.values == "general_help":
+        elif self.values[0] == "general_help":
             category_id = 1488259168593772554
             ticket_name = f"🎫-עזרה-{member.name}"
 
@@ -143,7 +139,7 @@ class TicketDropdown(discord.ui.Select):
             embed.set_footer(text="Voice Chat Server Support")
             embeds_to_send = [embed]
 
-        elif self.values == "admin_help":
+        elif self.values[0] == "admin_help":
             category_id = 1485440480459227227
             ticket_name = f"👑-הנהלה-{member.name}"
 
@@ -173,12 +169,10 @@ class XpShopView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    # פונקציה כללית לביצוע רכישה של רול
     async def buy_role(self, interaction: discord.Interaction, role_name: str, cost: int):
         user_id = str(interaction.user.id)
         current_xp = user_xp.get(user_id, 0)
 
-        # בדיקה אם יש מספיק XP
         if current_xp < cost:
             await interaction.response.send_message(f"❌ אין לך מספיק נקודות! הרול הזה עולה **{cost} XP** וכרגע יש לך רק **{current_xp} XP**.", ephemeral=True)
             return
@@ -190,12 +184,10 @@ class XpShopView(discord.ui.View):
             await interaction.response.send_message(f"❌ שגיאה: הרול '{role_name}' לא נמצא בהגדרות השרת, פנה למנהל.", ephemeral=True)
             return
 
-        # בדיקה אם הרול כבר קיים אצל המשתמש
         if role in interaction.user.roles:
             await interaction.response.send_message(f"אתה כבר מחזיק ברול **{role_name}**!", ephemeral=True)
             return
 
-        # ביצוע הרכישה בפועל
         try:
             user_xp[user_id] -= cost
             save_xp(user_xp)
@@ -204,9 +196,9 @@ class XpShopView(discord.ui.View):
         except Exception as e:
             await interaction.response.send_message("התרחשה שגיאה בהענקת הרול. ודא שהבוט נמצא מעליו בהגדרות השרת.", ephemeral=True)
 
-    # כפתור מוצר 1 (שנה את השם והמחיר כרצונך)
-
-
+    @discord.ui.button(label="קנה רול VIP (מחיר: 500 XP)", style=discord.ButtonStyle.blurple, custom_id="shop_vip")
+    async def buy_vip(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.buy_role(interaction, "VIP", 500)
 
 
 # ====== הרצת הבוט בצורה מאובטחת ======
