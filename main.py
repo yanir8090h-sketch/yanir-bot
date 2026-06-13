@@ -7,9 +7,10 @@ import os
 
 # הגדרת ה-Intents והרשאות הבוט
 intents = discord.Intents.all()
-intents.message_content = True
+intents.message_content = True # השורה שמאפשרת לקרוא את ה-! בכל ערוץ
 
 bot = commands.Bot(command_prefix="!", intents=intents)
+
 
 # ==========================================
 # הגדרות ומשתנים קבועים (הרולים והמחירים שלך)
