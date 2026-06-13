@@ -2,6 +2,25 @@ import discord
 from discord.ext import commands
 from flask import Flask
 from threading import Thread
+import asyncio
+
+# הגדרת הרשאות הבוט לקריאת הודעות ותוכן
+intents = discord.Intents.all()
+intents.message_content = True
+
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+# ==========================================
+# הגדרות ומשתנים קבועים של השרת שלך
+# ==========================================
+ROLE_1_ID = 1484226514051665930  # רול 1 - 30,000
+ROLE_2_ID = 1491063689502003360  # רול 2 - 20,000
+ROLE_3_ID = 1490894966262726687 # שלישי - 10,000
+ROLE_4_ID = 1490894895618195577  # רביעי - 5,000
+ROLE_5_ID = 1490894817373196388  # חמישי - 2,500
+
+STAFF_ROLE_ID = 1485440480459227227  # ID של תפקיד הצוות לניהול
+STAFF_FRIENDS_LOG_CHANNEL_ID = 1499531407859388496  # ערוץ לוגים לבקשות סגל
 
 # ==========================================
 # מערכת Staff Friend מעוצבת אחד לאחד כמו בתמונה
