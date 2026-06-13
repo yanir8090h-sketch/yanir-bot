@@ -211,7 +211,42 @@ async def setup_shop(ctx):
         await ctx.message.delete()
     except discord.NotFound:
         pass
-        
+        const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
+
+// יצירת הכפתורים
+const row = new ActionRowBuilder()
+    .addComponents(
+        new ButtonBuilder()
+            .setCustomId('claim_ticket')
+            .setLabel('לקיחת טיקט')
+            .setStyle(ButtonStyle.Success), // כפתור ירוק
+        new ButtonBuilder()
+            .setCustomId('close_ticket')
+            .setLabel('סגירת טיקט')
+            .setStyle(ButtonStyle.Danger) // כפתור אדום
+    );
+
+const embed = new EmbedBuilder()
+    .setTitle('טיקט חדש נפתח!')
+    .setDescription('אנא המתן למענה מהצוות. באפשרותך ללחוץ על הכפתורים למטה.');
+
+// שליחת ההודעה לערוץ הטיקט
+await channel.send({ embeds: [embed], components: [row] });
+client.on('interactionCreate', async interaction => {
+    if (!interaction.isButton()) return;
+
+    if (interaction.customId === 'claim_ticket') {
+        // שינוי שם הערוץ או הוספת חבר צוות
+        await interaction.channel.setName(`claimed-${interaction.user.username}`);
+        await interaction.reply({ content: `הטיקט נלקח על ידי ${interaction.user}!`, ephemeral: false });
+    }
+
+    if (interaction.customId === 'close_ticket') {
+        await interaction.reply('הטיקט ייסגר בעוד מספר שניות...');
+        setTimeout(() => interaction.channel.delete(), 5000); // מחיקת הערוץ
+    }
+});
+
 
 
 import os
