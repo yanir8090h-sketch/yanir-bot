@@ -50,7 +50,7 @@ async def on_message(message):
         points = user_xp.get(user_id, 0)
         embed = discord.Embed(title="📊 סטטיסטיקת נקודות ה-XP שלך", color=0x57F287)
         embed.add_field(name="👤 משתמש:", value=message.author.mention, inline=True)
-        embed.add_field(name="✨ נקודות ניסיון (XP):", value=f"**{points} XP**", inline=True)
+        embed.add_field(name="✨ נקודות ניסיון (XP):", value=f"**{points:,} XP**", inline=True)
         embed.set_thumbnail(url=message.author.display_avatar.url)
         await message.channel.send(embed=embed)
         return
