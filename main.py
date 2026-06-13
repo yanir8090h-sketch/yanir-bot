@@ -5,10 +5,9 @@ import random
 import asyncio
 
 # הגדרות בסיס ואינטנטים
-# הגדרות בסיס ואינטנטים מלאים (חובה להפעלת פקודות טקסט רגילות)
 intents = discord.Intents.default()
 intents.members = True
-intents.message_content = True  # שורה זו חובה כדי שהבוט יקרא את ה-!
+intents.message_content = True
 intents.messages = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
@@ -76,6 +75,10 @@ class StaffFormModal(discord.ui.Modal, title="📝 טופס מועמדות לצ�
         category_id = 1245448484859227227
 
         category = discord.utils.get(guild.categories, id=category_id)
+        if not category:
+            await interaction.followup.send("❌ שגיאה: קטגוריית הטיקטים לא נמצאה בשרת. ודא שה-ID נכון בקוד!", ephemeral=True)
+            return
+
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(view_channel=False),
             member: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_message_history=True)
@@ -122,7 +125,9 @@ class TicketDropdown(discord.ui.Select):
         super().__init__(placeholder="בחר את סוג הפנייה שלך מתוך הרשימה...", min_values=1, max_values=1, options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        if self.values == "בחינה לצוות":
+        selected_value = self.values[0]
+        
+        if selected_value == "בחינה לצוות":
             await interaction.response.send_modal(StaffFormModal())
             return
 
@@ -131,9 +136,14 @@ class TicketDropdown(discord.ui.Select):
         member = interaction.user
         category_id = 1245448484859227227
         
-        ticket_name = f"🎫-{self.values.replace(' ', '-')}-{member.name}"
+        clean_name = selected_value.replace(" ", "-")
+        ticket_name = f"🎫-{clean_name}-{member.name}"
         category = discord.utils.get(guild.categories, id=category_id)
         
+        if not category:
+            await interaction.followup.send("❌ שגיאה: קטגוריית הטיקטים לא נמצאה בשרת.", ephemeral=True)
+            return
+
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(view_channel=False),
             member: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_message_history=True)
@@ -143,7 +153,7 @@ class TicketDropdown(discord.ui.Select):
         
         embed = discord.Embed(
             title="🎯 פנייתך התקבלה בהצלחה",
-            description=f"שלום {member.mention},\nנפתח עבורך חדר טיקט בנושא **{self.values}**.\nאנא פרט את פנייתך בצורה ברורה, ונציג מצוות השרת יתפנה אליך בהקדם.",
+            description=f"שלום {member.mention},\nנפתח עבורך חדר טיקט בנושא **{selected_value}**.\nאנא פרט את פנייתך בצורה ברורה, ונציג מצוות השרת יתפנה אליך בהקדם.",
             color=0x004245
         )
         await channel.send(embed=embed)
@@ -158,14 +168,16 @@ class TicketDropdownView(discord.ui.View):
 @commands.has_permissions(administrator=True)
 async def setup_tickets(ctx):
     await ctx.message.delete()
-    TICKET_BANNER_URL = "https://imgur.com"
     
     embed = discord.Embed(
         title="תמיכה ופניות • הגשת מועמדות",
         description="צריך עזרה? רוצה להגיש מועמדות לצוות השרת?\nבחר את הקטגוריה המתאימה ביותר בתפריט למטה והבוט יפתח לך חדר פרטי מיידית.\n\n⚠️ **חוקי המערכת:**\n• אין לפתוח טיקטים ללא סיבה מוצדקת.\n• הגשת טופס מועמדות שקרי או מזלזל תיפסל מיידית.",
         color=0x004245
     )
-    embed.set_image(url=TICKET_BANNER_URL)
+    # תיקון: משיכת לוגו השרת באופן אוטומטי ללא צורך בלינקים חיצוניים פגומים
+    if ctx.guild.icon:
+        embed.set_image(url=ctx.guild.icon.url)
+        
     await ctx.send(embed=embed, view=TicketDropdownView())
 
 # ==========================================
@@ -196,20 +208,6 @@ class HelpStaffView(discord.ui.View):
 
         embed.color = discord.Color.green()
         for child in self.children:
-            child.disabled = True
-            
-        await interaction.message.edit(embed=embed, view=self)
-        await interaction.channel.send(f"⚡ הפנייה של המשתמש נלקחה לטיפול על ידי {interaction.user.mention}!")
-
-@bot.command(name="h", aliases=["עזרה"])
-
-async def h(ctx, *, reason: str = None):
-    if not reason:
-        await ctx.send("⚠️ נא לציין את סיבת הפנייה! דוגמה: `!h יש בעיה בצ'אט`")
-        return
-
-    await ctx.message.delete()
-
 
 
 import os
