@@ -211,7 +211,12 @@ async def setup_shop(ctx):
         await ctx.message.delete()
     except discord.NotFound:
         pass
-   class TicketView(discord.ui.View):
+        try:
+            await ctx.message.delete()
+        except discord.NotFound:
+            pass
+
+class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
@@ -224,6 +229,7 @@ async def setup_shop(ctx):
     async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message("הטיקט ייסגר ויימחק בעוד מספר שניות...")
         await interaction.channel.delete()
+
 
 import os
 bot.run(os.getenv("DISCORD_TOKEN"))
