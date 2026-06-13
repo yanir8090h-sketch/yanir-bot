@@ -94,8 +94,7 @@ class TicketDropdown(discord.ui.Select):
         ticket_name = f"🎫-{clean_name}-{member.name}"
         
         channel = await guild.create_text_channel(name=ticket_name, category=category, overwrites=overwrites)
-        
-               if selected_value == "בחינה לצוות":
+                if selected_value == "בחינה לצוות":
             embed = discord.Embed(
                 title="📝 טופס מועמדות לצוות השרת - Voice Chat Server",
                 description=f"שלום {member.mention},\nעל מנת להגיש מועמדות לצוות, **אנא העתק את השאלות הבאות, וענה עליהן בצורה מפורשת ומושקעת כאן בצ'אט:**\n\n"
@@ -121,7 +120,6 @@ class TicketDropdown(discord.ui.Select):
             await channel.send(embed=embed)
         else:
 
-        else:
             embed = discord.Embed(
                 title="🎯 פנייתך התקבלה בהצלחה",
                 description=f"שלום {member.mention},\nנפתח עבורך חדר טיקט בנושא **{selected_value}**.\nאנא פרט את פנייתך בצורה ברורה, ונציג מצוות השרת יתפנה אליך בהקדם.",
