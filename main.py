@@ -1,465 +1,211 @@
 import discord
+from discord import app_commands
 from discord.ext import commands
-import random
-import asyncio
+import json
+import os
 
-# הגדרות הרשאות ובוט
+# הגדרת ה-Intents
 intents = discord.Intents.default()
-intents.message_content = True
+intents.messages = True
 intents.members = True
+intents.message_content = True
 
-# יצירת הבוט עם הגדרת הפרוקסי של PythonAnywhere
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+# --- ניהול מאגר נתונים פשוט של XP בקובץ JSON ---
+XP_FILE = "xp_data.json"
 
-# מאגרי נתונים זמניים בזיכרון
-xp_data = {}  # user_id: xp
-inventory = {}  # user_id: [items]
+def load_xp():
+    if os.path.exists(XP_FILE):
+        with open(XP_FILE, "r") as f:
+            return json.load(f)
+    return {}
 
-# מחירי חנות ה-XP
-SHOP_ITEMS = {
-    "צבע_לשם_זהב": 500,
-    "רול_VIP": 1500,
-    "תואר_אלוף": 3000
-}
+def save_xp(data):
+    with open(XP_FILE, "w") as f:
+        json.dump(data, f, indent=4)
 
-# --- הגדרות איידי מותאמות אישית לשרת שלך ---
-STAFF_LOG_CHANNEL_ID = 123456789012345678  # איידי של ערוץ אליו יישלחו טפסי המועמדות לצוות
-TICKET_CATEGORY_ID = 123456789012345678    # איידי של הקטגוריה שבה ייפתחו חדרי הטיקטים הסודיים
-VERIFY_ROLE_ID = 123456789012345678        # איידי של הרול שנקרא "Member" בשרת שלך
+user_xp = load_xp()
 
-# --- הגדרות איידי של רולי הצוות והתפקידים ---
-ROLE_STAFF = 1488259168593772554           # רול @STAFF - הבלעדי שיכול להגיש ולטפל!
-ROLE_STAFF_FRIEND = 1493335218004820180    # רול @Staff Friend שמוענק באישור
-ROLE_MANAGEMENT = 1485440480459227227      # רול בעל גישה לטיקט עזרה מההנהלה
-ROLE_GENERAL_HELP = 1485680386972455042    # רול בעל גישה לטיקט עזרה כללית
+@bot.event
+async def on_ready():
+    print(f'הבוט מחובר בהצלחה בתור {bot.user.name}')
+    try:
+        synced = await bot.tree.sync()
+        print(f"סונכרנו {len(synced)} פקודות בהצלחה.")
+    except Exception as e:
+        print(f"שגיאה בסנכרון פקודות: {e}")
 
-# פונקציית עזר להוספת XP
-def add_xp(user_id, amount):
-    xp_data[user_id] = xp_data.get(user_id, 0) + amount
+# הוספת XP אוטומטית על כל הודעה שנשלחת בצ'אט
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
 
-# ==========================================
-# 🤝 מערכת בקשות Staff Friend (כמו בתמונה)
-# ==========================================
+    user_id = str(message.author.id)
+    if user_id not in user_xp:
+        user_xp[user_id] = 0
+        
+    user_xp[user_id] += 5  # מעניק 5 נקודות XP על כל הודעה
+    save_xp(user_xp)
 
-class StaffFriendView(discord.ui.View):
-    def __init__(self, target_user_id):
-        super().__init__(timeout=None)
-        self.target_user_id = target_user_id
-
-    @discord.ui.button(label="אישור", style=discord.ButtonStyle.green, custom_id="accept_sf_btn")
-    async def accept_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        guild = interaction.guild
-        staff_role = guild.get_role(ROLE_STAFF)
-
-        # רק בעלי רול STAFF יכולים ללחוץ על הכפתורים
-        if staff_role not in interaction.user.roles:
-            return await interaction.response.send_message("❌ רק חברי צוות ברול @STAFF יכולים לטפל בבקשה זו!", ephemeral=True)
-
-        target_member = guild.get_member(self.target_user_id)
-        sf_role = guild.get_role(ROLE_STAFF_FRIEND)
-
-        if target_member and sf_role:
-            try:
-                await target_member.add_roles(sf_role)
-            except discord.Forbidden:
-                return await interaction.response.send_message("❌ שגיאה: לבוט אין הרשאה להעניק את הרול הזה. ודא שהרול של הבוט נמצא מעליו ברשימה!", ephemeral=True)
-
-        await interaction.response.defer()
-
-        # עדכון ההודעה למצב אושר (בדיוק כמו בתמונה)
-        updated_embed = interaction.message.embeds[0]
-        updated_embed.color = discord.Color.green()
-
-        # הוספת שדות העדכון
-        updated_embed.add_field(name="אושר / נדחה:", value=f"✅ אושר על ידי: {interaction.user.mention}", inline=False)
-
-        disabled_view = discord.ui.View()
-        approved_btn = discord.ui.Button(label="אושר", style=discord.ButtonStyle.green, disabled=True)
-        disabled_view.add_item(approved_btn)
-
-        await interaction.message.edit(embed=updated_embed, view=disabled_view)
-
-    @discord.ui.button(label="דחייה", style=discord.ButtonStyle.danger, custom_id="deny_sf_btn")
-    async def deny_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        guild = interaction.guild
-        staff_role = guild.get_role(ROLE_STAFF)
-
-        if staff_role not in interaction.user.roles:
-            return await interaction.response.send_message("❌ רק חברי צוות ברול @STAFF יכולים לטפל בבקשה זו!", ephemeral=True)
-
-        await interaction.response.defer()
-
-        # עדכון ההודעה למצב נדחה
-        updated_embed = interaction.message.embeds[0]
-        updated_embed.color = discord.Color.red()
-        updated_embed.add_field(name="אושר / נדחה:", value=f"❌ נדחה על ידי: {interaction.user.mention}", inline=False)
-
-        disabled_view = discord.ui.View()
-        denied_btn = discord.ui.Button(label="נדחה", style=discord.ButtonStyle.danger, disabled=True)
-        disabled_view.add_item(denied_btn)
-
-        await interaction.message.edit(embed=updated_embed, view=disabled_view)
-
-@bot.command(name="stafffriend_req")
-async def staff_friend_req_cmd(ctx, member: discord.Member = None):
-    # בדיקה שרק בעל רול STAFF רשאי לשלוח את הפקודה
-    staff_role = ctx.guild.get_role(ROLE_STAFF)
-    if staff_role not in ctx.author.roles:
-        return await ctx.send("❌ אין לך הרשאה להשתמש בפקודה זו! היא מיועדת לחברי צוות @STAFF בלבד.")
-
-    if not member:
-        return await ctx.send("❌ יש לתייג משתמש שברצונך לבקש עבורו את הרול! דוגמה: `!stafffriend_req @user`")
-
-    embed = discord.Embed(
-        title="⚔️ בקשת Staff Friend",
-        color=discord.Color.from_rgb(47, 49, 54) # הצבע הכהה והנקי מהתמונה
-    )
-    embed.set_author(name="● Staff Friend Request", icon_url=ctx.guild.icon.url if ctx.guild.icon else None)
-
-    embed.add_field(name="מגיש הבקשה:", value=ctx.author.mention, inline=True)
-    embed.add_field(name="המשתמש המבוקש:", value=member.mention, inline=True)
-    embed.add_field(name="הודעת מערכת:", value="הבקשה פתוחה כעת. חברי הנהלת השרת רשאים לאשר או לדחות בלחיצת כפתור.", inline=False)
-
-    # הוספת תמונת הבאנר היפה של השרת שלכם בתחתית ההודעה (כמו שרואים בתמונה)
-    embed.set_image(url="https://discordapp.net") # שנה לקישור הבאנר של השרת שלך
-    embed.set_footer(text=f"{ctx.guild.name} | מערכת תפקידים אוטומטית")
-
-    await ctx.send(embed=embed, view=StaffFriendView(member.id))
-    try: await ctx.message.delete()
-    except: pass
+    await bot.process_commands(message)
 
 # ==========================================
-# 🛑 שאר המערכות הקודמות (Claim, Tickets, XP, Verify, Shop)
+# חלק 1: מערכת האימות (לחיצה על כפתור)
 # ==========================================
-
-class ClaimTicketView(discord.ui.View):
-    def __init__(self, help_type):
-        super().__init__(timeout=None)
-        self.help_type = help_type
-
-    @discord.ui.button(label="טפל כאן", style=discord.ButtonStyle.green, custom_id="claim_btn")
-    async def claim_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        guild = interaction.guild
-        staff_role = guild.get_role(ROLE_STAFF)
-        if staff_role not in interaction.user.roles:
-            return await interaction.response.send_message("❌ רק חברי צוות @STAFF יכולים לקחת פנייה זו!", ephemeral=True)
-        await interaction.response.defer()
-
-        claimed_embed = discord.Embed(color=discord.Color.from_rgb(47, 49, 54))
-        claimed_embed.set_author(name="● Help Request Handled", icon_url=guild.icon.url if guild.icon else None)
-        claimed_embed.add_field(name="אחראי:", value=interaction.user.mention, inline=False)
-
-        if self.help_type == "help":
-            claimed_embed.add_field(name="סיבה:", value="🔊 פקודת עזרה כללית של השרת", inline=False)
-            commands_text = "**🛠️ ניהול ואבטחה:**\n`!setup_verify` | `!setup_ticket`\n\n**🎮 משחקים ו-XP:**\n`!xp_games` | `!gamma`\n\n**💰 כלכלת שרת:**\n`!xp` | `!shop`"
-            claimed_embed.add_field(name="הודעת מערכת (רשימת פקודות):", value=commands_text, inline=False)
-        else:
-            claimed_embed.add_field(name="סיבה:", value="🔊 מרכז משחקי ה-XP המלא", inline=False)
-            games_text = "✊ `!rps` - אבן נייר ומספריים\n🔮 `!guess` - ניחוש מספר 1-5\n⚽ `!football` - בעיטת פנדל\n🃏 `!blackjack` - משחק הקלפים 21\n🎁 `!gamble` - תיבת המתנה בכפתורים\n🪙 `!coinsflip` - הטלת מטבע עץ/פלי\n🧮 `!mathquiz` - תרגיל מתמטיקה\n🎰 `!slot` - מכונת מזל"
-            claimed_embed.add_field(name="הודעת מערכת (רשימת משחקים):", value=games_text, inline=False)
-
-        disabled_view = discord.ui.View()
-        close_btn = discord.ui.Button(label="סגור טיקט", style=discord.ButtonStyle.danger, disabled=True)
-        disabled_view.add_item(close_btn)
-        await interaction.message.edit(embed=claimed_embed, view=disabled_view)
-
 class VerifyView(discord.ui.View):
-    def __init__(self): super().__init__(timeout=None)
-    @discord.ui.button(label="✅ לחץ כאן לאימות", style=discord.ButtonStyle.green, custom_id="verify_member_btn")
-    async def verify_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="לחץ כאן לאימות", style=discord.ButtonStyle.green, custom_id="verify_button")
+    async def verify_button_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
         guild = interaction.guild
-        role = guild.get_role(VERIFY_ROLE_ID)
-        if not role: return await interaction.response.send_message("❌ רול לא נמצא.", ephemeral=True)
-        if role in interaction.user.roles: return await interaction.response.send_message("ℹ️ אתה כבר מאומת!", ephemeral=True)
+        member = interaction.user
+        roles_to_give = ["Member", "Staff", "Friend"]
+        guild_roles = []
+
+        for role_name in roles_to_give:
+            role = discord.utils.get(guild.roles, name=role_name)
+            if not role:
+                await interaction.response.send_message(f"❌ שגיאה: לא מצאתי בשרת רול בשם '{role_name}'.", ephemeral=True)
+                return
+            guild_roles.append(role)
+
+        if any(role in member.roles for role in guild_roles):
+            await interaction.response.send_message("אתה כבר מאומת בשרת עם הרולים המתאימים!", ephemeral=True)
+            return
+
         try:
-            await interaction.user.add_roles(role)
-            await interaction.response.send_message("🎉 אימות עבר בהצלחה!", ephemeral=True)
-        except: pass
+            await member.add_roles(*guild_roles)
+            await interaction.response.send_message("אימות הצליח! קיבלת את הרולים: **Member, Staff, Friend** ופתחת את הגישה לשרת. 🎉", ephemeral=True)
+        except Exception as e:
+            await interaction.response.send_message("התרחשה שגיאה בהענקת הרולים. ודא שהרול של הבוט נמצא בראש הרשימה בהגדרות השרת.", ephemeral=True)
 
-# ==================== קוד חנות ה-XP החדשה ====================
+# ==========================================
+# חלק 2: מערכת הטיקטים (תפריט בחירה Dropdown)
+# ==========================================
+class TicketDropdown(discord.ui.Select):
+    def __init__(self):
+        options = [
+            discord.SelectOption(label="בחינות לצוות", value="team_apply", description="פתיחת טיקט להגשת מועמדות לצוות"),
+            discord.SelectOption(label="עזרה כללית", value="general_help", description="פתיחת פנייה לקבלת תמיכה כללית"),
+            discord.SelectOption(label="פנייה להנהלה", value="admin_help", description="פנייה דיחופה לדרגים הגבוהים")
+        ]
+        super().__init__(placeholder="...בחר את סוג הטיקט שברצונך לפתוח", min_values=1, max_values=1, options=options, custom_id="ticket_menu")
 
-SHOP_ROLES = {
-    "VIP": 500,
-    "תואר_אלוף": 1500,
-    "VIP_פלוס": 3000,
-    "תואר_אגדה": 5000,
-    "מלך_השרת": 10000
-}
+    async def callback(self, interaction: discord.Interaction):
+        guild = interaction.guild
+        member = interaction.user
+        allowed_roles = ["Member", "Staff", "Friend"]
+        can_open = any(role.name in allowed_roles for role in member.roles)
 
+        if not can_open:
+            await interaction.response.send_message("❌ **שגיאה:** רק משתמשים מאומתים בעלי הרולים המתאימים רשאים לפתוח טיקטים בשרת!", ephemeral=True)
+            return
 
+        await interaction.response.defer(ephemeral=True)
+
+        category_id = None
+        ticket_name = ""
+        embeds_to_send = []
+
+        if self.values == "team_apply":
+            category_id = 1485440385206456452
+            ticket_name = f"💡-בחינות-{member.name}"
+
+            embed1 = discord.Embed(title="📋 טופס מועמדות לצוות השרת - חלק א'", description=f"שלום {member.mention}, אנא ענה על השאלות הבאות בהודעה מפורטת אחת:", color=0x5865F2)
+            embed1.add_field(name="1. פרטים אישיים", value="שם מלא (שלך) / כינוי בדיסקורד:", inline=False)
+            embed1.add_field(name="2. גיל", value="מה הגיל שלך?", inline=False)
+            embed1.add_field(name="3. ותק בשרת", value="כמה זמן אתה בשרת שלנו?", inline=False)
+            embed1.add_field(name="4. ניסיון קודם", value="ניסיון קודם בצוות ניהול / מודרטור? ספר קצת.. ואם עזבת אז מדוע? (שלח הוכחה במידה ויש)", inline=False)
+            embed1.add_field(name="5. הגדרת חבר צוות", value="איך אתה מגדיר צוות טוב? מה בעינייך התכונות שצריכות להיות לחבר צוות?", inline=False)
+            embed1.add_field(name="6. התמודדות עם סיטואציות", value="בתור צוות, מה היית עושה במידה ויש סיטואציה פחות נעימה בחדרי השרת / הוויס (מישהו מתחצף / עובר על החוקים, ריבים בין כמה חברי השרת)? תן דוגמה:", inline=False)
+            embed1.add_field(name="7. היררכיה וסמכות", value="איך היית מגיב אם צוות מתחתיך תוקף אותך? ואיך היית מגיב אם הוא היה מעליך?", inline=False)
+
+            embed2 = discord.Embed(title="📋 טופס מועמדות לצוות השרת - חלק ב'", color=0x5865F2)
+            embed2.add_field(name="8. זמינות וזמן השקעה", value="כמה זמן בערך אתה חושב שתוכל לתת ממך למען השרת בשבוע כל יום?", inline=False)
+            embed2.add_field(name="9. התמודדות עם חוסר פעילות", value="במידה והשרת מתחיל טיפה להראות חוסר פעילות האם לדעתך תוכל לשנות את המצב? איך?", inline=False)
+            embed2.add_field(name="10. תחומי עניין", value="באיזה תחומים אתה רוצה לעזור בשרת?", inline=False)
+            embed2.add_field(name="11. תרומה ושאיפות", value="איך אתה חושב שתוכל לתרום לשרת, וכמה רחוק אתה חושב שתוכל להגיע?", inline=False)
+            embed2.add_field(name="12. מוטיבציה", value="מאיפה הרצון להצטרף לצוות?", inline=False)
+            embed2.add_field(name="13. התאמה ושיפורים", value="למה דווקא אתה מתאים לצוות שלנו? יש לך רעיון לשיפור השרת?", inline=False)
+            embed2.add_field(name="14. אבטחת חשבון", value="האם יש לך 2FA (אימות דו-שלבי)?", inline=False)
+            embed2.set_footer(text="צוות Voice Chat Server מאחל לך בהצלחה!")
+
+            embeds_to_send = [embed1, embed2]
+
+        elif self.values == "general_help":
+            category_id = 1488259168593772554
+            ticket_name = f"🎫-עזרה-{member.name}"
+
+            embed = discord.Embed(title="🎫 פנייה בנושא עזרה כללית", description=f"שלום {member.mention},\nפתחת פנייה בנושא עזרה כללית בשרת.\n\n**אנא רשום כאן את שאלתך או את הבעיה בצורה מפורטת**, וחבר צוות יתפנה לעזור לך בהקדם!", color=0x57F287)
+            embed.set_footer(text="Voice Chat Server Support")
+            embeds_to_send = [embed]
+
+        elif self.values == "admin_help":
+            category_id = 1485440480459227227
+            ticket_name = f"👑-הנהלה-{member.name}"
+
+            embed = discord.Embed(title="👑 פנייה דחופה להנהלת השרת", description=f"שלום {member.mention},\nפנייתך הופנתה ישירות לדרגים הגבוהים ומנהלי השרת.\n\nאנא רשום את סיבת הפנייה ופירוט מלא של המקרה.", color=0xED4245)
+            embed.set_footer(text="Voice Chat Server Management")
+            embeds_to_send = [embed]
+
+        if category_id:
+            category = discord.utils.get(guild.categories, id=category_id)
+            overwrites = {
+                guild.default_role: discord.PermissionOverwrite(view_channel=False),
+                member: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_message_history=True)
+            }
+            ticket_channel = await guild.create_text_channel(name=ticket_name, category=category, overwrites=overwrites)
+            await ticket_channel.send(content=member.mention, embeds=embeds_to_send)
+            await interaction.followup.send(f"הטיקט שלך נפתח בהצלחה! לחץ כאן כדי לעבור אליו: {ticket_channel.mention}", ephemeral=True)
+
+class TicketView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(TicketDropdown())
+
+# ==========================================
+# חלק 3: מערכת חנות ה-XP (XP SHOP)
+# ==========================================
 class XpShopView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="קניית VIP (500 XP)", style=discord.ButtonStyle.green, custom_id="buy_vip_btn")
-    async def buy_vip(self, interaction: discord.Interaction, button: discord.ui.Button):
+    # פונקציה כללית לביצוע רכישה של רול
+    async def buy_role(self, interaction: discord.Interaction, role_name: str, cost: int):
+        user_id = str(interaction.user.id)
+        current_xp = user_xp.get(user_id, 0)
+
+        # בדיקה אם יש מספיק XP
+        if current_xp < cost:
+            await interaction.response.send_message(f"❌ אין לך מספיק נקודות! הרול הזה עולה **{cost} XP** וכרגע יש לך רק **{current_xp} XP**.", ephemeral=True)
+            return
+
         guild = interaction.guild
-        member = interaction.user
-        role = discord.utils.get(guild.roles, name="VIP")
+        role = discord.utils.get(guild.roles, name=role_name)
+
         if not role:
-            await interaction.response.send_message("❌ הרול `VIP` לא נמצא בשרת.", ephemeral=True)
+            await interaction.response.send_message(f"❌ שגיאה: הרול '{role_name}' לא נמצא בהגדרות השרת, פנה למנהל.", ephemeral=True)
             return
-        if role in member.roles:
-            await interaction.response.send_message("כבר יש לך את הרול `VIP`!", ephemeral=True)
+
+        # בדיקה אם הרול כבר קיים אצל המשתמש
+        if role in interaction.user.roles:
+            await interaction.response.send_message(f"אתה כבר מחזיק ברול **{role_name}**!", ephemeral=True)
             return
+
+        # ביצוע הרכישה בפועל
         try:
-            await member.add_roles(role)
-            await interaction.response.send_message("🎉 תתחדש! קיבלת את הרול **VIP** בהצלחה!", ephemeral=True)
-        except discord.Forbidden:
-            await interaction.response.send_message("❌ אין לבוט הרשאה. תעלה את הרול שלו גבוה יותר בהגדרות השרת.", ephemeral=True)
+            user_xp[user_id] -= cost
+            save_xp(user_xp)
+            await interaction.user.add_roles(role)
+            await interaction.response.send_message(f"🎉 תתחדש! קנית את הרול **{role_name}** בתמורה ל-**{cost} XP**!\nהיתרה החדשה שלך: **{user_xp[user_id]} XP**.", ephemeral=True)
+        except Exception as e:
+            await interaction.response.send_message("התרחשה שגיאה בהענקת הרול. ודא שהבוט נמצא מעליו בהגדרות השרת.", ephemeral=True)
 
-    @discord.ui.button(label="קניית תואר אלוף (1500 XP)", style=discord.ButtonStyle.green, custom_id="buy_aluf_btn")
-    async def buy_aluf(self, interaction: discord.Interaction, button: discord.ui.Button):
-        guild = interaction.guild
-        member = interaction.user
-        role = discord.utils.get(guild.roles, name="תואר_אלוף")
-        if not role:
-            await interaction.response.send_message("❌ הרול `תואר_אלוף` לא נמצא בשרת.", ephemeral=True)
-            return
-        if role in member.roles:
-            await interaction.response.send_message("כבר יש לך את הרול `תואר_אלוף`!", ephemeral=True)
-            return
-        try:
-            await member.add_roles(role)
-            await interaction.response.send_message("🎉 תתחדש! קיבלת את הרול **תואר אלוף** בהצלחה!", ephemeral=True)
-        except discord.Forbidden:
-            await interaction.response.send_message("❌ אין לבוט הרשאה. תעלה את הרול שלו גבוה יותר בהגדרות השרת.", ephemeral=True)
+    # כפתור מוצר 1 (שנה את השם והמחיר כרצונך)
 
-@bot.command(name="shop")
-async def send_shop(ctx):
-    embed = discord.Embed(
-        title="🛒 חנות השרת - XP SHOP",
-        description="שלום, כאן תוכל לרכוש רולים ותארים מהשרת עם נקודות ה-XP שלך!\n\n**הרולים הזמינים לרכישה:**",
-        color=discord.Color.purple()
-    )
-    embed.add_field(name="💰 500 XP", value="רול: **VIP**", inline=False)
-    embed.add_field(name="💰 1500 XP", value="רול: **תואר אלוף**", inline=False)
-    await ctx.send(embed=embed, view=XpShopView())
-
-# =============================================================
-
-
-
-    async def callback(self, interaction: discord.Interaction):
-        await interaction.response.send_message("הכרטיס שלך נוצר בהצלחה!", ephemeral=True)
-
-# ====== פקודת הכרטיסים בצ'אט ======
-# למחוק את כל השורות האלו:
-
-   # =============================================================
-
-@bot.command()
-async def ticket(ctx):
-    embed = discord.Embed(title="יצירת כרטיס תמיכה", description="לחצו על הכפתור למטה כדי לפתוח פנייה למנהלים.", color=discord.Color.blue())
-    await ctx.send(embed=embed, view=TicketSetupView())
-
-
-const { Client, GatewayIntentBits, Events, ChannelType, PermissionsBitField, EmbedBuilder } = require('discord.js');
-
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers, 
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent // חובה כדי שהבוט יוכל לקרוא את הפקודה !h
-    ]
-});
-
-// ==========================================
-// חלק 1: פקודת עזרה דחופה (!h) כמו בתמונה
-// ==========================================
-client.on(Events.MessageCreate, async message => {
-    // מונע מהבוט להגיב לעצמו או לבוטים אחרים
-    if (message.author.bot) return;
-
-    // בודק אם ההודעה מתחילה בפקודה !h
-    if (message.content.startsWith('!h')) {
-        // מוחק את הודעת ה-!h המקורית של המשתמש כדי לשמור על ערוץ נקי
-        await message.delete().catch(err => console.error('לא הצלחתי למחוק את ההודעה:', err));
-
-        // מחלץ את סיבת הפנייה מתוך ההודעה (כל מה שנכתב אחרי !h)
-        const reason = message.content.slice(2).trim();
-
-        // אם המשתמש לא רשם סיבה, הבוט יציב סיבה ברירת מחדל
-        const finalReason = reason ? reason : 'לא צוינה סיבה ספציפית';
-
-        // בניית ה-Embed המעוצב בדיוק לפי תמונת המסך שלך
-        const helpEmbed = new EmbedBuilder()
-            .setColor('#1A243F') // צבע כחול כהה/אינדיגו מותאם לתמונה
-            .setTitle('🚨 קריאת עזרה דחופה')
-            .setDescription(`המשתמש ${message.author} ביקש עזרה דחופה בדיסקורד!`)
-            .addFields(
-                { name: '📍 מיקום הפנייה / וויס:', value: `${message.channel}`, inline: false },
-                { name: '📝 סיבה/פירוט:', value: `\`\`\`\n${finalReason}\n\`\`\``, inline: false }
-            )
-            .setTimestamp();
-
-        // שליחת ההודעה לערוץ עם תיוג של ה-Staff (תוכל לשנות ל-ID של הרול במידת הצורך)
-        await message.channel.send({ 
-            content: `⚠️ **@STAFF** ישנה קריאת עזרה חדשה!`, 
-            embeds: [helpEmbed] 
-        });
-    }
-});
-
-// ==========================================
-// חלק 2: מערכת אימות וטיקטים (אינטראקציות)
-// ==========================================
-client.on(Events.InteractionCreate, async interaction => {
-
-    // א. מערכת האימות (לחיצה על הכפתור הירוק)
-    if (interaction.isButton()) {
-        if (interaction.customId === 'verify_button') {
-            try {
-                const rolesToGive = ['Member', 'Staff', 'Friend'];
-                const guildRoles = [];
-
-                for (const name of rolesToGive) {
-                    const foundRole = interaction.guild.roles.cache.find(r => r.name === name);
-                    if (!foundRole) {
-                        return await interaction.reply({ 
-                            content: `שגיאה: לא מצאתי בשרת רול בשם "${name}".`, 
-                            ephemeral: true 
-                        });
-                    }
-                    guildRoles.push(foundRole);
-                }
-
-                const hasAny = interaction.member.roles.cache.some(r => rolesToGive.includes(r.name));
-                if (hasAny) {
-                    return await interaction.reply({ content: 'אתה כבר מאומת בשרת!', ephemeral: true });
-                }
-
-                await interaction.member.roles.add(guildRoles);
-                return await interaction.reply({ 
-                    content: 'אימות הצליח! קיבלת את הרולים: **Member, Staff, Friend**. 🎉', 
-                    ephemeral: true 
-                });
-
-            } catch (error) {
-                console.error('שגיאה באימות:', error);
-                return await interaction.reply({ content: 'התרחשה שגיאה בהענקת הרולים. בדוק את היררכיית הבוט.', ephemeral: true });
-            }
-        }
-    }
-
-    // ב. מערכת הטיקטים (תפריט בחירה Dropdown)
-    if (interaction.isStringSelectMenu()) {
-        if (interaction.customId === 'ticket_menu') {
-            
-            const allowedRoles = ['Member', 'Staff', 'Friend']; 
-            const canOpenTicket = interaction.member.roles.cache.some(role => allowedRoles.includes(role.name));
-
-            if (!canOpenTicket) {
-                return await interaction.reply({
-                    content: `❌ **שגיאה:** רק משתמשים מאומתים רשאים לפתוח טיקטים בשרת!`,
-                    ephemeral: true 
-                });
-            }
-
-            const selectedValue = interaction.values[0]; 
-            await interaction.deferReply({ ephemeral: true });
-
-            let categoryId = '';
-            let ticketName = '';
-            let embedsToSend = [];
-
-            // טיקט בחינות לצוות (14 שאלות)
-            if (selectedValue === 'team_apply') {
-                categoryId = '1485440385206456452'; 
-                ticketName = `💡-בחינות-${interaction.user.username}`;
-
-                const embedPart1 = new EmbedBuilder()
-                    .setColor('#5865F2')
-                    .setTitle('📋 טופס מועמדות לצוות השרת - חלק א\'')
-                    .setDescription(`שלום ${interaction.user}, אנא ענה על השאלות הבאות בהודעה מפורטת אחת:`)
-                    .addFields(
-                        { name: '1. פרטים אישיים', value: 'שם מלא (שלך) / כינוי בדיסקורד:' },
-                        { name: '2. גיל', value: 'מה הגיל שלך?' },
-                        { name: '3. ותק בשרת', value: 'כמה זמן אתה בשרת שלנו?' },
-                        { name: '4. ניסיון קודם', value: 'ניסיון קודם בצוות ניהול / מודרטור? ספר קצת.. ואם עזבת אז מדוע? (שלח הוכחה במידה ויש)' },
-                        { name: '5. הגדרת חבר צוות', value: 'איך אתה מגדיר צוות טוב? מה בעינייך התכונות שצריכות להיות לחבר צוות?' },
-                        { name: '6. התמודדות עם סיטואציות', value: 'בתור צוות, מה היית עושה במידה ויש סיטואציה פחות נעימה בחדרי השרת / הוויס (מישהו מתחצף / עובר על החוקים, ריבים בין כמה חברי השרת)? תן דוגמה:' },
-                        { name: '7. היררכיה וסמכות', value: 'איך היית מגיב אם צוות מתחתיך תוקף אותך? ואיך היית מגיב אם הוא היה מעליך?' }
-                    );
-
-                const embedPart2 = new EmbedBuilder()
-                    .setColor('#5865F2')
-                    .setTitle('📋 טופס מועמדות לצוות השרת - חלק ב\'')
-                    .addFields(
-                        { name: '8. זמינות וזמן השקעה', value: 'כמה זמן בערך אתה חושב שתוכל לתת ממך למען השרת בשבוע כל יום?' },
-                        { name: '9. התמודדות עם חוסר פעילות', value: 'במידה והשרת מתחיל טיפה להראות חוסר פעילות האם לדעתך תוכל לשנות את המצב? איך?' },
-                        { name: '10. תחומי עניין', value: 'באיזה תחומים אתה רוצה לעזור בשרת?' },
-                        { name: '11. תרומה ושאיפות', value: 'איך אתה חושב שתוכל לתרום לשרת, וכמה רחוק אתה חושב שתוכל להגיע?' },
-                        { name: '12. מוטיבציה', value: 'מאיפה הרצון להצטרף לצוות?' },
-                        { name: '13. התאמה ושיפורים', value: 'למה דווקא אתה מתאים לצוות שלנו? יש לך רעיון לשיפור השרת?' },
-                        { name: '14. אבטחת חשבון', value: 'האם יש לך 2FA (אימות דו-שלבי)?' }
-                    )
-                    .setFooter({ text: 'צוות Voice Chat Server מאחל לך בהצלחה!' })
-                    .setTimestamp();
-
-                embedsToSend = [embedPart1, embedPart2];
-            }
-
-            // טיקט עזרה כללית
-            else if (selectedValue === 'general_help') {
-                categoryId = '1488259168593772554'; 
-                ticketName = `🎫-עזרה-${interaction.user.username}`;
-
-                const generalEmbed = new EmbedBuilder()
-                    .setColor('#57F287')
-                    .setTitle('🎫 פנייה בנושא עזרה כללית')
-                    .setDescription(`שלום ${interaction.user},\nפתחת פנייה בנושא עזרה כללית בשרת.\n\n**אנא רשום כאן את שאלתך או את הבעיה שנתקלת בה בצורה מפורטת ככל הניתן**, וחבר צוות יתפנה לעזור לך בהקדם!`)
-                    .setFooter({ text: 'Voice Chat Server Support' })
-                    .setTimestamp();
-
-                embedsToSend = [generalEmbed];
-            }
-
-            // טיקט פנייה להנהלה
-            else if (selectedValue === 'admin_help') {
-                categoryId = '1485440480459227227'; 
-                ticketName = `👑-הנהלה-${interaction.user.username}`;
-
-                const adminEmbed = new EmbedBuilder()
-                    .setColor('#ED4245')
-                    .setTitle('👑 פנייה דחופה להנהלת השרת')
-                    .setDescription(`שלום ${interaction.user},\nפנייתך הופנתה ישירות לדרגים הגבוהים ומנהלי השרת.\n\nאנא רשום את סיבת הפנייה, הוכחות (במידה ויש) ופירוט מלא של המקרה.`)
-                    .setFooter({ text: 'Voice Chat Server Management' })
-                    .setTimestamp();
-
-                embedsToSend = [adminEmbed];
-            }
-
-            // יצירת הערוץ בשרת
-            if (categoryId !== '') {
-                try {
-                    const ticketChannel = await interaction.guild.channels.create({
-                        name: ticketName,
-                        type: ChannelType.GuildText,
-                        parent: categoryId, 
-                        permissionOverwrites: [
-                            {
-                                id: interaction.guild.roles.everyone.id,
-                                deny: [PermissionsBitField.Flags.ViewChannel], 
-                            },
-                            {
-                                id: interaction.user.id,
-                                allow: [
-                                    PermissionsBitField.Flags.ViewChannel,
-                                    PermissionsBitField.Flags.SendMessages,
-                                    PermissionsBitField.Flags.ReadMessageHistory
-                                ], 
-                            },
-                        ],
-                    });
-
-                    await ticketChannel.send({ content: `${interaction.user}`, embeds: embedsToSend });
-                    await interaction.editReply({ content: `הטיקט שלך נפתח בהצלחה! לחץ כאן כדי לעבור אליו: ${ticketChannel}` });
-
-                } catch (error) {
-                    console.error('שגיאה ביצירת הטיקט:', error);
 
 
 
