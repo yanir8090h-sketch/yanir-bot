@@ -166,19 +166,26 @@ class VerifyView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="להתחלת אימות 🛡️", style=discord.ButtonStyle.green, custom_id="verify_u_p")
+    @discord.ui.button(label="להתחלת אימות 🛡️", style=discord.ButtonStyle.green, custom_id="verify_user_persistent")
     async def verify_button(interaction: discord.Interaction, button: discord.ui.Button):
         guild = interaction.guild
         member = interaction.user
-        verified_role = discord.utils.get(guild.roles, name="Verified")
-        if not verified_role:
-            verified_role = await guild.create_role(name="Verified")
+        
+        # זיהוי הרול במדויק לפי ה-ID של הממבר ששלחת
+        target_role = guild.get_role(1485680386972455042)
+        
+        if not target_role:
+            await interaction.response.send_message("❌ שגיאה: רול הממבר לא נמצא בשרת! ודא שה-ID תקין.", ephemeral=True)
+            return
 
-        if verified_role in member.roles:
-            await interaction.response.send_message("❌ אתה כבר מאומת בשרת!", ephemeral=True)
+        if target_role in member.roles:
+            await interaction.response.send_message("❌ אתה כבר מאומת ומחזיק ברול הממבר!", ephemeral=True)
         else:
-            await member.add_roles(verified_role)
-            await interaction.response.send_message("✅ האימות בוצע בהצלחה!", ephemeral=True)
+            try:
+                await member.add_roles(target_role)
+                await interaction.response.send_message("✅ האימות בוצע בהצלחה! כעת הוענק לך רול הממבר ונפתחו הערוצים.", ephemeral=True)
+            except discord.Forbidden:
+                await interaction.response.send_message("❌ שגיאה: הרול של הבוט נמוך מדי ברשימה ולא יכול להעניק את רול הממבר!", ephemeral=True)
 
 # ==========================================
 # 4. מערכת בקשות Staff Friend
