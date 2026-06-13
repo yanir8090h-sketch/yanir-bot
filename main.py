@@ -186,6 +186,5 @@ def keep_alive():
     t.start()
 
 keep_alive()
-
 import os
 bot.run(os.getenv("DISCORD_TOKEN"))
