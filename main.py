@@ -177,40 +177,102 @@ async def setup_verify(ctx):
 # ==========================================
 class StaffFriendReview(discord.ui.View):
     def __init__(self, applicant_id: int):
-        super().__init__(timeout=None)
-        self.applicant_id = applicant_id
+       # ==========================================
+# קוד Flask לשמירה על הבוט דלוק בחינם ב-Render
+# ==========================================
+app = Flask('')
 
-    @discord.ui.button(label="Accept  ✔️", style=discord.ButtonStyle.success, custom_id="staff_friend_accept")
-    async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
-        guild = interaction.guild
-        member = guild.get_member(self.applicant_id)
-        staff_friend_role = discord.utils.get(guild.roles, name="Staff Friend")
-        if not staff_friend_role:
-            staff_friend_role = await guild.create_role(name="Staff Friend")
+@app.route('/')
+def home():
+    return "הבוט דלוק ובאוויר!"
 
-        if member:
-            await member.add_roles(staff_friend_role)
-            embed = interaction.message.embeds[0]
-            embed.color = discord.Color.green()
-            embed.set_field_at(2, name="🟢 סטטוס:", value=f"אושר על ידי {interaction.user.mention}", inline=False)
-            await interaction.message.edit(embed=embed, view=None)
-            await interaction.response.send_message(f"✅ הבקשה אושרה והרול הוענק.", ephemeral=True)
-        else:
-            await interaction.response.send_message("❌ המשתמש עזב את השרת.", ephemeral=True)
+def run():
+    app.run(host='0.0.0.0', port=8080)
 
-    @discord.ui.button(label="Deny  ❌", style=discord.ButtonStyle.danger, custom_id="staff_friend_deny")
-    async def deny(self, interaction: discord.Interaction, button: discord.ui.Button):
-        embed = interaction.message.embeds[0]
-        embed.color = discord.Color.red()
-        embed.set_field_at(2, name="🔴 סטטוס:", value=f"נדחה על ידי {interaction.user.mention}", inline=False)
-        await interaction.message.edit(embed=embed, view=None)
-        await interaction.response.send_message("❌ הבקשה נדחתה.", ephemeral=True)
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+keep_alive()
+
+# ==========================================
+# פקודות הניהול והמערכות המעוצבות
+# ==========================================
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def setup_shop(ctx):
+    try:
+        await ctx.message.delete()
+    except discord.NotFound:
+        pass
+    guild = ctx.guild
+    embed = discord.Embed(
+        title=f"🎁 חנות ה-XP הרשמית - {guild.name}",
+        description=f"🛍️ **חנות הרולים של השרת**\n\n"
+                    f"👑 <@&{ROLE_1_ID}> — 30,000 XP\n"
+                    f"💎 <@&{ROLE_2_ID}> — 20,000 XP\n"
+                    f"🔥 <@&{ROLE_3_ID}> — 10,000 XP\n"
+                    f"⚡ <@&{ROLE_4_ID}> — 5,000 XP\n"
+                    f"✨ <@&{ROLE_5_ID}> — 2,500 XP",
+        color=discord.Color.from_rgb(142, 201, 57)
+    )
+    if guild.icon:
+        embed.set_image(url=guild.icon.url)
+    await ctx.send(embed=embed, view=ShopView())
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def setup_verify(ctx):
+    try:
+        await ctx.message.delete()
+    except discord.NotFound:
+        pass
+    embed = discord.Embed(title="🔒 אימות חשבון - Verification", description="ברוך הבא לשרת!\nכדי לקבל גישה לשאר הערוצים, לחץ על הכפתור הירוק למטה.", color=discord.Color.green())
+    if ctx.guild.icon:
+        embed.set_thumbnail(url=ctx.guild.icon.url)
+    await ctx.send(embed=embed, view=VerifyView())
 
 @bot.command()
 async def apply_staff_friend(ctx):
     log_channel = bot.get_channel(STAFF_FRIENDS_LOG_CHANNEL_ID)
     if not log_channel:
+        await ctx.send("❌ ערוץ הלוגים לא הוגדר.", ephemeral=True)
+        return
+    embed = discord.Embed(title="🛠️ בקשת Staff Friend חדשה", color=discord.Color.purple())
+    embed.add_field(name="👤 מגיש הבקשה:", value=ctx.author.mention, inline=True)
+    embed.add_field(name="🕒 זמן:", value=discord.utils.format_dt(ctx.message.created_at), inline=True)
+    embed.add_field(name="🟡 סטטוס:", value="ממתין לטיפול...", inline=False)
+    if ctx.guild.icon:
+        embed.set_image(url=ctx.guild.icon.url)
+    await log_channel.send(embed=embed, view=StaffFriendReview(ctx.author.id))
+    await ctx.send("✅ בקשתך נשלחה לצוות הניהול!", ephemeral=True)
 
+@bot.command(name="h")
+async def help_ticket_info(ctx, *, reason: str = "לא צוינה סיבה"):
+    try:
+        await ctx.message.delete()
+    except discord.NotFound:
+        pass
+    guild = ctx.guild
+    embed = discord.Embed(title="⚠️ בקשת עזרה", color=discord.Color.from_rgb(47, 49, 54))
+    embed.add_field(name="👥 צוות מתוייג:", value=f"<@&{STAFF_ROLE_ID}>", inline=False)
+    embed.add_field(name="📝 סיבה:", value=reason, inline=False)
+    embed.add_field(name="🌐 וייס:", value="🔈 (🔒) Private", inline=False)
+    embed.add_field(name="🔒 נלקח על ידי:", value=f"@{ctx.author.name} · <@&{ROLE_3_ID}>", inline=False)
+    if guild.icon:
+        embed.set_image(url=guild.icon.url)
+    await ctx.send(embed=embed)
+
+# ==========================================
+# הפעלת ה-Views הקבועים ב-on_ready
+# ==========================================
+@bot.event
+async def on_ready():
+    bot.add_view(ShopView())
+    bot.add_view(TicketView())
+    bot.add_view(TicketOpenView())
+    bot.add_view(VerifyView())
+    print(f'🤖 הבוט מחובר בהצלחה כאל: {bot.user.name}')
 
 import os
 bot.run(os.getenv("DISCORD_TOKEN"))
