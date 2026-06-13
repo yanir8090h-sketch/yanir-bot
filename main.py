@@ -234,13 +234,18 @@ async def help_ticket_info(ctx, *, reason: str = "לא צוינה סיבה"):
 # ==========================================
 # פקודת חנות ה-XP המעוצבת
 # ==========================================
+# ==========================================
+# פקודות הניהול המעוצבות לעבודה מכל ערוץ
+# ==========================================
+
 @bot.command()
 @commands.has_permissions(administrator=True)
-async def setup_shop(ctx):
-    try:
-        await ctx.message.delete()
-    except discord.NotFound:
-        pass
+async def setup_shop(ctx, target_channel: discord.TextChannel = None):
+    """פקודה להצבת החנות - מריצים כך: setup_shop #ערוץ_החנות!"""
+    try: await ctx.message.delete()
+    except discord.NotFound: pass
+    channel_to_send = target_channel if target_channel else ctx.channel
+    
     guild = ctx.guild
     embed = discord.Embed(
         title=f"🎁 חנות ה-XP הרשמית - {guild.name}",
@@ -252,9 +257,50 @@ async def setup_shop(ctx):
                     f"✨ <@&{ROLE_5_ID}> — 2,500 XP",
         color=discord.Color.from_rgb(142, 201, 57)
     )
-    if guild.icon:
-        embed.set_image(url=guild.icon.url)
-    await ctx.send(embed=embed, view=ShopView())
+    if guild.icon: embed.set_image(url=guild.icon.url)
+    await channel_to_send.send(embed=embed, view=ShopView())
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def setup_ticket(ctx, target_channel: discord.TextChannel = None):
+    """פקודת טיקטים - מריצים כך: setup_ticket #ערוץ_הטיקטים!"""
+    try: await ctx.message.delete()
+    except discord.NotFound: pass
+    channel_to_send = target_channel if target_channel else ctx.channel
+    
+    embed = discord.Embed(
+        title="🎫 פתיחת טיקט תמיכה", 
+        description="צריך עזרה או יש לך שאלה לצוות המנהלים?\nלחץ על הכפתור למטה כדי לפתוח טיקט פרטי!", 
+        color=discord.Color.blue()
+    )
+    await channel_to_send.send(embed=embed, view=TicketOpenView())
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def setup_verify(ctx, target_channel: discord.TextChannel = None):
+    """פקודת אימות - מריצים כך: setup_verify #ערוץ_האימות!"""
+    try: await ctx.message.delete()
+    except discord.NotFound: pass
+    channel_to_send = target_channel if target_channel else ctx.channel
+    
+    embed = discord.Embed(
+        title="🔒 אימות חשבון - Verification", 
+        description="ברוך הבא לשרת!\nכדי לקבל גישה לשאר הערוצים, לחץ על הכפתור הירוק למטה.", 
+        color=discord.Color.green()
+    )
+    if ctx.guild.icon: embed.set_thumbnail(url=ctx.guild.icon.url)
+    await channel_to_send.send(embed=embed, view=VerifyView())
+
+# ==========================================
+# הפעלת ה-Views הקבועים ב-on_ready
+# ==========================================
+@bot.event
+async def on_ready():
+    bot.add_view(ShopView())
+    bot.add_view(TicketView())
+    bot.add_view(TicketOpenView())
+    bot.add_view(VerifyView())
+    print(f'🤖 הבוט מחובר בהצלחה כאל: {bot.user.name}')
 
 # ==========================================
 # קוד Flask לשמירה על הבוט דלוק בחינם ב-Render
