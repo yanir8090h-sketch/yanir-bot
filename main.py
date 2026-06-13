@@ -183,6 +183,9 @@ async def setup_tickets(ctx):
 # ==========================================
 # 🚨 פקודת עזרה (HELP STAFF COMMAND)
 # ==========================================
+# ==========================================
+# 🚨 פקודת עזרה (HELP STAFF COMMAND)
+# ==========================================
 class HelpStaffView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -208,6 +211,35 @@ class HelpStaffView(discord.ui.View):
 
         embed.color = discord.Color.green()
         for child in self.children:
+            child.disabled = True
+            
+        await interaction.message.edit(embed=embed, view=self)
+        await interaction.channel.send(f"⚡ הפנייה של המשתמש נלקחה לטיפול על ידי {interaction.user.mention}!")
+
+@bot.command(name="h", aliases=["עזרה"])
+async def h(ctx, *, reason: str = None):
+    if not reason:
+        await ctx.send("⚠️ נא לציין את סיבת הפנייה! דוגמה: `!h יש בעיה בצ'אט`")
+        return
+
+    await ctx.message.delete()
+
+    embed = discord.Embed(
+        title="🚨 בקשת עזרה / דיווח חדש",
+        description="איש צוות זמין נדרש להגיע לסייע.",
+        color=0xe74c3c
+    )
+    embed.add_field(name="👤 המבקש", value=f"{ctx.author.mention}", inline=True)
+    embed.add_field(name="💬 סיבה / פירוט", value=f"```{reason}```", inline=False)
+    embed.add_field(name="🤝 נלקח על ידי", value="טרם נלקח - ממתין לצוות ⏳", inline=False)
+    
+    if ctx.guild.icon:
+        embed.set_image(url=ctx.guild.icon.url)
+    embed.set_thumbnail(url=ctx.author.display_avatar.url)
+    embed.set_footer(text=f"Help System • {ctx.guild.name}")
+
+    await ctx.send(embed=embed, view=HelpStaffView())
+
 
 
 import os
