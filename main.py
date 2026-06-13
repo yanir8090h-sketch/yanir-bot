@@ -33,7 +33,7 @@ async def on_ready():
     print(f'הבוט מחובר בהצלחה בתור {bot.user.name}')
     print(f'-----------------------------------------')
 
-# מערכת קריאת הודעות ישירה שעוקפת כל בעיית פקודות
+# מערכת קריאת הודעות ישירה
 @bot.event
 async def on_message(message):
     if message.author.bot:
@@ -46,7 +46,7 @@ async def on_message(message):
     user_xp[user_id] += 5
     save_xp(user_xp)
 
-    # בדיקה ישירה של פקודות טקסט ללא תלות במערכת הדינמית
+    # בדיקה ישירה של פקודות טקסט
     if message.content.strip() == "!xp":
         points = user_xp.get(user_id, 0)
         embed = discord.Embed(title="📊 סטטיסטיקת נקודות ה-XP שלך", color=0x57F287)
@@ -168,7 +168,7 @@ class TicketDropdown(discord.ui.Select):
 
             embed2 = discord.Embed(title="📋 טופס מועמדות לצוות השרת - חלק ב'", color=0x5865F2)
             embed2.add_field(name="8. זמינות וזמן השקעה", value="כמה זמן בערך אתה חושב שתוכל לתת ממך למען השרת בשבוע כל יום?", inline=False)
-            embed2.add_field(name="9. התמודדות עם חוסר פעילות", value="במידה והשרת מתחיל טיפה להראות חוסר פעילות האם לדעתך תוכל לשנות את המצב? איך?", inline=False)
+            embed2.add_field(name="9. התמודדותstyle לחוסר פעילות", value="במידה והשרת מתחיל טיפה להראות חוסר פעילות האם לדעתך תוכל לשנות את המצב? איך?", inline=False)
             embed2.add_field(name="10. תחומי עניין", value="באיזה תחומים אתה רוצה לעזור בשרת?", inline=False)
             embed2.add_field(name="11. תרומה ושאיפות", value="איך אתה חושב שתוכל לתרום לשרת, וכמה רחוק אתה חושב שתוכל להגיע?", inline=False)
             embed2.add_field(name="12. מוטיבציה", value="מאיפה הרצון להצטרף לצוות?", inline=False)
@@ -196,8 +196,9 @@ class TicketDropdown(discord.ui.Select):
 
         if category_id:
             category = discord.utils.get(guild.categories, id=category_id)
+            # תיקון הסוגר המסולסל שהיה חסר בשורה הבאה:
             overwrites = {
-                guild.default_role: discord.PermissionOverwrite(view_channel=False),
+
 
 
 
