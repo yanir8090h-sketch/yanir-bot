@@ -196,9 +196,10 @@ class TicketDropdown(discord.ui.Select):
             # פונקציה שתופסת את כל ההודעות ועונה אם הפקודה לא קיימת
 @bot.event
 async def on_message(message):
-    # אם הבוט עצמו שלח את ההודעה, נתעלם ממנה
     if message.author == bot.user:
         return
+        
+    await bot.process_commands(message)
 
   
 import os
