@@ -255,6 +255,211 @@ async def ticket(ctx):
     await ctx.send(embed=embed, view=TicketSetupView())
 
 
+const { Client, GatewayIntentBits, Events, ChannelType, PermissionsBitField, EmbedBuilder } = require('discord.js');
+
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers, 
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent // חובה כדי שהבוט יוכל לקרוא את הפקודה !h
+    ]
+});
+
+// ==========================================
+// חלק 1: פקודת עזרה דחופה (!h) כמו בתמונה
+// ==========================================
+client.on(Events.MessageCreate, async message => {
+    // מונע מהבוט להגיב לעצמו או לבוטים אחרים
+    if (message.author.bot) return;
+
+    // בודק אם ההודעה מתחילה בפקודה !h
+    if (message.content.startsWith('!h')) {
+        // מוחק את הודעת ה-!h המקורית של המשתמש כדי לשמור על ערוץ נקי
+        await message.delete().catch(err => console.error('לא הצלחתי למחוק את ההודעה:', err));
+
+        // מחלץ את סיבת הפנייה מתוך ההודעה (כל מה שנכתב אחרי !h)
+        const reason = message.content.slice(2).trim();
+
+        // אם המשתמש לא רשם סיבה, הבוט יציב סיבה ברירת מחדל
+        const finalReason = reason ? reason : 'לא צוינה סיבה ספציפית';
+
+        // בניית ה-Embed המעוצב בדיוק לפי תמונת המסך שלך
+        const helpEmbed = new EmbedBuilder()
+            .setColor('#1A243F') // צבע כחול כהה/אינדיגו מותאם לתמונה
+            .setTitle('🚨 קריאת עזרה דחופה')
+            .setDescription(`המשתמש ${message.author} ביקש עזרה דחופה בדיסקורד!`)
+            .addFields(
+                { name: '📍 מיקום הפנייה / וויס:', value: `${message.channel}`, inline: false },
+                { name: '📝 סיבה/פירוט:', value: `\`\`\`\n${finalReason}\n\`\`\``, inline: false }
+            )
+            .setTimestamp();
+
+        // שליחת ההודעה לערוץ עם תיוג של ה-Staff (תוכל לשנות ל-ID של הרול במידת הצורך)
+        await message.channel.send({ 
+            content: `⚠️ **@STAFF** ישנה קריאת עזרה חדשה!`, 
+            embeds: [helpEmbed] 
+        });
+    }
+});
+
+// ==========================================
+// חלק 2: מערכת אימות וטיקטים (אינטראקציות)
+// ==========================================
+client.on(Events.InteractionCreate, async interaction => {
+
+    // א. מערכת האימות (לחיצה על הכפתור הירוק)
+    if (interaction.isButton()) {
+        if (interaction.customId === 'verify_button') {
+            try {
+                const rolesToGive = ['Member', 'Staff', 'Friend'];
+                const guildRoles = [];
+
+                for (const name of rolesToGive) {
+                    const foundRole = interaction.guild.roles.cache.find(r => r.name === name);
+                    if (!foundRole) {
+                        return await interaction.reply({ 
+                            content: `שגיאה: לא מצאתי בשרת רול בשם "${name}".`, 
+                            ephemeral: true 
+                        });
+                    }
+                    guildRoles.push(foundRole);
+                }
+
+                const hasAny = interaction.member.roles.cache.some(r => rolesToGive.includes(r.name));
+                if (hasAny) {
+                    return await interaction.reply({ content: 'אתה כבר מאומת בשרת!', ephemeral: true });
+                }
+
+                await interaction.member.roles.add(guildRoles);
+                return await interaction.reply({ 
+                    content: 'אימות הצליח! קיבלת את הרולים: **Member, Staff, Friend**. 🎉', 
+                    ephemeral: true 
+                });
+
+            } catch (error) {
+                console.error('שגיאה באימות:', error);
+                return await interaction.reply({ content: 'התרחשה שגיאה בהענקת הרולים. בדוק את היררכיית הבוט.', ephemeral: true });
+            }
+        }
+    }
+
+    // ב. מערכת הטיקטים (תפריט בחירה Dropdown)
+    if (interaction.isStringSelectMenu()) {
+        if (interaction.customId === 'ticket_menu') {
+            
+            const allowedRoles = ['Member', 'Staff', 'Friend']; 
+            const canOpenTicket = interaction.member.roles.cache.some(role => allowedRoles.includes(role.name));
+
+            if (!canOpenTicket) {
+                return await interaction.reply({
+                    content: `❌ **שגיאה:** רק משתמשים מאומתים רשאים לפתוח טיקטים בשרת!`,
+                    ephemeral: true 
+                });
+            }
+
+            const selectedValue = interaction.values[0]; 
+            await interaction.deferReply({ ephemeral: true });
+
+            let categoryId = '';
+            let ticketName = '';
+            let embedsToSend = [];
+
+            // טיקט בחינות לצוות (14 שאלות)
+            if (selectedValue === 'team_apply') {
+                categoryId = '1485440385206456452'; 
+                ticketName = `💡-בחינות-${interaction.user.username}`;
+
+                const embedPart1 = new EmbedBuilder()
+                    .setColor('#5865F2')
+                    .setTitle('📋 טופס מועמדות לצוות השרת - חלק א\'')
+                    .setDescription(`שלום ${interaction.user}, אנא ענה על השאלות הבאות בהודעה מפורטת אחת:`)
+                    .addFields(
+                        { name: '1. פרטים אישיים', value: 'שם מלא (שלך) / כינוי בדיסקורד:' },
+                        { name: '2. גיל', value: 'מה הגיל שלך?' },
+                        { name: '3. ותק בשרת', value: 'כמה זמן אתה בשרת שלנו?' },
+                        { name: '4. ניסיון קודם', value: 'ניסיון קודם בצוות ניהול / מודרטור? ספר קצת.. ואם עזבת אז מדוע? (שלח הוכחה במידה ויש)' },
+                        { name: '5. הגדרת חבר צוות', value: 'איך אתה מגדיר צוות טוב? מה בעינייך התכונות שצריכות להיות לחבר צוות?' },
+                        { name: '6. התמודדות עם סיטואציות', value: 'בתור צוות, מה היית עושה במידה ויש סיטואציה פחות נעימה בחדרי השרת / הוויס (מישהו מתחצף / עובר על החוקים, ריבים בין כמה חברי השרת)? תן דוגמה:' },
+                        { name: '7. היררכיה וסמכות', value: 'איך היית מגיב אם צוות מתחתיך תוקף אותך? ואיך היית מגיב אם הוא היה מעליך?' }
+                    );
+
+                const embedPart2 = new EmbedBuilder()
+                    .setColor('#5865F2')
+                    .setTitle('📋 טופס מועמדות לצוות השרת - חלק ב\'')
+                    .addFields(
+                        { name: '8. זמינות וזמן השקעה', value: 'כמה זמן בערך אתה חושב שתוכל לתת ממך למען השרת בשבוע כל יום?' },
+                        { name: '9. התמודדות עם חוסר פעילות', value: 'במידה והשרת מתחיל טיפה להראות חוסר פעילות האם לדעתך תוכל לשנות את המצב? איך?' },
+                        { name: '10. תחומי עניין', value: 'באיזה תחומים אתה רוצה לעזור בשרת?' },
+                        { name: '11. תרומה ושאיפות', value: 'איך אתה חושב שתוכל לתרום לשרת, וכמה רחוק אתה חושב שתוכל להגיע?' },
+                        { name: '12. מוטיבציה', value: 'מאיפה הרצון להצטרף לצוות?' },
+                        { name: '13. התאמה ושיפורים', value: 'למה דווקא אתה מתאים לצוות שלנו? יש לך רעיון לשיפור השרת?' },
+                        { name: '14. אבטחת חשבון', value: 'האם יש לך 2FA (אימות דו-שלבי)?' }
+                    )
+                    .setFooter({ text: 'צוות Voice Chat Server מאחל לך בהצלחה!' })
+                    .setTimestamp();
+
+                embedsToSend = [embedPart1, embedPart2];
+            }
+
+            // טיקט עזרה כללית
+            else if (selectedValue === 'general_help') {
+                categoryId = '1488259168593772554'; 
+                ticketName = `🎫-עזרה-${interaction.user.username}`;
+
+                const generalEmbed = new EmbedBuilder()
+                    .setColor('#57F287')
+                    .setTitle('🎫 פנייה בנושא עזרה כללית')
+                    .setDescription(`שלום ${interaction.user},\nפתחת פנייה בנושא עזרה כללית בשרת.\n\n**אנא רשום כאן את שאלתך או את הבעיה שנתקלת בה בצורה מפורטת ככל הניתן**, וחבר צוות יתפנה לעזור לך בהקדם!`)
+                    .setFooter({ text: 'Voice Chat Server Support' })
+                    .setTimestamp();
+
+                embedsToSend = [generalEmbed];
+            }
+
+            // טיקט פנייה להנהלה
+            else if (selectedValue === 'admin_help') {
+                categoryId = '1485440480459227227'; 
+                ticketName = `👑-הנהלה-${interaction.user.username}`;
+
+                const adminEmbed = new EmbedBuilder()
+                    .setColor('#ED4245')
+                    .setTitle('👑 פנייה דחופה להנהלת השרת')
+                    .setDescription(`שלום ${interaction.user},\nפנייתך הופנתה ישירות לדרגים הגבוהים ומנהלי השרת.\n\nאנא רשום את סיבת הפנייה, הוכחות (במידה ויש) ופירוט מלא של המקרה.`)
+                    .setFooter({ text: 'Voice Chat Server Management' })
+                    .setTimestamp();
+
+                embedsToSend = [adminEmbed];
+            }
+
+            // יצירת הערוץ בשרת
+            if (categoryId !== '') {
+                try {
+                    const ticketChannel = await interaction.guild.channels.create({
+                        name: ticketName,
+                        type: ChannelType.GuildText,
+                        parent: categoryId, 
+                        permissionOverwrites: [
+                            {
+                                id: interaction.guild.roles.everyone.id,
+                                deny: [PermissionsBitField.Flags.ViewChannel], 
+                            },
+                            {
+                                id: interaction.user.id,
+                                allow: [
+                                    PermissionsBitField.Flags.ViewChannel,
+                                    PermissionsBitField.Flags.SendMessages,
+                                    PermissionsBitField.Flags.ReadMessageHistory
+                                ], 
+                            },
+                        ],
+                    });
+
+                    await ticketChannel.send({ content: `${interaction.user}`, embeds: embedsToSend });
+                    await interaction.editReply({ content: `הטיקט שלך נפתח בהצלחה! לחץ כאן כדי לעבור אליו: ${ticketChannel}` });
+
+                } catch (error) {
+                    console.error('שגיאה ביצירת הטיקט:', error);
 
 
 
