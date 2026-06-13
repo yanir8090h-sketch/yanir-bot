@@ -239,6 +239,7 @@ async def on_ready():
     bot.add_view(TicketOpenView())
     bot.add_view(VerifyView())
     print(f'🤖 הבוט מחובר בהצלחה כאל: {bot.user.name}')
+    
+# הפעלת הבוט ישירות עם הטוקן המקורי שלך
+bot.run("YOUR_TOKEN_HERE")
 
-import os
-bot.run(os.getenv("DISCORD_TOKEN"))
