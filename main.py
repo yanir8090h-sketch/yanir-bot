@@ -73,7 +73,7 @@ class TicketDropdown(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        selected_value = self.values
+       selected_value = self.values[0]
         guild = interaction.guild
         member = interaction.user
         
