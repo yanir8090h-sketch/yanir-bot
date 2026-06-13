@@ -200,29 +200,12 @@ async def on_message(message):
     if message.author == bot.user:
         return
 
-    # בודק אם ההודעה מתחילה בפרפיקס של הבוט
-    if message.content.startswith("!"):
-        command_name = message.content[1:].split()[0]
-        
-        # אם הפקודה לא רשומה בבוט, הוא יענה
-        if command_name not in bot.commands:
-            await message.channel.send(f"❌ פקודה לא מוכרת: `!{command_name}`. נסה את `!xp` כדי לפתוח את החנות.")
-            return
-
-  @bot.event
-async def on_message(message):
-    if message.author.bot:
-        return
-
-    await bot.process_commands(message)
-
-
-@bot.event
-async def on_command(ctx):
-    try:
-        await ctx.message.add_reaction("✅")
-    except:
-        pass
+    @bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandNotFound):
+        await ctx.send("❌ פקודה לא קיימת.")
+    # ... שאר הקוד של השגיאות ושל ה-bot.run בסוף בסוף
+  
 
 
 @bot.event
