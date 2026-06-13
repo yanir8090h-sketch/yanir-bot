@@ -12,8 +12,23 @@ intents.messages = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-# מילון ה-XP המקורי
+# מילון ה-XP המקורי של השרת
 user_xp = {}
+
+# מערכת הגדרות ה-IDs ששלחת
+CATEGORY_TICKETS_ID = 1480327808445059072
+CHANNEL_XP_ID = 1483946813944758413
+CHANNEL_XP_SHOP_ID = 1484129709414416434
+CHANNEL_VERIFY_ID = 1487501792488067182
+
+# רשימת הרולים והמחירים לחנות
+SHOP_ROLES = {
+    1491063689502003360: 5000,
+    1490894966262726687: 15000,
+    1490894895618195577: 20000,
+    1490894817373196388: 25000,
+    1484226514051665930: 30000
+}
 
 # ==========================================
 # 🔒 מערכת אימות (VERIFY SYSTEM)
@@ -28,11 +43,9 @@ class VerifyButton(discord.ui.View):
         guild = interaction.guild
         member = interaction.user
         
-        ROLE_NAME = "Member"
-        role = discord.utils.get(guild.roles, name=ROLE_NAME)
-
+        role = discord.utils.get(guild.roles, name="Member")
         if not role:
-            await interaction.followup.send(f"❌ שגיאה: הרול `{ROLE_NAME}` לא נמצא בשרת.", ephemeral=True)
+            await interaction.followup.send("❌ שגיאה: הרול `Member` לא נמצא בשרת.", ephemeral=True)
             return
 
         if role in member.roles:
@@ -41,7 +54,7 @@ class VerifyButton(discord.ui.View):
 
         try:
             await member.add_roles(role)
-            await interaction.followup.send(f"🎉 אימות בוצע בהצלחה! קיבלת את הרול **{ROLE_NAME}**.", ephemeral=True)
+            await interaction.followup.send("🎉 אימות בוצע בהצלחה! קיבלת את הרול **Member**.", ephemeral=True)
             
             welcome_channel = discord.utils.get(guild.text_channels, name="ברוכים-הבאים")
             if welcome_channel:
@@ -58,8 +71,88 @@ class VerifyButton(discord.ui.View):
         except discord.Forbidden:
             await interaction.followup.send("❌ לבוט אין הרשאה לתת רולים!", ephemeral=True)
 
+@bot.command(name="setup_verify")
+@commands.has_permissions(administrator=True)
+async def setup_verify(ctx):
+    await ctx.message.delete()
+    embed = discord.Embed(
+        title="🔒 מערכת אימות וסינון המשתמשים",
+        description="ברוכים הבאים לשרת! על מנת לקבל גישה מלאה לכל החדרים והערוצים,\nעליכם למזער סיכונים ולעבור אימות.\n\n**לחצו על הכפתור הירוק למטה כדי לקבל רול Member!**",
+        color=0x2ecc71
+    )
+    if ctx.guild.icon:
+        embed.set_thumbnail(url=ctx.guild.icon.url)
+    await ctx.send(embed=embed, view=VerifyButton())
+
 # ==========================================
-# 📝 מערכת טיקטים (TICKETS SYSTEM WITH ALL QUESTIONS)
+# 🛒 חנות רולים בלחיצת כפתור (XP SHOP SYSTEM)
+# ==========================================
+class ShopButtons(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        
+    async def process_purchase(self, interaction: discord.Interaction, role_id: int, cost: int):
+        await interaction.response.defer(ephemeral=True)
+        user_id = str(interaction.user.id)
+        current_xp = user_xp.get(user_id, 0)
+        
+        if current_xp < cost:
+            await interaction.followup.send(f"❌ אין לך מספיק XP! הרול עולה **{cost} XP** ויש לך כרגע **{current_xp} XP**.", ephemeral=True)
+            return
+            
+        guild = interaction.guild
+        role = guild.get_role(role_id)
+        
+        if not role:
+            await interaction.followup.send("❌ שגיאה: הרול הזה לא נמצא בשרת, פנה למנהל.", ephemeral=True)
+            return
+            
+        if role in interaction.user.roles:
+            await interaction.followup.send(f"⭐ כבר יש לך את הרול {role.mention}!", ephemeral=True)
+            return
+            
+        try:
+            user_xp[user_id] -= cost
+            await interaction.user.add_roles(role)
+            await interaction.followup.send(f"🎉 תתחדש! קנית את הרול {role.mention} בהצלחה עבור **{cost} XP**!", ephemeral=True)
+        except discord.Forbidden:
+            await interaction.followup.send("❌ לבוט אין הרשאה להעניק רולים. ודא שהרול של הבוט נמצא בראש הרשימה!", ephemeral=True)
+
+    @discord.ui.button(label="קניית רול דרגה 1 • 5,000 XP", style=discord.ButtonStyle.primary, custom_id="shop_r1")
+    async def r1_click(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.process_purchase(interaction, 1491063689502003360, 5000)
+
+    @discord.ui.button(label="קניית רול דרגה 2 • 15,000 XP", style=discord.ButtonStyle.primary, custom_id="shop_r2")
+    async def r2_click(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.process_purchase(interaction, 1490894966262726687, 15000)
+
+    @discord.ui.button(label="קניית רול דרגה 3 • 20,000 XP", style=discord.ButtonStyle.primary, custom_id="shop_r3")
+    async def r3_click(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.process_purchase(interaction, 1490894895618195577, 20000)
+
+    @discord.ui.button(label="קניית רול דרגה 4 • 25,000 XP", style=discord.ButtonStyle.primary, custom_id="shop_r4")
+    async def r4_click(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.process_purchase(interaction, 1490894817373196388, 25000)
+
+    @discord.ui.button(label="קניית רול דרגה 5 • 30,000 XP", style=discord.ButtonStyle.primary, custom_id="shop_r5")
+    async def r5_click(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.process_purchase(interaction, 1484226514051665930, 30000)
+
+@bot.command(name="setup_shop")
+@commands.has_permissions(administrator=True)
+async def setup_shop(ctx):
+    await ctx.message.delete()
+    embed = discord.Embed(
+        title="🛒 חנות הרולים הרשמית של השרת",
+        description="צברתם מספיק נקודות פעילות בצ'אט ובוויס?\nזה הזמן להתקדם ולהשוויץ בדירוג שלכם בשרת!\n\n**לחצו על אחד הכפתורים למטה כדי לרכוש את הרול המתאים:**",
+        color=0xe67e22
+    )
+    if ctx.guild.icon:
+        embed.set_image(url=ctx.guild.icon.url)
+    await ctx.send(embed=embed, view=ShopButtons())
+
+# ==========================================
+# 📝 מערכת טיקטים (TICKETS SYSTEM)
 # ==========================================
 class TicketDropdown(discord.ui.Select):
     def __init__(self):
@@ -72,19 +165,15 @@ class TicketDropdown(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        selected_value = self.values[0]
+        selected_value = self.values
         guild = interaction.guild
         member = interaction.user
         
-        # ID של קטגוריית הטיקטים שלך
-        category_id = 1245448484859227227
-        category = discord.utils.get(guild.categories, id=category_id)
-        
+        category = discord.utils.get(guild.categories, id=CATEGORY_TICKETS_ID)
         if not category:
-            await interaction.followup.send("❌ שגיאה: קטגוריית הטיקטים לא נמצאה בשרת. פנה למנהל שיבדוק את ה-ID בקוד!", ephemeral=True)
+            await interaction.followup.send("❌ שגיאה: קטגוריית הטיקטים לא נמצאה בשרת.", ephemeral=True)
             return
 
-        # הגדרת הרשאות לערוץ החדש
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(view_channel=False),
             member: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_message_history=True)
@@ -92,11 +181,8 @@ class TicketDropdown(discord.ui.Select):
         
         clean_name = selected_value.replace(" ", "-")
         ticket_name = f"🎫-{clean_name}-{member.name}"
-        
-        # יצירת הערוץ בפועל
         channel = await guild.create_text_channel(name=ticket_name, category=category, overwrites=overwrites)
         
-        # אם המשתמש בחר בבחינה לצוות - נשלח את כל 14 השאלות שלך בתוך החדר!
         if selected_value == "בחינה לצוות":
             embed = discord.Embed(
                 title="📝 טופס מועמדות לצוות השרת - Voice Chat Server",
@@ -109,113 +195,12 @@ class TicketDropdown(discord.ui.Select):
                             "**6.** בתור צוות, מה היית עושה במידה ויש סיטואציה פחות נעימה בחדרי השרת / הוויס (מישהו מתחצף/עובר על החוקים, ריבים)? תן דוגמה:\n"
                             "**7.** איך היית מגיב אם איש צוות מתחתיך תוקף אותך? ואיך היית מגיב אם הוא היה מעליך?\n"
                             "**8.** כמה זמן בערך אתה חושב שתוכל לתנת ממך למען השרת בשבוע כל יום?\n"
-                            "**9.** במידה והשרת מתחיל טיפה להראות חוסר פעילות האם לדעתך תוכל לשנות את המצב? איך?\n"
+                            "**9.** במידה והשרת מתחיל טיפה להראות חוססר פעילות האם לדעתך תוכל לשנות את המצב? איך?\n"
                             "**10.** באיזה תחומים אתה רוצה לעזור בשרת?\n"
                             "**11.** איך אתה חושב שתוכל לתרום לשרת, וכמה רחוק אתה חושב שתוכל להגיע?\n"
                             "**12.** מאיפה הרצון להצטרף לצוות?\n"
                             "**13.** למה דווקא אתה מתאים לצוות שלנו? יש לך רעיון לשיפור השרת?\n"
                             "**14.** האם יש לך אבטחת 2FA מופעלת בדיסקורד?\n\n"
-                            "📌 *צוות הניהול הגבוה יעבור על התשובות שלך וייתן לך תשובה בהקדם! בהצלחה!*",
-                color=0x9b59b6
-            )
-            if guild.icon:
-                embed.set_thumbnail(url=guild.icon.url)
-            await channel.send(embed=embed)
-        
-        else:
-            # הודעת טיקט רגילה (עזרה כללית / עזרה מההנהלה)
-            embed = discord.Embed(
-                title="🎯 פנייתך התקבלה בהצלחה",
-                description=f"שלום {member.mention},\nנפתח עבורך חדר טיקט בנושא **{selected_value}**.\nאנא פרט את פנייתך בצורה ברורה, ונציג מצוות השרת יתפנה אליך בהקדם.",
-                color=0x004245
-            )
-            if guild.icon:
-                embed.set_thumbnail(url=guild.icon.url)
-            await channel.send(embed=embed)
-            
-        await interaction.followup.send(f"✅ הטיקט שלך נוצר בהצלחה! לחץ כאן למעבר: {channel.mention}", ephemeral=True)
-
-class TicketDropdownView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-        self.add_item(TicketDropdown())
-
-@bot.command(name="setup_tickets")
-@commands.has_permissions(administrator=True)
-async def setup_tickets(ctx):
-    await ctx.message.delete()
-    
-    embed = discord.Embed(
-        title="תמיכה ופניות • הגשת מועמדות",
-        description="צריך עזרה? רוצה להגיש מועמדות לצוות השרת?\nבחר את הקטגוריה המתאימה ביותר בתפריט למטה והבוט יפתח לך חדר פרטי מיידית.\n\n⚠️ **חוקי המערכת:**\n• אין לפתוח טיקטים ללא סיבה מוצדקת.\n• הגשת טופס מועמדות שקרי או מזלזל תיפסל מיידית.",
-        color=0x004245
-    )
-    if ctx.guild.icon:
-        embed.set_image(url=ctx.guild.icon.url)
-        
-    await ctx.send(embed=embed, view=TicketDropdownView())
-
-# ==========================================
-# 🚨 פקודת עזרה (HELP STAFF COMMAND)
-# ==========================================
-class HelpStaffView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @discord.ui.button(label="נלקח על ידי", style=discord.ButtonStyle.secondary, emoji="🛡️", custom_id="claim_help")
-    async def claim_callback(self, interaction: discord.Interaction):
-        if not interaction.user.guild_permissions.manage_messages:
-            await interaction.response.send_message("❌ כפתור זה מיועד לצוות השרת בלבד!", ephemeral=True)
-            return
-
-        await interaction.response.defer()
-        embed = interaction.message.embeds
-        
-        field_updated = False
-        for i, field in enumerate(embed.fields):
-            if "נלקח על ידי" in field.name:
-                embed.set_field_at(i, name="🤝 נלקח על ידי", value=f"{interaction.user.mention}", inline=False)
-                field_updated = True
-                break
-                
-        if not field_updated:
-            embed.add_field(name="🤝 נלקח על ידי", value=f"{interaction.user.mention}", inline=False)
-
-        embed.color = discord.Color.green()
-        for child in self.children:
-            child.disabled = True
-            
-        await interaction.message.edit(embed=embed, view=self)
-        await interaction.channel.send(f"⚡ הפנייה של המשתמש נלקחה לטיפול על ידי {interaction.user.mention}!")
-
-@bot.command(name="h", aliases=["עזרה"])
-async def h(ctx, *, reason: str = None):
-    if not reason:
-        await ctx.send("⚠️ נא לציין את סיבת הפנייה! דוגמה: `!h יש בעיה בצ'אט`")
-        return
-
-    await ctx.message.delete()
-
-    embed = discord.Embed(
-        title="🚨 בקשת עזרה / דיווח חדש",
-        description="איש צוות זמין נדרש להגיע לסייע.",
-        color=0xe74c3c
-    )
-    embed.add_field(name="👤 המבקש", value=f"{ctx.author.mention}", inline=True)
-    embed.add_field(name="💬 סיבה / פירוט", value=f"```{reason}```", inline=False)
-    embed.add_field(name="🤝 נלקח על ידי", value="טרם נלקח - ממתין לצוות ⏳", inline=False)
-    
-    if ctx.guild.icon:
-        embed.set_image(url=ctx.guild.icon.url)
-    embed.set_thumbnail(url=ctx.author.display_avatar.url)
-    embed.set_footer(text=f"Help System • {ctx.guild.name}")
-
-    await ctx.send(embed=embed, view=HelpStaffView())
-
-# ==========================================
-# 📊 פקודת רמות (XP COMMAND)
-# ==========================================
-@bot.command(name="xp")
 
 
 
