@@ -157,27 +157,7 @@ class VerifyView(discord.ui.View):
         if verified_role in member.roles:
             await interaction.response.send_message("❌ אתה כבר מאומת בשרת!", ephemeral=True)
         else:
-            await member.add_roles(verified_role)
-            await interaction.response.send_message("✅ האימות בוצע בהצלחה! כעת נפתחו עבורך הערוצים.", ephemeral=True)
-
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def setup_verify(ctx):
-    try:
-        await ctx.message.delete()
-    except discord.NotFound:
-        pass
-    embed = discord.Embed(title="🔒 אימות חשבון - Verification", description="ברוך הבא לשרת!\nכדי לקבל גישה לשאר הערוצים, לחץ על הכפתור הירוק למטה.", color=discord.Color.green())
-    if ctx.guild.icon:
-        embed.set_thumbnail(url=ctx.guild.icon.url)
-    await ctx.send(embed=embed, view=VerifyView())
-
-# ==========================================
-# 4. מערכת בקשות Staff Friend (עם אישור/דחייה)
-# ==========================================
-class StaffFriendReview(discord.ui.View):
-    def __init__(self, applicant_id: int):
-       # ==========================================
+           # ==========================================
 # קוד Flask לשמירה על הבוט דלוק בחינם ב-Render
 # ==========================================
 app = Flask('')
