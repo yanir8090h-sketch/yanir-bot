@@ -216,5 +216,5 @@ async def setup_verify(ctx):
 async def apply_staff_friend(ctx):
 
 # הפעלת הבוט ישירות עם הטוקן המקורי שלך
-bot.run("YOUR_TOKEN_HERE")
+bot.run("DISCORD_TOKEN")
 
