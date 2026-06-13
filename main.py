@@ -199,7 +199,8 @@ class HelpStaffView(discord.ui.View):
         await interaction.message.edit(embed=embed, view=self)
         await interaction.channel.send(f"⚡ הפנייה של המשתמש נלקחה לטיפול על ידי {interaction.user.mention}!")
 
-@bot.command(name="h", aliases=["help"])
+@bot.command(name="h", aliases=["עזרה"])
+
 async def h(ctx, *, reason: str = None):
     if not reason:
         await ctx.send("⚠️ נא לציין את סיבת הפנייה! דוגמה: `!h יש בעיה בצ'אט`")
