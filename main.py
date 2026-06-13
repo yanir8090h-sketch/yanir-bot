@@ -300,59 +300,27 @@ class TicketView(discord.ui.View):
         await interaction.response.send_message("⚠️ הטיקט ייסגר ויימחק בעוד 5 שניות...")
         await asyncio.sleep(5)
         await interaction.channel.delete()
-
-class TicketOpenView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @discord.ui.button(label="פתח טיקט ✉️", style=discord.ButtonStyle.blurple, custom_id="open_ticket_persistent")
-    async def open_button(interaction: discord.Interaction, button: discord.ui.Button):
-        guild = interaction.guild
-        member = interaction.user
-        overwrites = {
-            guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            member: discord.PermissionOverwrite(read_messages=True, send_messages=True, attach_files=True),
-            guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True)
-        }
-        ticket_channel = await guild.create_text_channel(name=f"ticket-{member.name}", overwrites=overwrites)
-        ticket_embed = discord.Embed(
-            title="🎫 טיקט חדש נפתח!",
-            description=f"שלום {member.mention},\nצוות התמיכה עודכן ויענה לך בהקדם.\nבאפשרותך לנהל את הטיקט בעזרת הכפתורים למטה.",
-            color=discord.Color.green()
-        )
-        await ticket_channel.send(embed=ticket_embed, view=TicketView())
-        await interaction.response.send_message(f"הטיקט שלך נפתח בהצלחה! {ticket_channel.mention}", ephemeral=True)
-
 @bot.command()
 @commands.has_permissions(administrator=True)
-async def setup_ticket(ctx):
+async def setup_shop(ctx):
     try:
         await ctx.message.delete()
     except discord.NotFound:
         pass
-    embed = discord.Embed(title="🎫 פתיחת טיקט תמיכה", description="צריך עזרה או יש לך שאלה לצוות המנהלים?\nלחץ על הכפתור למטה כדי לפתוח טיקט פרטי!", color=discord.Color.blue())
-    await ctx.send(embed=embed, view=TicketOpenView())
-
-# ==========================================
-# 3. מערכת אימות (Verification)
-# ==========================================
-class VerifyView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @discord.ui.button(label="להתחלת אימות 🛡️", style=discord.ButtonStyle.green, custom_id="verify_user_persistent")
-    async def verify_button(interaction: discord.Interaction, button: discord.ui.Button):
-        guild = interaction.guild
-        member = interaction.user
-        verified_role = discord.utils.get(guild.roles, name="Verified")
-        if not verified_role:
-            verified_role = await guild.create_role(name="Verified")
-
-        if verified_role in member.roles:
-            await interaction.response.send_message("❌ אתה כבר מאומת בשרת!", ephemeral=True)
-        else:
-            await member.add_roles(verified_role)
-            await interaction.response.send_message("✅ האימות בוצע בהצלחה!", ephemeral=True)
+    guild = ctx.guild
+    embed = discord.Embed(
+        title=f"🎁 חנות ה-XP הרשמית - {guild.name}",
+        description=f"🛍️ **חנות הרולים של השרת**\n\n"
+                    f"👑 <@&{ROLE_1_ID}> — 30,000 XP\n"
+                    f"💎 <@&{ROLE_2_ID}> — 20,000 XP\n"
+                    f"🔥 <@&{ROLE_3_ID}> — 10,000 XP\n"
+                    f"⚡ <@&{ROLE_4_ID}> — 5,000 XP\n"
+                    f"✨ <@&{ROLE_5_ID}> — 2,500 XP",
+        color=discord.Color.from_rgb(142, 201, 57)
+    )
+    if guild.icon:
+        embed.set_image(url=guild.icon.url)
+    await ctx.send(embed=embed, view=ShopView())
 
 @bot.command()
 @commands.has_permissions(administrator=True)
@@ -361,50 +329,16 @@ async def setup_verify(ctx):
         await ctx.message.delete()
     except discord.NotFound:
         pass
-    embed = discord.Embed(title="🔒 אימות חשבון - Verification", description="ברוך הבא לשרת!\nכדי לקבל גישה לשאר הערוצים, לחץ על הכפתור למטה.", color=discord.Color.green())
+    embed = discord.Embed(title="🔒 אימות חשבון - Verification", description="ברוך הבא לשרת!\nכדי לקבל גישה לשאר הערוצים, לחץ על הכפתור הירוק למטה.", color=discord.Color.green())
     if ctx.guild.icon:
         embed.set_thumbnail(url=ctx.guild.icon.url)
     await ctx.send(embed=embed, view=VerifyView())
-
-# ==========================================
-# 4. מערכת בקשות Staff Friend
-# ==========================================
-class StaffFriendReview(discord.ui.View):
-    def __init__(self, applicant_id: int):
-        super().__init__(timeout=None)
-        self.applicant_id = applicant_id
-
-    @discord.ui.button(label="Accept  ✔️", style=discord.ButtonStyle.success, custom_id="staff_friend_accept")
-    async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
-        guild = interaction.guild
-        member = guild.get_member(self.applicant_id)
-        staff_friend_role = discord.utils.get(guild.roles, name="Staff Friend")
-        if not staff_friend_role:
-            staff_friend_role = await guild.create_role(name="Staff Friend")
-
-        if member:
-            await member.add_roles(staff_friend_role)
-            embed = interaction.message.embeds[0]
-            embed.color = discord.Color.green()
-            embed.set_field_at(2, name="🟢 סטטוס:", value=f"אושר על ידי {interaction.user.mention}", inline=False)
-            await interaction.message.edit(embed=embed, view=None)
-            await interaction.response.send_message("✅ הבקשה אושרה!", ephemeral=True)
-        else:
-            await interaction.response.send_message("❌ המשתמש עזב.", ephemeral=True)
-
-    @discord.ui.button(label="Deny  ❌", style=discord.ButtonStyle.danger, custom_id="staff_friend_deny")
-    async def deny(self, interaction: discord.Interaction, button: discord.ui.Button):
-        embed = interaction.message.embeds[0]
-        embed.color = discord.Color.red()
-        embed.set_field_at(2, name="🔴 סטטוס:", value=f"נדחה על ידי {interaction.user.mention}", inline=False)
-        await interaction.message.edit(embed=embed, view=None)
-        await interaction.response.send_message("❌ הבקשה נדחתה.", ephemeral=True)
 
 @bot.command()
 async def apply_staff_friend(ctx):
     log_channel = bot.get_channel(STAFF_FRIENDS_LOG_CHANNEL_ID)
     if not log_channel:
-        await ctx.send("❌ ערוץ הלוגים לא נמצא.", ephemeral=True)
+        await ctx.send("❌ ערוץ הלוגים לא הוגדר.", ephemeral=True)
         return
     embed = discord.Embed(title="🛠️ בקשת Staff Friend חדשה", color=discord.Color.purple())
     embed.add_field(name="👤 מגיש הבקשה:", value=ctx.author.mention, inline=True)
@@ -415,11 +349,25 @@ async def apply_staff_friend(ctx):
     await log_channel.send(embed=embed, view=StaffFriendReview(ctx.author.id))
     await ctx.send("✅ בקשתך נשלחה לצוות הניהול!", ephemeral=True)
 
-# ==========================================
-# 5. פקודת העזרה המעוצבת החדשה (!h)
-# ==========================================
 @bot.command(name="h")
-
+async def help_ticket_info(ctx, *, reason: str = "לא צוינה סיבה"):
+    try:
+        await ctx.message.delete()
+    except discord.NotFound:
+        pass
+    guild = ctx.guild
+    embed = discord.Embed(title="⚠️ בקשת עזרה", color=discord.Color.from_rgb(47, 49, 54))
+    embed.add_field(name="👥 צוות מתוייג:", value=f"<@&{STAFF_ROLE_ID}>", inline=False)
+    embed.add_field(name="📝 סיבה:", value=reason, inline=False)
+    embed.add_field(name="🌐 וייס:", value="🔈 (🔒) Private", inline=False)
+    embed.add_field(name="🔒 נלקח על ידי:", value=f"@{ctx.author.name} · <@&{ROLE_3_ID}>", inline=False)
+    if guild.icon:
+        embed.set_image(url=guild.icon.url)
+    await ctx.send(embed=embed)
 
 import os
+
+# הפעלת הבוט באמצעות הטוקן המוגדר ב-Render
 bot.run(os.getenv("DISCORD_TOKEN"))
+
+
