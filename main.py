@@ -209,54 +209,32 @@ async def on_message(message):
             await message.channel.send(f"❌ פקודה לא מוכרת: `!{command_name}`. נסה את `!xp` כדי לפתוח את החנות.")
             return
 
-    # שורה חובה כדי ששאר הפקודות הרגילות (כמו !xp) ימשיכו לעבוד
+  @bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
     await bot.process_commands(message)
-# מערכת אוטומטית שאומרת לך בדיוק מה הבעיה עם כל פקודה
+
+
+@bot.event
+async def on_command(ctx):
+    try:
+        await ctx.message.add_reaction("✅")
+    except:
+        pass
+
+
 @bot.event
 async def on_command_error(ctx, error):
-    # בעיה 1: הפקודה לא קיימת בכלל בקוד
     if isinstance(error, commands.CommandNotFound):
-        # מציג את השם של מה שנסית לרשום
-        wrong_command = ctx.message.content.split()[0]
-        await ctx.send(f"❌ **מה הבעיה?** הפקודה `{wrong_command}` לא קיימת בקוד של הבוט. ודא שלא טעית באיות, או נסה את `!xp`.")
-        return
-
-    # בעיה 2: חסרות לבוט או לך הרשאות בשרת
-    elif isinstance(error, commands.MissingPermissions):
-        await ctx.send("❌ **מה הבעיה?** לפקודה הזו חסרות הרשאות ניהול בשרת הדיסקורד כדי לפעול.")
-        return
-
-    # בעיה 3: חסר משתנה/ארגומנט שהפקודה צריכה (למשל שכחת לתייג מישהו)
+        await ctx.send("❌ הפקודה לא קיימת.")
     elif isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send(f"❌ **מה הבעיה?** שכחת להוסיף פרט חובה לפקודה הזו (חסר ארגומנט: `{error.param.name}`).")
-        return
-
-    # בעיה 4: שגיאת קוד פנימית בפייתון (קריסה של הפקודה)
+        await ctx.send(f"❌ חסר ארגומנט: {error.param.name}")
     else:
-        await ctx.send(f"⚠️ **מה הבעיה?** יש שגיאת קוד פנימית בתוך הפקודה הזו.\n**פירוט השגיאה מהשרת:** `{error}`")
-        print(f"שגיאה שהתרחשה: {error}") # מדפיס את השגיאה גם ל-Logs ב-Render
+        await ctx.send(f"⚠️ שגיאה: {error}")
 
-
-# קוד קטן שמשתלט על הכל ועונה אוטומטית לכל פקודה שקיימת אצלך
-@bot.event
-async def on_message(message):
-    # מונע מהבוט לענות לעצמו
-    if message.author == bot.user:
-        return
-
-    # בודק אם ההודעה מתחילה ב-!
-    if message.content.startswith("!"):
-        # לוקח את שם הפקודה שרשמת (למשל "xp")
-        command_name = message.content[1:].split()[0]
-
-        # הוא בודק אוטומטית אם הפקודה הזו קיימת אצלך בקוד
-        if bot.get_command(command_name):
-            # אם היא קיימת, הוא משתלט, מפעיל אותה ועונה בדיוק מה שהיא צריכה לעשות!
-            await bot.process_commands(message)
-            return
-        else:
-            # אם רשמת משהו שלא קיים, הוא לא יעשה כלום
-            return
+     
 
 
 # ====== הרצת הבוט בצורה מאובטחת ======
