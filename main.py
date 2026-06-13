@@ -60,7 +60,7 @@ class VerifyButton(discord.ui.View):
             await interaction.followup.send("❌ לבוט אין הרשאה לתת רולים!", ephemeral=True)
 
 # ==========================================
-# 📝 מערכת טיקטים (TICKETS SYSTEM)
+# 📝 מערכת טיקטים (TICKETS SYSTEM WITH SMART CATEGORIES)
 # ==========================================
 class TicketDropdown(discord.ui.Select):
     def __init__(self):
@@ -73,16 +73,22 @@ class TicketDropdown(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        selected_value = self.values
+        selected_value = self.values[0]  # תיקון: משיכת הערך בצורה נקייה
         guild = interaction.guild
         member = interaction.user
         
-        # ה-ID של קטגוריית הטיקטים ששלחת
-        category_id = 1480327808445059072
+        # ניווט אוטומטי לקטגוריה הנכונה לפי ה-IDs המדויקים ששלחת
+        if selected_value == "עזרה כללית":
+            category_id = 1515362219481763993
+        elif selected_value == "בחינה לצוות":
+            category_id = 1515362117736464394
+        else:  # עזרה מההנהלה
+            category_id = 1515362346279895182
+            
         category = guild.get_channel(category_id)
         
         if not category or not isinstance(category, discord.CategoryChannel):
-            await interaction.followup.send("❌ שגיאה: קטגוריית הטיקטים לא נמצאה בשרת.", ephemeral=True)
+            await interaction.followup.send(f"❌ שגיאה: קטגוריית הטיקטים עבור `{selected_value}` לא נמצאה בשרת.", ephemeral=True)
             return
 
         overwrites = {
@@ -93,6 +99,7 @@ class TicketDropdown(discord.ui.Select):
         clean_name = selected_value.replace(" ", "-")
         ticket_name = f"🎫-{clean_name}-{member.name}"
         
+        # יצירת חדר הטיקט בתוך הקטגוריה המתאימה
         channel = await guild.create_text_channel(name=ticket_name, category=category, overwrites=overwrites)
         
         if selected_value == "בחינה לצוות":
@@ -199,15 +206,6 @@ async def setup_shop(ctx):
     await ctx.message.delete()
     embed = discord.Embed(
         title="🛒 חנות הרולים הרשמית של השרת",
-        description="צברתם מספיק נקודות XP מהדיבורים בצ'אט ומהמשחקים?\nזה הזמן להחליף אותם ברולים בלעדיים ויוקרתיים בשרת!\n\n**לחצו על אחד הכפתורים למטה כדי לרכוש את הרול מיידית:**",
-        color=0xe67e22
-    )
-    if ctx.guild.icon:
-        embed.set_thumbnail(url=ctx.guild.icon.url)
-    embed.set_footer(text=f"XP Shop • {ctx.guild.name}")
-    await ctx.send(embed=embed, view=ShopView())
-
-
 
 import os
 bot.run(os.getenv("DISCORD_TOKEN"))
