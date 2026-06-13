@@ -211,12 +211,7 @@ async def setup_shop(ctx):
         await ctx.message.delete()
     except discord.NotFound:
         pass
-    const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
-
-import discord
-from discord.ext import commands
-
-class TicketView(discord.ui.View):
+   class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
@@ -229,7 +224,6 @@ class TicketView(discord.ui.View):
     async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message("הטיקט ייסגר ויימחק בעוד מספר שניות...")
         await interaction.channel.delete()
-
 
 import os
 bot.run(os.getenv("DISCORD_TOKEN"))
