@@ -5,9 +5,11 @@ import random
 import asyncio
 
 # הגדרות בסיס ואינטנטים
+# הגדרות בסיס ואינטנטים מלאים (חובה להפעלת פקודות טקסט רגילות)
 intents = discord.Intents.default()
 intents.members = True
-intents.message_content = True
+intents.message_content = True  # שורה זו חובה כדי שהבוט יקרא את ה-!
+intents.messages = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
