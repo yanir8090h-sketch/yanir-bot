@@ -211,6 +211,30 @@ async def on_message(message):
 
     # שורה חובה כדי ששאר הפקודות הרגילות (כמו !xp) ימשיכו לעבוד
     await bot.process_commands(message)
+# מערכת אוטומטית שאומרת לך בדיוק מה הבעיה עם כל פקודה
+@bot.event
+async def on_command_error(ctx, error):
+    # בעיה 1: הפקודה לא קיימת בכלל בקוד
+    if isinstance(error, commands.CommandNotFound):
+        # מציג את השם של מה שנסית לרשום
+        wrong_command = ctx.message.content.split()[0]
+        await ctx.send(f"❌ **מה הבעיה?** הפקודה `{wrong_command}` לא קיימת בקוד של הבוט. ודא שלא טעית באיות, או נסה את `!xp`.")
+        return
+
+    # בעיה 2: חסרות לבוט או לך הרשאות בשרת
+    elif isinstance(error, commands.MissingPermissions):
+        await ctx.send("❌ **מה הבעיה?** לפקודה הזו חסרות הרשאות ניהול בשרת הדיסקורד כדי לפעול.")
+        return
+
+    # בעיה 3: חסר משתנה/ארגומנט שהפקודה צריכה (למשל שכחת לתייג מישהו)
+    elif isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send(f"❌ **מה הבעיה?** שכחת להוסיף פרט חובה לפקודה הזו (חסר ארגומנט: `{error.param.name}`).")
+        return
+
+    # בעיה 4: שגיאת קוד פנימית בפייתון (קריסה של הפקודה)
+    else:
+        await ctx.send(f"⚠️ **מה הבעיה?** יש שגיאת קוד פנימית בתוך הפקודה הזו.\n**פירוט השגיאה מהשרת:** `{error}`")
+        print(f"שגיאה שהתרחשה: {error}") # מדפיס את השגיאה גם ל-Logs ב-Render
 
 
 
