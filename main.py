@@ -58,12 +58,11 @@ class VerifyButton(discord.ui.View):
 # ==========================================
 # 📝 מערכת טיקטים וטופס מועמדות לצוות (TICKETS & STAFF FORM)
 # ==========================================
-class StaffFormModal(discord.ui.Modal, title="📝 טופס מועמדות לצוות השרת"):
     name_input = discord.ui.TextInput(label="שם מלא / כינוי בדיסקורד", placeholder="ישראל ישראלי", required=True)
     age_input = discord.ui.TextInput(label="גיל", placeholder="למשל: 16", required=True)
-        exp_input = discord.ui.TextInput(label="ניסיון קודם בניהול? (פרט בקצרה)", style=discord.TextStyle.long, required=True)
+    time_input = discord.ui.TextInput(label="כמה זמן אתה בשרת שלנו?", placeholder="למשל: חודשיים", required=True)
+    exp_input = discord.ui.TextInput(label="ניסיון קודם בניהול? (פרט בקצרה)", style=discord.TextStyle.long, required=True)
     why_input = discord.ui.TextInput(label="למה דווקא אתה מתאים לצוות?", style=discord.TextStyle.long, required=True)
-    why_input = discord.ui.TextInput(label="למה דווקא אתה מתאים לצוות?", style=discord.ui.TextStyle.paragraph, required=True)
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
