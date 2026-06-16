@@ -173,4 +173,5 @@ class XpShopDropdownView(discord.ui.View):
 # 6. פקודות הבוט (XP, Setup, Help)
 # ==========================================
 @bot.command()
-bot.run(os.getenv("DISCORD_TOKEN"))
+bot.run(os.environ.get("DISCORD_TOKEN"))
+
