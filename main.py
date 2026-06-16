@@ -135,15 +135,6 @@ async def setup_shop(ctx, target_channel: discord.TextChannel = None):
     if guild.icon: embed.set_image(url=guild.icon.url)
     await channel_to_send.send(embed=embed, view=ShopView())
 
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def setup_ticket(ctx, target_channel: discord.TextChannel = None):
-    try: await ctx.message.delete()
-    except discord.NotFound: pass
-    channel_to_send = target_channel if target_channel else ctx.channel
-    embed = discord.Embed(title="תמיכה טכנית 🎫", description="בחר את סוג הפנייה שברצונך לפתוח מתוך תפריט הבחירה שלמטה.\nצוות המנהלים יתפנה אליך בהקדם האפשרי!", color=discord.Color.from_rgb(47, 49, 54))
-    if ctx.guild.icon: embed.set_image(url=ctx.guild.icon.url)
-    await channel_to_send.send(embed=embed, view=TicketDropdownView())
 
 @bot.command()
 @commands.has_permissions(administrator=True)
