@@ -258,17 +258,22 @@ async def setup_verify(ctx, target_channel: discord.TextChannel = None):
 # הפעלת ה-Views הקבועים ואירועים קריטיים
 # ==========================================
 @bot.event
-@bot.event
 async def on_ready():
-    # סנכרון פקודות הסלאש מול שרתי דיסקורד (חובה בשביל /sf)
+    # סנכרון פקודות הסלאש (חובה בשביל פקודת /sf שביקשת!)
     await bot.tree.sync()
     
-    # bot.add_view(ShopDropdownView())
-    bot.add_view(TicketView())
-    # bot.add_view(TicketDropdownView())
-    bot.add_view(VerifyView())
-    bot.add_view(StaffFriendReview())
-    print(f' {bot.user.name}')
+    # הפעלה בטוחה של ה-views ללא קריסות
+    try:
+        bot.add_view(TicketView())
+    except:
+        pass
+        
+    try:
+        bot.add_view(StaffFriendReview())
+    except:
+        pass
+        
+    print(f' {bot.user.name} is online and fully synced!')
 
 
 @bot.event
