@@ -292,7 +292,7 @@ async def staff_shortcut(ctx, *, message: str = None):
         return
         
     # האיידי של ערוץ staff-friends מהשרת שלך
-    STAFF_CHANNEL_ID = 1251649980838875156 
+    STAFF_CHANNEL_ID = 1492894356091179008
     channel = bot.get_channel(STAFF_CHANNEL_ID)
     
     if channel:
