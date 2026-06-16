@@ -467,6 +467,48 @@ async def sf_command(interaction: discord.Interaction, member: discord.Member):
     except discord.Forbidden:
         await interaction.response.send_message("❌ שגיאה: לבוט אין הרשאה מספקת. ודא שהרול של הבוט נמצא בראש רשימת הרולים בדיסקורד!", ephemeral=True)
 
+# --- פקודת עזרה ותמיכה (!h) בעיצוב המקצועי של מאסטר אוהד ---
+@bot.command(name="help_call", aliases=["h"])
+async def help_call_custom(ctx):
+    guild = ctx.guild
+    
+    # יצירת אמבד יוקרתי ומעוצב
+    embed = discord.Embed(
+        title=f"⚠️ מרכז התמיכה והעזרה - {guild.name} ⚠️",
+        description=(
+            "שלום חברים! נתקלתם בבעיה, שגיאה, או שאתם זקוקים לעזרת צוות הניהול המורחב?\n"
+            "הגעתם למקום הנכון. אנו זמינים עבורכם לכל פנייה, שאלה או בקשת עזרה בשרת.\n\n"
+            "**💡 דגשים חשובים לפני פתיחת פנייה:**\n"
+            "• נא לשמור על שפה מכבדת מול חברי הסטאף.\n"
+            "• אין לפתוח טיקטים סתם ללא סיבה מוצדקת (הדבר עלול לגרור ענישה).\n"
+            "• צוות השרת עושה את מירב המאמצים לענות במהירות האפשרית."
+        ),
+        color=discord.Color.from_rgb(47, 49, 54) # צבע כהה ומקצועי כמו של דיסקורד
+    )
+    
+    # הוספת תמונת השרת (לוגו) בצד האמבד
+    if guild.icon:
+        embed.set_thumbnail(url=guild.icon.url)
+        
+    # שדות מידע מעוצבים
+    embed.add_field(name="⏰ שעות פעילות הטיקטים", value="```24/7 - בהתאם לזמינות הצוות```", inline=False)
+    embed.add_field(name="🛡️ בורר פניות אוטומטי", value="לאחר לחיצה על הכפתור, ייפתח לכם חדר אישי ומאובטח.", inline=False)
+    
+    # שורת תחתית (Footer) עם השם שלך/שם השרת
+    embed.set_footer(text=f"MasterOhad Network • כל הזכויות שמורות", icon_url=guild.icon.url if guild.icon else None)
+    
+    # חיבור כפתור הטיקט הקיים שלך מהקוד (TicketView) בשביל לפתוח חדר
+    try:
+        view = TicketView()
+    except NameError:
+        # פתרון גיבוי במידה והקלאס לא מוגדר תחת השם הזה
+        view = None
+        
+    if view:
+        await ctx.send(embed=embed, view=view)
+    else:
+        await ctx.send(embed=embed)
+        await ctx.send("⚠️ שגיאה זמנית: מערכת הכפתורים של הטיקטים (TicketView) לא נמצאה בקוד.")
 
 keep_alive()
 
