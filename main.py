@@ -331,28 +331,66 @@ class StaffButtons(discord.ui.View):
             embed.color = discord.Color.green()
             embed.add_field(name="סטטוס:", value=f"אושר על ידי {interaction.user.mention} והרול הוענק.", inline=False)
             
-            # מנטרל את הכפתורים אחרי לחיצה
-            for child in self.children:
-                child.disabled = True
-                
-            await interaction.message.edit(embed=embed, view=self)
-            await interaction.response.send_message(f"🎉 הרול הוענק בהצלחה ל-{member.mention}!", ephemeral=True)
-            try:
-                await member.send(f"✨ שמחים לעדכן שבקשתך אושרה והוענק לך הרול **Staff Friend** בשרת {guild.name}!")
-            except:
-                pass
-        else:
-            await interaction.response.send_message("❌ המשתמש כבר לא נמצא בשרת ולכן לא ניתן להעניק לו רול.", ephemeral=True)
+            
 
-    @discord.ui.button(label="Deny | דחייה", style=discord.ButtonStyle.danger, custom_id="deny_staff")
-    async def deny_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
+ # --- מערכת כפתורי אישור/דחייה לפקודת /sf ---
+class SFApprovalButtons(discord.ui.View):
+    def __init__(self, target_member_id: int):
+        super().__init__(timeout=None)
+        self.target_member_id = target_member_id
+
+    @discord.ui.button(label="Accept | אשר", style=discord.ButtonStyle.success, custom_id="sf_accept_btn")
+    async def accept_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # בדיקה שללחוץ יש הרשאה לנהל רולים
         if not interaction.user.guild_permissions.manage_roles:
-            await interaction.response.send_message("❌ אין לך הרשאה לדחות בקשות!", ephemeral=True)
+            await interaction.response.send_message("❌ אין לך הרשאה לאשר את הרולים האלו!", ephemeral=True)
             return
 
         guild = interaction.guild
-        member = guild.get_member(self.applicant_id)
+        member = guild.get_member(self.target_member_id)
         
+        # שליפת הרולים מהשרת (סטאף פרנד לפי ID וממבר לפי שם)
+        staff_friend_role = guild.get_role(1493335218004820180)
+        member_role = discord.utils.get(guild.roles, name="Member")
+        
+        if not staff_friend_role or not member_role:
+            await interaction.response.send_message("❌ שגיאה: אחד מהרולים ('Member' או ID של Staff Friend) לא נמצא בשרת.", ephemeral=True)
+            return
+
+        if member:
+            try:
+                # הענקת שני הרולים ביחד
+                await member.add_roles(member_role, staff_friend_role)
+                
+                # עדכון ההודעה בערוץ שהבקשה אושרה
+                embed = interaction.message.embeds[0]
+                embed.title = "✅ החברות בצוות אושרה!"
+                embed.color = discord.Color.green()
+                embed.add_field(name="סטטוס:", value=f"אושר בהצלחה על ידי {interaction.user.mention}. הרולים הוענקו!", inline=False)
+                
+                # נטרול הכפתורים שלא יהיה כפל לחיצות
+                for child in self.children:
+                    child.disabled = True
+                    
+                await interaction.message.edit(embed=embed, view=self)
+                await interaction.response.send_message(f"🎉 הרולים הוענקו בהצלחה ל-{member.mention}!", ephemeral=True)
+                
+                # שליחת הודעה פרטית למשתמש
+                try:
+                    await member.send(f"✨ שמחים לעדכן שאושרת! קיבלת את הרולים **Member** ו-**Staff Friend** בשרת {guild.name}!")
+                except:
+                    pass
+            except discord.Forbidden:
+                await interaction.response.send_message("❌ שגיאה: לבוט אין הרשאה לשים את הרולים. גרור את הרול שלו לראש הרשימה!", ephemeral=True)
+        else:
+            await interaction.response.send_message("❌ המשתמש כבר לא נמצא בשרת.", ephemeral=True)
+
+    @discord.ui.button(label="Deny | דחה", style=discord.ButtonStyle.danger, custom_id="sf_deny_btn")
+    async def deny_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not interaction.user.guild_permissions.manage_roles:
+            await interaction.response.send_message("❌ אין לך הרשאה לדחות את הבקשה!", ephemeral=True)
+            return
+
         embed = interaction.message.embeds[0]
         embed.title = "❌ הבקשה נדחתה"
         embed.color = discord.Color.red()
@@ -362,22 +400,35 @@ class StaffButtons(discord.ui.View):
             child.disabled = True
             
         await interaction.message.edit(embed=embed, view=self)
-        await interaction.response.send_message("הבקשה נדחתה.", ephemeral=True)
-        if member:
-            try:
-                await member.send(f"שלום, בקשתך ל-Staff Friend בשרת {guild.name} נבדקה ונדחתה על ידי הנהלת השרת.")
-            except:
-                pass
-# --- פקודת סלאש למתן רול ממבר וסטאף פרנד לפי ID ---
-@bot.tree.command(name="sf", description="הענקת רול Member ו-Staff Friend למשתמש")
-@discord.app_commands.describe(member="המשתמש שברצונך להעניק לו את הרולים")
+        await interaction.response.send_message("הבקשה נדחתה בהצלחה.", ephemeral=True)
+
+# --- פקודת הסלאש המקורית ששולחת את הכפתורים ---
+@bot.tree.command(name="sf", description="שליחת בקשת אישור לרולים Member ו-Staff Friend")
+@discord.app_commands.describe(member="המשתמש שברצונך להעניק לו את הרולים לאחר אישור")
 async def sf_command(interaction: discord.Interaction, member: discord.Member):
-    # בדיקה האם ללחוץ יש הרשאה לנהל רולים בשרת
     if not interaction.user.guild_permissions.manage_roles:
         await interaction.response.send_message("❌ פקודה זו מיועדת לצוות הניהול בלבד!", ephemeral=True)
         return
 
     guild = interaction.guild
+    
+    # יצירת ההודעה המעוצבת עם הכפתורים
+    embed = discord.Embed(
+        title="❓ בקשת אישור דרגה חדשה",
+        description=f"האם להעניק למשתמש {member.mention} את הרולים שלו?",
+        color=discord.Color.orange()
+    )
+    if guild.icon:
+        embed.set_thumbnail(url=guild.icon.url)
+        
+    embed.add_field(name="הרולים המיועדים:", value="• Member\n• Staff Friend", inline=False)
+    embed.add_field(name="נשלח על ידי:", value=interaction.user.mention, inline=False)
+    embed.set_footer(text=f"User ID: {member.id} • {guild.name}")
+    
+    # הצמדת הכפתורים להודעה
+    view = SFApprovalButtons(target_member_id=member.id)
+    await interaction.response.send_message(embed=embed, view=view)
+
     
     # שליפת הרולים מהשרת (סטאף פרנד לפי ID וממבר לפי שם)
     staff_friend_role = guild.get_role(1493335218004820180)
