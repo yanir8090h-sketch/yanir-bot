@@ -136,7 +136,7 @@ async def setup_shop(ctx, target_channel: discord.TextChannel = None):
     await channel_to_send.send(embed=embed, view=ShopView())
 
 
-@bot.command()
+
 @commands.has_permissions(administrator=True)
 async def setup_verify(ctx, target_channel: discord.TextChannel = None):
     try: await ctx.message.delete()
