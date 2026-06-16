@@ -23,7 +23,7 @@ class HelpButtonView(discord.ui.View):
         await interaction.followup.send(f"\u2694\ufe0f {interaction.user.mention} \u05dc\u05e7\u05d7 \u05d0\u05ea \u05d4\u05e7\u05e5 \u05dc\u05d8\u05d9\u05e4\u05d5\u05dc\u05df!", ephemeral=False)
 
 
-הגדרת הרשאות הבוט לקריאת הודעות ותוכן
+# חנות של הרמות ודברים חנות
 intents = discord.Intents.all()
 intents.message_content = True
 
