@@ -285,6 +285,38 @@ def run(): app.run(host='0.0.0.0', port=8080)
 def keep_alive():
     t = Thread(target=run)
     t.start()
+@bot.command(name="staff")
+async def staff_shortcut(ctx, *, message: str = None):
+    if message is None:
+        await ctx.send("❌ נא לכתוב את הפירוט של הבקשה. דוגמה: `!staff אני רוצה להגיש מועמדות לצוות`")
+        return
+        
+    # האיידי של ערוץ staff-friends מהשרת שלך
+    STAFF_CHANNEL_ID = 1251649980838875156 
+    channel = bot.get_channel(STAFF_CHANNEL_ID)
+    
+    if channel:
+        # יצירת ההודעה המעוצבת
+        embed = discord.Embed(
+            title="✨ בקשת Staff Friend חדשה ✨", 
+            description=f"התקבלה בקשה חדשה מחבר שרת המעוניין להצטרף!",
+            color=discord.Color.purple()
+        )
+        
+        # הוספת תמונת הלוגו של השרת בצד ההודעה
+        if ctx.guild.icon:
+            embed.set_thumbnail(url=ctx.guild.icon.url)
+            
+        # תוכן הבקשה
+        embed.add_field(name="👤 המשתמש המבקש:", value=ctx.author.mention, inline=False)
+        embed.add_field(name="📝 תוכן הבקשה:", value=f"```{message}```", inline=False)
+        embed.set_footer(text=f"User ID: {ctx.author.id} • MasterOhad Server")
+        
+        # שליחת ההודעה לערוץ עם כפתורי אישור ודחייה (אם קיימים אצלך בקוד)
+        await channel.send(embed=embed)
+        await ctx.send("✅ בקשתך ל-Staff Friend נשלחה בהצלחה לערוץ הניהול!")
+    else:
+        await ctx.send("❌ שגיאה: ערוץ staff-friends לא נמצא. ודא שהאיידי בקוד תקין.")
 
 keep_alive()
 
