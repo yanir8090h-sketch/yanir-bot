@@ -212,14 +212,7 @@ class TicketView(discord.ui.View):
 # פקודות הניהול המעוצבות לעבודה מכל ערוץ
 # ==========================================
 
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def setup_shop(ctx, target_channel: discord.TextChannel = None):
-    """פקודה להצבת החנות - מריצים כך: setup_shop #ערוץ_החנות!"""
-    try: await ctx.message.delete()
-    except discord.NotFound: pass
-    channel_to_send = target_channel if target_channel else ctx.channel
-    
+ 
     guild = ctx.guild
     embed = discord.Embed(
         title=f"🎁 חנות ה-XP הרשמית - {guild.name}",
