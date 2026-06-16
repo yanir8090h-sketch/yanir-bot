@@ -146,8 +146,8 @@ async def myshop(ctx, target_channel: discord.TextChannel = None):
 # =================================================================
 # 📩 פקודת הקמת מערכת האימות (Verify)
 # =================================================================
-@bot.command(name="setup_verify")
-@commands.has_permissions(administrator=True)
+@bot.command(name="myverify")
+async def myverify_cmd(ctx, target_channel: discord.TextChannel = None):
 async def setup_verify_cmd(ctx, target_channel: discord.TextChannel = None):
     channel_to_send = target_channel if target_channel else ctx.channel
     guild = ctx.guild
@@ -161,7 +161,7 @@ async def setup_verify_cmd(ctx, target_channel: discord.TextChannel = None):
         embed.set_thumbnail(url=guild.icon.url)
         
     try:
-        await channel_to_send.send(embed=embed, view=VerifyView())
+     await channel_to_send.send(embed=embed, view=View())
     except NameError:
         await channel_to_send.send(embed=embed)
 
