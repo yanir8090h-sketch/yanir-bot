@@ -147,8 +147,8 @@ async def myshop(ctx, target_channel: discord.TextChannel = None):
 # 📩 פקודת הקמת מערכת האימות (Verify)
 # =================================================================
 @bot.command(name="myverify")
+@commands.has_permissions(administrator=True)
 async def myverify_cmd(ctx, target_channel: discord.TextChannel = None):
-async def setup_verify_cmd(ctx, target_channel: discord.TextChannel = None):
     channel_to_send = target_channel if target_channel else ctx.channel
     guild = ctx.guild
     
