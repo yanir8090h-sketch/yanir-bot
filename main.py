@@ -291,32 +291,46 @@ async def staff_shortcut(ctx, *, message: str = None):
         await ctx.send("❌ נא לכתוב את הפירוט של הבקשה. דוגמה: `!staff אני רוצה להגיש מועמדות לצוות`")
         return
         
-    # האיידי של ערוץ staff-friends מהשרת שלך
-    STAFF_CHANNEL_ID = 1492894356091179008
+    # --- קיצורים ופקודות חדשות ---
+
+@bot.command(name="h")
+async def h_shortcut(ctx):
+    await help_call(ctx)
+
+@bot.command(name="xg")
+async def xg_shortcut(ctx):
+    await xp_games(ctx)
+
+@bot.command(name="staff")
+async def staff_shortcut(ctx, *, message: str = None):
+    if message is None:
+        await ctx.send("❌ נא לכתוב את הפירוט של הבקשה. דוגמה: `!staff אני רוצה להגיש מועמדות לצוות`")
+        return
+        
+    # האיידי של ערוץ staff-friends (מומלץ לוודא שהמספר מדויק)
+    STAFF_CHANNEL_ID = 1492894356091179008 
     channel = bot.get_channel(STAFF_CHANNEL_ID)
     
     if channel:
-        # יצירת ההודעה המעוצבת
         embed = discord.Embed(
             title="✨ בקשת Staff Friend חדשה ✨", 
             description=f"התקבלה בקשה חדשה מחבר שרת המעוניין להצטרף!",
             color=discord.Color.purple()
         )
         
-        # הוספת תמונת הלוגו של השרת בצד ההודעה
+        # מוסיף אוטומטית את תמונת הלוגו של השרת שלך
         if ctx.guild.icon:
             embed.set_thumbnail(url=ctx.guild.icon.url)
             
-        # תוכן הבקשה
         embed.add_field(name="👤 המשתמש המבקש:", value=ctx.author.mention, inline=False)
         embed.add_field(name="📝 תוכן הבקשה:", value=f"```{message}```", inline=False)
         embed.set_footer(text=f"User ID: {ctx.author.id} • MasterOhad Server")
         
-        # שליחת ההודעה לערוץ עם כפתורי אישור ודחייה (אם קיימים אצלך בקוד)
         await channel.send(embed=embed)
         await ctx.send("✅ בקשתך ל-Staff Friend נשלחה בהצלחה לערוץ הניהול!")
     else:
-        await ctx.send("❌ שגיאה: ערוץ staff-friends לא נמצא. ודא שהאיידי בקוד תקין.")
+        await ctx.send("❌ שגיאה: ערוץ staff-friends לא נמצא בקוד.")
+
 
 keep_alive()
 
