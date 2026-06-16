@@ -120,7 +120,7 @@ async def xp(ctx, member: discord.Member = None):
 # =================================================================
 # 🛒 פקודת הקמת חנות ה-XP
 # =================================================================
-@bot.command(name="setup_shop")
+async def myshop(ctx, target_channel: discord.TextChannel = None):
 @commands.has_permissions(administrator=True)
 async def setup_shop_cmd(ctx, target_channel: discord.TextChannel = None):
     channel_to_send = target_channel if target_channel else ctx.channel
