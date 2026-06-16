@@ -117,58 +117,86 @@ async def xp(ctx, member: discord.Member = None):
 
 
 
-# ==========================================
-# פקודות הניהול המעוצבות לעבודה מכל ערוץ
-# ==========================================
-@bot.command()
+# =================================================================
+# 🛒 פקודת הקמת חנות ה-XP
+# =================================================================
+@bot.command(name="setup_shop")
 @commands.has_permissions(administrator=True)
-async def setup_shop(ctx, target_channel: discord.TextChannel = None):
-  
-    except discord.NotFound: pass
+async def setup_shop_cmd(ctx, target_channel: discord.TextChannel = None):
     channel_to_send = target_channel if target_channel else ctx.channel
     guild = ctx.guild
+    
     embed = discord.Embed(
-        title=f"🎁 חנות ה-XP הרשמית - {guild.name}",
-        description=f"🛍️ **חנות הרולים של השרת**\n\n👑 <@&{ROLE_1_ID}> — 30,000 XP\n"
-                    f"💎 <@&{ROLE_2_ID}> — 20,000 XP\n"
-                    f"🔥 <@&{ROLE_3_ID}> — 10,000 XP\n"
-                    f"⚡ <@&{ROLE_4_ID}> — 5,000 XP\n"
-                    f"✨ <@&{ROLE_5_ID}> — 2,500 XP",
-        color=discord.Color.from_rgb(142, 201, 57)
+        title=f"🛒 חנות ה-XP של השרת - {guild.name}",
+        description=(
+            "ברוכים הבאים לחנות! כאן תוכלו לבזבז את נקודות ה-XP שלכם על רולים שווים:\n\n"
+            "• **רול 10K XP** ➔ עלות: 10,000 XP\n"
+            "• **רול 18K XP** ➔ עלות: 18,000 XP\n"
+            "• **רול 28K XP** ➔ עלות: 28,000 XP"
+        ),
+        color=discord.Color.from_rgb(142, 203, 57)
     )
-    if guild.icon: embed.set_image(url=guild.icon.url)
-   await channel_to_send.send(embed=embed, view=ShopDropdownView())
-
-
-
-
-@commands.has_permissions(administrator=True)
-async def setup_verify(ctx, target_channel: discord.TextChannel = None):
-    
-    except discord.NotFound: pass
-    channel_to_send = target_channel if target_channel else ctx.channel
-    embed = discord.Embed(title="🔒 אימות חשבון - Verification", description="ברוך הבא לשרת!\nכדי לקבל גישה לשאר הערוצים, לחץ על הכפתור הירוק למטה.", color=discord.Color.green())
-    await channel_to_send.send(embed=embed)
-    await channel_to_send.send(embed=embed, view=VerifyView())
-
-# ==========================================
-# הפעלת ה-Views הקבועים ואירועים קריטיים
-# ==========================================
-@bot.event
-async def on_ready():
-    # סנכרון פקודות הסלאש (חובה בשביל /sf)
-    await bot.tree.sync()
-    
-    # הפעלה בטוחה של ה-Views ללא קריסות
-    try:
-        bot.add_view(TicketView())
-    except:
-        pass
+    if guild.icon:
+        embed.set_thumbnail(url=guild.icon.url)
         
     try:
-        bot.add_view(StaffFriendReview())
-    except:
-        pass
+        await channel_to_send.send(embed=embed, view=ShopDropdownView())
+    except NameError:
+        await channel_to_send.send(embed=embed, view=View())
+
+# =================================================================
+# 📩 פקודת הקמת מערכת האימות (Verify)
+# =================================================================
+@bot.command(name="setup_verify")
+@commands.has_permissions(administrator=True)
+async def setup_verify_cmd(ctx, target_channel: discord.TextChannel = None):
+    channel_to_send = target_channel if target_channel else ctx.channel
+    guild = ctx.guild
+    
+    embed = discord.Embed(
+        title="🛡️ מערכת אימות ואישור כניסה 🛡️",
+        description="ברוכים הבאים! כדי לקבל גישה לשאר ערוצי השרת, אנא לחצו על כפתור האימות למטה.",
+        color=discord.Color.green()
+    )
+    if guild.icon:
+        embed.set_thumbnail(url=guild.icon.url)
+        
+    try:
+        await channel_to_send.send(embed=embed, view=VerifyView())
+    except NameError:
+        await channel_to_send.send(embed=embed)
+
+# =================================================================
+# ⚠️ פקודת עזרה ותמיכה (!h) המעוצבת של מאסטר אוהד
+# =================================================================
+@bot.command(name="help_call", aliases=["h"])
+async def help_call_custom(ctx):
+    guild = ctx.guild
+    
+    embed = discord.Embed(
+        title=f"⚠️ מרכז התמיכה והעזרה - {guild.name} ⚠️",
+        description=(
+            "שלום חברים! נתקלתם בבעיה, שגיאה, או שאתם זקוקים לעזרת צוות הניהול המורחב?\n"
+            "הגעתם למקום הנכון. אנו זמינים עבורכם לכל פנייה, שאלה או בקשת עזרה בשרת.\n\n"
+            "**💡 דגשים חשובים לפני פתיחת פנייה:**\n"
+            "• נא לשמור על שפה מכבדת מול חברי הסטאף.\n"
+            "• אין לפתוח טיקטים סתם ללא סיבה מוצדקת.\n"
+            "• צוות השרת עושה את מירב המאמצים לענות במהירות האפשרית."
+        ),
+        color=discord.Color.from_rgb(47, 49, 54)
+    )
+    if guild.icon:
+        embed.set_thumbnail(url=guild.icon.url)
+        
+    embed.add_field(name="⏰ שעות פעילות הטיקטים", value="```24/7 - בהתאם לזמינות הצוות```", inline=False)
+    embed.add_field(name="🛡️ בורר פניות אוטומטי", value="לאחר לחיצה על הכפתור, ייפתח לכם חדר אישי ומאובטח.", inline=False)
+    embed.set_footer(text=f"MasterOhad Network • כל הזכויות שמורות")
+    
+    try:
+        await ctx.send(embed=embed, view=TicketView())
+    except NameError:
+        await ctx.send(embed=embed)
+
         
     print(f' 🟢 {bot.user.name} is online and fully synced!')
 
