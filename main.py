@@ -123,7 +123,7 @@ async def xp(ctx, member: discord.Member = None):
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def setup_shop(ctx, target_channel: discord.TextChannel = None):
-    try: await ctx.message.delete()
+  
     except discord.NotFound: pass
     channel_to_send = target_channel if target_channel else ctx.channel
     guild = ctx.guild
@@ -144,7 +144,7 @@ async def setup_shop(ctx, target_channel: discord.TextChannel = None):
 
 @commands.has_permissions(administrator=True)
 async def setup_verify(ctx, target_channel: discord.TextChannel = None):
-    try: await ctx.message.delete()
+    
     except discord.NotFound: pass
     channel_to_send = target_channel if target_channel else ctx.channel
     embed = discord.Embed(title="🔒 אימות חשבון - Verification", description="ברוך הבא לשרת!\nכדי לקבל גישה לשאר הערוצים, לחץ על הכפתור הירוק למטה.", color=discord.Color.green())
