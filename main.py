@@ -123,7 +123,6 @@ async def xp(ctx, member: discord.Member = None):
 @bot.command(name="myshop")
 @commands.has_permissions(administrator=True)
 async def myshop(ctx, target_channel: discord.TextChannel = None):
-   channel_to_send = target_channel if target_channel else ctx.channel
     guild = ctx.guild
     
     embed = discord.Embed(
