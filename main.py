@@ -258,14 +258,18 @@ async def setup_verify(ctx, target_channel: discord.TextChannel = None):
 # הפעלת ה-Views הקבועים ואירועים קריטיים
 # ==========================================
 @bot.event
+@bot.event
 async def on_ready():
-    # רישום מאוחד ומלא של כל ה-Views כדי שיעבדו קבוע בשרת לתמיד!
+    # סנכרון פקודות הסלאש מול שרתי דיסקורד (חובה בשביל /sf)
+    await bot.tree.sync()
+    
     # bot.add_view(ShopDropdownView())
     bot.add_view(TicketView())
-    bot.add_view(TicketDropdownView())
+    # bot.add_view(TicketDropdownView())
     bot.add_view(VerifyView())
-    bot.add_view(StaffFriendReview(0))
-    print(f'🤖 הבוט מחובר בהצלחה ומפעיל את כל הכפתורים כאל: {bot.user.name}')
+    bot.add_view(StaffFriendReview())
+    print(f' {bot.user.name}')
+
 
 @bot.event
 async def on_message(message):
