@@ -137,7 +137,8 @@ async def setup_shop(ctx, target_channel: discord.TextChannel = None):
         color=discord.Color.from_rgb(142, 201, 57)
     )
     if guild.icon: embed.set_image(url=guild.icon.url)
-    await channel_to_send.send(embed=embed, view=ShopView())
+   await channel_to_send.send(embed=embed, view=ShopDropdownView())
+
 
 
 
@@ -147,7 +148,7 @@ async def setup_verify(ctx, target_channel: discord.TextChannel = None):
     except discord.NotFound: pass
     channel_to_send = target_channel if target_channel else ctx.channel
     embed = discord.Embed(title="🔒 אימות חשבון - Verification", description="ברוך הבא לשרת!\nכדי לקבל גישה לשאר הערוצים, לחץ על הכפתור הירוק למטה.", color=discord.Color.green())
-    if ctx.guild.icon: embed.set_thumbnail(url=ctx.guild.icon.url)
+    await channel_to_send.send(embed=embed)
     await channel_to_send.send(embed=embed, view=VerifyView())
 
 # ==========================================
