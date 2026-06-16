@@ -115,22 +115,7 @@ async def xp(ctx, member: discord.Member = None):
     if guild.icon: embed.set_image(url=guild.icon.url)
     await ctx.send(embed=embed)
 
-# ==========================================
-# פקודת העזרה המעוצבת המוכרת (!h) החדשה עם הבאנר הסגול
-# ==========================================
-@bot.command(name="h")
-async def help_ticket_info(ctx, *, reason: str = "לא צוינה סיבה"):
-    try: await ctx.message.delete()
-    except discord.NotFound: pass
-    guild = ctx.guild
-    embed = discord.Embed(title="⚙️ בקשת עזרה", color=discord.Color.from_rgb(47, 49, 54))
-    embed.add_field(name="👥 צוות מתוייג:", value=f"<@&{STAFF_ROLE_ID}>", inline=True)
-    embed.add_field(name="📝 סיבה:", value=f"`{reason}`", inline=True)
-    embed.add_field(name="📅 זמן פתיחה:", value=discord.utils.format_dt(ctx.message.created_at), inline=False)
-    embed.add_field(name="🌐 וייס / מיקום:", value="🔈 `(🔒) Private Voice`", inline=False)
-    embed.add_field(name="🔒 נלקח לטיפול על ידי:", value=f"{ctx.author.mention} · <@&{ROLE_3_ID}>", inline=False)
-    embed.set_image(url="https://discordapp.net")
-    await ctx.send(embed=embed)
+
 
 # ==========================================
 # פקודות הניהול המעוצבות לעבודה מכל ערוץ
