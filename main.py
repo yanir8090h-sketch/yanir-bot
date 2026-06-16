@@ -155,12 +155,22 @@ async def setup_verify(ctx, target_channel: discord.TextChannel = None):
 # ==========================================
 @bot.event
 async def on_ready():
-    bot.add_view(ShopView())
-    bot.add_view(TicketView())
-    bot.add_view(TicketDropdownView())
-    bot.add_view(VerifyView())
-    bot.add_view(StaffFriendReview(0))
-    print(f'🤖 הבוט מחובר בהצלחה כאל: {bot.user.name}')
+    # סנכרון פקודות הסלאש (חובה בשביל /sf)
+    await bot.tree.sync()
+    
+    # הפעלה בטוחה של ה-Views ללא קריסות
+    try:
+        bot.add_view(TicketView())
+    except:
+        pass
+        
+    try:
+        bot.add_view(StaffFriendReview())
+    except:
+        pass
+        
+    print(f' 🟢 {bot.user.name} is online and fully synced!')
+
 
 @bot.event
 async def on_message(message):
