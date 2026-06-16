@@ -260,7 +260,7 @@ async def setup_verify(ctx, target_channel: discord.TextChannel = None):
 @bot.event
 async def on_ready():
     # רישום מאוחד ומלא של כל ה-Views כדי שיעבדו קבוע בשרת לתמיד!
-    bot.add_view(ShopDropdownView())
+    # bot.add_view(ShopDropdownView())
     bot.add_view(TicketView())
     bot.add_view(TicketDropdownView())
     bot.add_view(VerifyView())
