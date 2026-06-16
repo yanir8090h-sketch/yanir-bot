@@ -174,7 +174,8 @@ class XpShopDropdownView(discord.ui.View):
 # ==========================================
 @bot.command()
 
-token = os.environ.get("TOKEN")
+token = os.getenv("TOKEN")
 bot.run(token)
+
 
 
