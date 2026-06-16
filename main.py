@@ -212,7 +212,12 @@ class TicketView(discord.ui.View):
 # פקודות הניהול המעוצבות לעבודה מכל ערוץ
 # ==========================================
 
- 
+ embed = discord.Embed(...)
+title = ...
+description = ...
+# וכל שאר השורות שקשורות אליו עד השורה הזו שמופיעה בשגיאה:
+await channel_to_send.send(embed=embed, view=ShopView())
+
     guild = ctx.guild
     embed = discord.Embed(
         title=f"🎁 חנות ה-XP הרשמית - {guild.name}",
