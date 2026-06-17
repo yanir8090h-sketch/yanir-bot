@@ -4,68 +4,61 @@ from flask import Flask
 from threading import Thread
 import asyncio
 class HelpButtonView(discord.ui.View):
+   class HelpButtonView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-  
     @discord.ui.button(label="עזרה", style=discord.ButtonStyle.success, custom_id="take_help_call")
     async def take_call(self, interaction: discord.Interaction, button: discord.ui.Button):
         embed = interaction.message.embeds
-        
         embed.set_field_at(2, name="טופל על ידי", value=f"{interaction.user.mention}", inline=False)
         embed.color = discord.Color.green()
-        
         button.disabled = True
         button.label = "בטיפול"
         button.style = discord.ButtonStyle.secondary
-        
         await interaction.response.edit_message(embed=embed, view=self)
         await interaction.followup.send(f"{interaction.user.mention} קיבל את הקריאה!", ephemeral=False)
 
-
-# חנות של הרמות ודברים חנות
+# הגדרות השרת והאינטנטים
 intents = discord.Intents.all()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 bot.remove_command('help')
-# ==========================================
-# הגדרות ומשתנים קבועים של השרת שלך
-# ==========================================
-ROLE_1_ID = 1484226514051665930  # רול 1 - 30,000
-ROLE_2_ID = 1491063689502003360 # רול 2 - 20,000
-ROLE_3_ID = 1490894966262726687# שלישי - 10,000
-ROLE_4_ID = 1490894895618195577 # רביעי - 5,000
-ROLE_5_ID = 1490894817373196388 # חמישי - 2,500
 
-STAFF_ROLE_ID = 1488259168593772554  # ID של תפקיד הצוות לניהול
-STAFF_FRIENDS_LOG_CHANNEL_ID = 1499531407859388496  # ערוץ לוגים לבקשות סגל
+# הגדרת משתנים ורולים
+ROLE_1_ID = 1434226514051665920 
+ROLE_2_ID = 1434236285220202100 
+ROLE_3_ID = 1434023456252726607 
+ROLE_4_ID = 1434023485618195577 
+ROLE_5_ID = 1434034812251396305 
 
-# ==========================================
-# מערכת Staff Friend מעוצבת אחד לאחד כמו בתמונה
-# ==========================================
+STAFF_ROLE_ID = 1484235285220202100 
+STAFF_FRIENDS_LOG_CHANNEL_ID = 1434311487832883406 
+
 class StaffFriendReview(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
 
-
-    @discord.ui.button(label="Accept 🟢", style=discord.ButtonStyle.green, custom_id="staff_friend_accept_persistent")
+    @discord.ui.button(label="Accept ✅", style=discord.ButtonStyle.green, custom_id="staff_friend_accept_persistent")
     async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
         guild = interaction.guild
         member = guild.get_member(self.applicant_id)
         role = discord.utils.get(guild.roles, name="Staff Friend")
-        
         if not role:
             role = await guild.create_role(name="Staff Friend")
-
         if member:
             await member.add_roles(role)
             embed = interaction.message.embeds
             embed.color = discord.Color.green()
-            embed.set_field_at(0, name="🟢 אושר:", value="🟢", inline=True)
-            embed.set_field_at(1, name="🛡️ אושר על ידי:", value=interaction.user.mention, inline=True)
-            embed.set_field_at(2, name="⏰ זמן טיפול:", value=discord.utils.format_dt(discord.utils.utcnow()), inline=False)
+            embed.set_field_at(0, name="סטטוס:", value="אושר ✅", inline=True)
+            embed.set_field_at(1, name="מאשר:", value=interaction.user.mention, inline=True)
+            embed.set_field_at(2, name="זמן אישור:", value=discord.utils.format_dt(discord.utils.utcnow()), inline=False)
             await interaction.message.edit(embed=embed, view=None)
-            await interaction.response.send_message(f"✅ אישרת את הבקשה של {member.mention} והרול הוענק!", ephemeral=True)
+            await interaction.response.send_message(f"המשתמש {member.mention} פתח חבר צוות!", ephemeral=True)
         else:
+            await interaction.response.send_message("המשתמש לא נמצא בשרת.", ephemeral=True)
+
             await interaction.response.send_message("❌ המשתמש כבר לא נמצא בשרת.", ephemeral=True)
 
     @discord.ui.button(label="Deny ❌", style=discord.ButtonStyle.red, custom_id="staff_friend_deny_persistent")
