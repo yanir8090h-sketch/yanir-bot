@@ -194,7 +194,7 @@ async def help_call_custom(ctx):
       #await ctx.send(embed=embed, view=TicketView())
    #except NameError:
       #    await ctx.send(embed=embed)
-         await ctx.send(embed=embed)   
+   
     #print(f' {bot.user.name} is online and fully synced!')
     await ctx.send(embed=embed)
 @bot.event
