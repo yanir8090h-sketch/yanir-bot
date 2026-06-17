@@ -190,15 +190,13 @@ async def help_call_custom(ctx):
     embed.add_field(name="🛡️ בורר פניות אוטומטי", value="לאחר לחיצה על הכפתור, ייפתח לכם חדר אישי ומאובטח.", inline=False)
     embed.set_footer(text=f"MasterOhad Network • כל הזכויות שמורות")
     
-    try:
-        await ctx.send(embed=embed, view=TicketView())
-    except NameError:
-        await ctx.send(embed=embed)
-
-        
-    print(f' 🟢 {bot.user.name} is online and fully synced!')
-
-
+    #try:
+      #await ctx.send(embed=embed, view=TicketView())
+   #except NameError:
+      #    await ctx.send(embed=embed)
+         await ctx.send(embed=embed)   
+    #print(f' {bot.user.name} is online and fully synced!')
+    await ctx.send(embed=embed)
 @bot.event
 async def on_message(message):
     if message.author.bot: return
