@@ -10,7 +10,7 @@ class HelpButtonView(discord.ui.View):
 
     
         @discord.ui.button(label="טקסט כפתור", style=discord.ButtonStyle.success, custom_id="take_help_call")
-        async def take_call(self, interaction: discord.Interaction, button: discord.ui.Button):
+         async def take_call(self, interaction: discord.Interaction, button: discord.ui.Button):
         embed = interaction.message.embeds[0]
         
         embed.set_field_at(2, name="\u05e0\u05dc\u05e7\u05d7 \u05e2\u05dc \u05d9\u05d3\u05d9 \u2694\ufe0f", value=f"{interaction.user.mention}", inline=False)
