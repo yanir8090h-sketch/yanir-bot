@@ -101,7 +101,7 @@ async def apply_staff_friend(ctx):
 # ==========================================
 # פקודת !xp בעיצוב כרטיס שחור ומיושר
 # ==========================================
-@bot.command()
+#@bot.command()
 #async def apply_staff_friend2(ctx):2
    #except discord.NotFound: pass
     #if member is None: member = ctx.author
