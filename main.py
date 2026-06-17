@@ -84,8 +84,8 @@ async def apply_staff_friend(ctx):
     if not log_channel:
         await ctx.send("❌ ערוץ הלוגים של המערכת לא הוגדר כראוי בקוד.", ephemeral=True)
         return
-    try: await ctx.message.delete()
-    except discord.NotFound: pass
+    #try: await ctx.message.delete()
+    #except discord.NotFound: pass
 
     embed = discord.Embed(title="⚙️ בקשת Staff Friend", color=discord.Color.from_rgb(47, 49, 54))
     embed.add_field(name="👤 איש צוות:", value=ctx.author.mention, inline=True)
@@ -102,8 +102,8 @@ async def apply_staff_friend(ctx):
 # פקודת !xp בעיצוב כרטיס שחור ומיושר
 # ==========================================
 @bot.command()
-async def apply_staff_friend2(ctx):2
-    except discord.NotFound: pass
+#async def apply_staff_friend2(ctx):2
+   #except discord.NotFound: pass
     if member is None: member = ctx.author
     guild = ctx.guild
     embed = discord.Embed(title="📊 מידע XP והתקדמות", color=discord.Color.from_rgb(47, 49, 54))
