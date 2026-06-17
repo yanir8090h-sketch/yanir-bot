@@ -8,20 +8,20 @@ class HelpButtonView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    
-        @discord.ui.button(label="טקסט כפתור", style=discord.ButtonStyle.success, custom_id="take_help_call")
-         async def take_call(self, interaction: discord.Interaction, button: discord.ui.Button):
+    @discord.ui.button(label="עזרה", style=discord.ButtonStyle.success, custom_id="take_help_call")
+    async def take_call(self, interaction: discord.Interaction, button: discord.ui.Button):
         embed = interaction.message.embeds[0]
         
-        embed.set_field_at(2, name="\u05e0\u05dc\u05e7\u05d7 \u05e2\u05dc \u05d9\u05d3\u05d9 \u2694\ufe0f", value=f"{interaction.user.mention}", inline=False)
+        embed.set_field_at(2, name="טופל על ידי", value=f"{interaction.user.mention}", inline=False)
         embed.color = discord.Color.green()
         
         button.disabled = True
-        button.label = "\u05d1\u05d8\u05d9\u05e4\u05d5\u05dc \ud83d\udee0\ufe0f"
+        button.label = "בטיפול"
         button.style = discord.ButtonStyle.secondary
-
+        
         await interaction.response.edit_message(embed=embed, view=self)
-        await interaction.followup.send(f"\u2694\ufe0f {interaction.user.mention} \u05dc\u05e7\u05d7 \u05d0\u05ea \u05d4\u05e7\u05e5 \u05dc\u05d8\u05d9\u05e4\u05d5\u05dc\u05df!", ephemeral=False)
+        await interaction.followup.send(f"{interaction.user.mention} קיבל את הקריאה!", ephemeral=False)
+
 
 
 # חנות של הרמות ודברים חנות
