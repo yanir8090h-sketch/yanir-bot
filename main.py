@@ -9,7 +9,7 @@ class HelpButtonView(discord.ui.View):
         super().__init__(timeout=None)
 
     
-    @discord.ui.button(label="\u05d8\u05e4\u05dc \u05db\u05d0\u05df \u2694\ufe0f", style=discord.ButtonStyle.success, custom_id="take_help_call")
+       @discord.ui.button(label="טקסט כפתור", style=discord.ButtonStyle.success, custom_id="take_help_call")
     async def take_call(self, interaction: discord.Interaction, button: discord.ui.Button):
         embed = interaction.message.embeds[0]
         
