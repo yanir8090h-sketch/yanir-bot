@@ -528,8 +528,7 @@ async def help_call_custom(ctx):
         await ctx.send("⚠️ שגיאה זמנית: מערכת הכפתורים של הטיקטים (TicketView) לא נמצאה בקוד.")
 
 keep_alive()
-
-bot.run('MTQ4MDMzMjIxMTQyODUyODI0OA.GcMON6.URtsRJs7WqWju3gSHmC-MJaIZeJ2T_q8_1tVPE')
+bot.run(os.getenv('DISCORD_TOKEN'))
 
 
 
