@@ -167,7 +167,7 @@ async def myverify_cmd(ctx, target_channel: discord.TextChannel = None):
 # =================================================================
 # ⚠️ פקודת עזרה ותמיכה (!h) המעוצבת של מאסטר אוהד
 # =================================================================
-@bot.command(name="bot_help", aliases=["h"])
+@bot.command(name="h")
 async def help_call_custom(ctx):
     guild = ctx.guild
     
