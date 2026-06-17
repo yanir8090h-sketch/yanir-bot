@@ -9,7 +9,7 @@ class HelpButtonView(discord.ui.View):
         super().__init__(timeout=None)
 
   
-      @discord.ui.button(label="עזרה", style=discord.ButtonStyle.success, custom_id="take_help_call")
+    @discord.ui.button(label="עזרה", style=discord.ButtonStyle.success, custom_id="take_help_call")
     async def take_call(self, interaction: discord.Interaction, button: discord.ui.Button):
         embed = interaction.message.embeds
         
