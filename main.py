@@ -1,4 +1,3 @@
-
 import discord
 from discord.ext import commands
 from flask import Flask
@@ -22,7 +21,6 @@ class HelpButtonView(discord.ui.View):
         
         await interaction.response.edit_message(embed=embed, view=self)
         await interaction.followup.send(f"{interaction.user.mention} קיבל את הקריאה!", ephemeral=False)
-
 
 
 # חנות של הרמות ודברים חנות
