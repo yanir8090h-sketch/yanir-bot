@@ -8,9 +8,10 @@ class HelpButtonView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="עזרה", style=discord.ButtonStyle.success, custom_id="take_help_call")
+  
+      @discord.ui.button(label="עזרה", style=discord.ButtonStyle.success, custom_id="take_help_call")
     async def take_call(self, interaction: discord.Interaction, button: discord.ui.Button):
-        embed = interaction.message.embeds[0]
+        embed = interaction.message.embeds
         
         embed.set_field_at(2, name="טופל על ידי", value=f"{interaction.user.mention}", inline=False)
         embed.color = discord.Color.green()
@@ -29,7 +30,7 @@ intents = discord.Intents.all()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
-
+bot.remove_command('help')
 # ==========================================
 # הגדרות ומשתנים קבועים של השרת שלך
 # ==========================================
@@ -103,7 +104,7 @@ async def apply_staff_friend(ctx):
 # פקודת !xp בעיצוב כרטיס שחור ומיושר
 # ==========================================
 @bot.command()
-async def xp(ctx, member: discord.Member = None):
+async def apply_staff_friend(ctx):
     try: await ctx.message.delete()
     except discord.NotFound: pass
     if member is None: member = ctx.author
