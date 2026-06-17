@@ -536,8 +536,7 @@ async def help_call_custom(ctx):
 
 keep_alive()
 
-import os
-bot.run(os.environ.get("DISCORD_TOKEN"))
+bot.run('MTQ4MDMzMjIxMTQyODUyODI0OA.GcMON6.URtsRJs7WqWju3gSHmC-MJaIZeJ2T_q8_1tVPE')
 
 
 
