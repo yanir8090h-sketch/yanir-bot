@@ -8,18 +8,6 @@ import random
 import io
 from easy_pil import Editor, Canvas, load_image, Font
 
-intents = discord.Intents.all()
-intents.message_content = True
-
-bot = commands.Bot(command_prefix='!', intents=intents)
-bot.remove_command('help')
-
-# הגדרות השרת והאינטנטים
-intents = discord.Intents.all()
-intents.message_content = True
-
-bot = commands.Bot(command_prefix="!", intents=intents)
-bot.remove_command('help')
 
 # הגדרת משתנים ורולים
 ROLE_1_ID = 1434226514051665920 
