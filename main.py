@@ -212,54 +212,7 @@ class TicketView(discord.ui.View):
     async def staff_exam(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(StaffModalPart1())
 
-    # 2. כפתור עזרה מצוות
-    @discord.ui.button(label="עזרה מצוות 🛠️", style=discord.ButtonStyle.success, custom_id="btn_general_help")
-    async def general_help(self, interaction: discord.Interaction, button: discord.ui.Button):
-        guild = interaction.guild
-        user = interaction.user
-        overwrites = {
-            guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            user: discord.PermissionOverwrite(read_messages=True, send_messages=True),
-            guild.get_role(GENERAL_STAFF_ROLE_ID): discord.PermissionOverwrite(read_messages=True, send_messages=True)
-        }
-        channel = await guild.create_text_channel(name=f"עזרה-{user.name}", overwrites=overwrites)
-        embed = discord.Embed(
-            title="🛠️ פנייה לצוות התמיכה",
-            description=f"שלום {user.mention},\nפתחת פנייה לצוות הכללי. נציג מתוך <@&{GENERAL_STAFF_ROLE_ID}> יתפנה אלייך בהקדם.",
-            color=discord.Color.green()
-        )
-        await channel.send(embed=embed)
-        await interaction.response.send_message(f"✅ הטיקט שלך נפתח! כנס לערוץ: {channel.mention}", ephemeral=True)
-
-    # 3. כפתור עזרה מהנהלה
-    @discord.ui.button(label="עזרה מהנהלה ⚠️", style=discord.ButtonStyle.danger, custom_id="btn_admin_help")
-    async def admin_help(self, interaction: discord.Interaction, button: discord.ui.Button):
-        guild = interaction.guild
-        user = interaction.user
-        overwrites = {
-            guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            user: discord.PermissionOverwrite(read_messages=True, send_messages=True),
-            guild.get_role(ADMIN_TICKET_ROLE_ID): discord.PermissionOverwrite(read_messages=True, send_messages=True)
-        }
-        channel = await guild.create_text_channel(name=f"הנהלה-{user.name}", overwrites=overwrites)
-        embed = discord.Embed(
-            title="⚠️ פנייה חסויה להנהלה הגבוהה",
-            description=f"שלום {user.mention},\nפנייתך חסויה ורגישה. רק חברי <@&{ADMIN_TICKET_ROLE_ID}> יכולים לצפות בה. אנא רשום את סיבת הפנייה.",
-            color=discord.Color.red()
-        )
-        await channel.send(embed=embed)
-        await interaction.response.send_message(f"✅ טיקט הנהלה נפתח! כנס לערוץ: {channel.mention}", ephemeral=True)
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def setup_ticket(ctx, target_channel: discord.TextChannel = None):
-    try:
-        await ctx.message.delete()
-    except discord.NotFound:
-        pass
-    channel_to_send = target_channel if target_channel else ctx.channel
-    embed = discord.Embed(
-        title=f"🎫 מרכז פניות ותמיכה - {ctx.guild.name}",
-        description=(
+    
             "ברוכים הבאים למרכז העזרה הרשמי של השרת.\n"
             "על מנת לקבל מענה מדויק, לחצו על הכפתור המתאים לכם ביותר:\n\n"
             "📝 **בחינות לצוות** ➔ לפתיחת שאלון הגשת מועמדות לשרת.\n"
@@ -300,16 +253,7 @@ async def setup_verify(ctx, target_channel: discord.TextChannel = None):
     await channel_to_send.send(embed=embed, view=VerifyView())
 
     
-    # הפעלה בטוחה של ה-views ללא קריסות
-    try:
-        bot.add_view(TicketView())
-    except:
-        pass
-        
-    try:
-        bot.add_view(StaffFriendReview())
-    except:
-        pass
+   
         
     print(f' {bot.user.name} is online and fully synced!')
 
