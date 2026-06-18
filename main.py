@@ -477,134 +477,8 @@ async def blackjack_game(ctx, amount: int = 0):
     bot_total = random.randint(15, 22)
     if user_total > 21: await ctx.send(f"💥 נשרפת! הקלפים שלך: {user_card1} + {user_card2} = {user_total}. הפסדת.")
     elif bot_total > 21 or user_total > bot_total: await ctx.send(f"🃏 ניצחת בבלאקג'ק! לך יש {user_total} ולבוט יש {bot_total}. זכית!")
-   # ==========================================
-# 1. פקדת ה-XP המעוצבת (שונה ל-myxp כדי למנוע כפילות)
-# ==========================================
-@bot.command(name="myxp")
-async def xp_card_command(ctx, member: discord.Member = None):
-    member = member or ctx.author
-    user_id = str(member.id)
-    if user_id in user_data:
-        user_xp = user_data[user_id].get('xp', 0)
-        user_level = user_data[user_id].get('level', 1)
-    else:
-        user_xp = 0
-        user_level = 1
-    next_level_xp = user_level * 10000 if user_level > 0 else 10000
-    percentage = int((user_xp / next_level_xp) * 100) if next_level_xp > 0 else 0
-    if percentage > 100: percentage = 100
-    background = Canvas(shape=(900, 250), color="#2f3136")
-    editor = Editor(background)
-    avatar_image = load_image(member.display_avatar.url)
-    editor.avatar(avatar_image, position=(50, 50), size=(150, 150), circle=True)
-    editor.text((240, 60), f"◆ IN|★{member.name}★", color="#ffffff", font=Font.poppins(size=35, variant="bold"))
-    editor.text((240, 120), f"XP: {user_xp:,} / {next_level_xp:,}", color="#aaaaaa", font=Font.poppins(size=25))
-    editor.text((240, 160), f"רמה: {user_level}", color="#ffaa00", font=Font.poppins(size=28, variant="bold"))
-    editor.bar(position=(240, 200), max_width=600, height=20, percentage=percentage, fill="#ffaa00", background="#4f545c")
-    file = discord.File(fp=editor.image_bytes, filename="xp_card.png")
-    await ctx.send(file=file)
-
-
-# ==========================================
-# 2. חנות ה-XP המקצועית בשרת (!myshop)
-# ==========================================
-@bot.command(name="xpshop")
-async def xp_shop_command(ctx):
-    embed = discord.Embed(
-        title=f"🛒 חנות ה-XP הרשמית - {ctx.guild.name}",
-        description="צברתם מספיק נקודות? זה הזמן לרכוש רולים ייחודיים ולהשתדרג בשרת!",
-        color=discord.Color.gold()
-    )
-    embed.add_field(name="🎖️ רול: Iron Member", value="💰 עלות: **5,000 XP**\n*רמה נדרשת: 5*", inline=False)
-    embed.add_field(name="🥇 רול: Bronze Member", value="💰 עלות: **10,000 XP**\n*רמה נדרשת: 10*", inline=False)
-    embed.add_field(name="💎 רול: Silver Member", value="💰 עלות: **25,000 XP**\n*רמה נדרשת: 20*", inline=False)
-    embed.add_field(name="👑 רול: Gold VIP", value="💰 עלות: **50,000 XP**\n*רמה נדרשת: 35*", inline=False)
-    embed.set_footer(text="לקנייה יש לרשום בקשה בטיקט מול אחד מבוחני או מנהלי השרת.")
-    if ctx.guild.icon:
-        embed.set_thumbnail(url=ctx.guild.icon.url)
-    await ctx.send(embed=embed)
-
-
-# ==========================================
-# 3. קטגוריית משחקי ה-XP המלאה
-# ==========================================
-@bot.command(name="rps", aliases=["rock", "paper", "scissors"])
-async def rps_game(ctx, choice: str = None):
-    if not choice or choice.lower() not in ["אבן", "נייר", "מספריים"]: return await ctx.send("❌ נא לבחור: `!rps אבן`, `!rps נייר` או `!rps מספריים`")
-    bot_choice = random.choice(["אבן", "נייר", "מספריים"])
-    user_choice = choice.lower()
-    if user_choice == bot_choice: await ctx.send("🤝 תיקו! שנינו בחרנו את אותו הדבר.")
-    elif (user_choice == "אבן" and bot_choice == "מספריים") or (user_choice == "נייר" and bot_choice == "אבן") or (user_choice == "מספריים" and bot_choice == "נייר"):
-        await ctx.send(f"🎉 ניצחת! בחרת {user_choice} ואני בחרתי {bot_choice}. זכית!")
-    else: await ctx.send(f"😢 הפסדת! בחרת {user_choice} ואני בחרתי {bot_choice}.")
-
-@bot.command(name="guess", aliases=["g"])
-async def guess_game(ctx, number: int = None):
-    if not number or number < 1 or number > 5: return await ctx.send("❌ נא לנחש מספר בין 1 ל-5! דוגמה: `!guess 3`")
-    secret_number = random.randint(1, 5)
-    if number == secret_number: await ctx.send(f"🎯 בול! המספר היה {secret_number}. זכית!")
-    else: await ctx.send(f"❌ פספוס! ניחשת {number} אבל המספר האמיתי היה {secret_number}.")
-
-@bot.command(name="football", aliases=["fb", "goal"])
-async def football_game(ctx, direction: str = None):
-    if not direction or direction not in ["ימין", "שמאל", "אמצע"]: return await ctx.send("⚽ לאן לבעוט? תבחר: `!football ימין`, `!football שמאל` או `!football אמצע`")
-    gk_jump = random.choice(["ימין", "שמאל", "אמצע"])
-    if direction == gk_jump: await ctx.send(f"🧤 השוער זינק ל{gk_jump} והדף את הכדור! אין גול.")
-    else: await ctx.send(f"⚽ GOAL!! השוער זינק ל{gk_jump} ואתה הבקעת ל{direction}! זכית!")
-
-@bot.command(name="blackjack", aliases=["bj"])
-async def blackjack_game(ctx, amount: int = 0):
-    user_card1 = random.randint(1, 11)
-    user_card2 = random.randint(1, 10)
-    user_total = user_card1 + user_card2
-    bot_total = random.randint(15, 22)
-    if user_total > 21: await ctx.send(f"💥 נשרפת! הקלפים שלך: {user_card1} + {user_card2} = {user_total}. הפסדת.")
-    elif bot_total > 21 or user_total > bot_total: await ctx.send(f"🃏 ניצחת בבלאקג'ק! לך יש {user_total} ולבוט יש {bot_total}. זכית!")
-    elif user_total == bot_total: await ctx.send(f"🤝 תיקו! לשניכם יש {user_total}.")
-    else: await ctx.send(f"😢 הפסדת! לך יש {user_total} ולבוט יש {bot_total}.")
-
-@bot.command(name="gamble", aliases=["gift"])
-async def gamble_gift(ctx, box: int = None):
-    if not box or box < 1 or box > 3: return await ctx.send("🎁 יש 3 קופסאות. נחש איפה המתנה: `!gamble 1`, `!gamble 2` או `!gamble 3`")
-    gift_box = random.randint(1, 3)
-    if box == gift_box: await ctx.send(f"🎉 מצאת את המתנה בקופסה {gift_box}! זכית!")
-    else: await ctx.send(f"📦 קופסה ריקה! המתנה הייתה בקופסה מספר {gift_box}.")
-
-@bot.command(name="coinsflip", aliases=["cf", "flip"])
-async def coins_flip(ctx, choice: str = None, amount: int = 0):
-    if not choice or choice not in ["עץ", "פאלי"]: return await ctx.send("🪙 תבחר צד: `!coinsflip עץ` או `!coinsflip פאלי`")
-    side = random.choice(["עץ", "פאלי"])
-    if choice == side: await ctx.send(f"🤑 יצא {side}! ניחשת נכון וזכית!")
-    else: await ctx.send(f"😭 יצא {side}! ניחשת {choice} והפסדת.")
-
-@bot.command(name="mathquiz", aliases=["math"])
-async def math_quiz(ctx):
-    num1 = random.randint(1, 20)
-    num2 = random.randint(1, 20)
-    operator = random.choice(["+", "-", "*"])
-    correct_answer = eval(f"{num1} {operator} {num2}")
-    await ctx.send(f"🧮 פתור את התרגיל תוך 15 שניות: **{num1} {operator} {num2} = ?**")
-    def check(m): return m.author == ctx.author and m.channel == ctx.channel and m.content.strip().replace('-', '').isdigit()
-    try:
-        msg = await bot.wait_for("message", check=check, timeout=15.0)
-        if int(msg.content) == correct_answer: await ctx.send(f"👑 גאון! התשובה נכונה. זכית!")
-        else: await ctx.send(f"❌ טעות! התשובה הנכונה היא {correct_answer}.")
-    except asyncio.TimeoutError: await ctx.send(f"⏰ נגמר הזמן! התשובה הייתה {correct_answer}.")
-
-@bot.command(name="slot", aliases=["slots"])
-async def slot_machine(ctx):
-    emojis = ["🍒", "🍋", "🍇", "💎", "7️⃣"]
-    slot1 = random.choice(emojis)
-    slot2 = random.choice(emojis)
-    slot3 = random.choice(emojis)
-    await ctx.send(f"🎰 **[ {slot1} | {slot2} | {slot3} ]** 🎰")
-    if slot1 == slot2 == slot3: await ctx.send("🔥 ג'קפוט מטורף! 3 סמלים זהים! זכית!")
-    elif slot1 == slot2 or slot2 == slot3 or slot1 == slot3: await ctx.send("✨ נחמד מאוד! 2 סמלים זהים. זכית!")
-    else: await ctx.send("💸 אין התאמה, נסה את מזלך שוב בפעם הבאה!")
-
-
-# ==========================================
-# 4. פקודת עזרה משודרגת עם סיבה וחדר וויס (!h)
+  # ==========================================
+# פקודת עזרה משודרגת עם סיבה וחדר וויס (!h)
 # ==========================================
 class RequestHelpView(discord.ui.View):
     def __init__(self, request_msg_url=None):
@@ -617,6 +491,7 @@ class RequestHelpView(discord.ui.View):
         is_admin = interaction.user.guild_permissions.administrator
         if not has_staff_role and not is_admin:
             return await interaction.response.send_message("❌ כפתור זה מיועד לחברי צוות השרת בלבד!", ephemeral=True)
+        
         await interaction.channel.send(f"🙋‍♂️ הפנייה נלקחה לטיפול על ידי איש הצוות: {interaction.user.mention}")
         try:
             dm_embed = discord.Embed(
@@ -657,6 +532,11 @@ async def help_call_custom(ctx, *, args: str = None):
     embed.set_footer(text=f"נשלח על ידי: {ctx.author.name} • {guild.name}")
     sent_message = await ctx.send(embed=embed)
     await sent_message.edit(view=RequestHelpView(request_msg_url=sent_message.jump_url))
+    try: await ctx.message.delete()
+    except discord.NotFound: pass
+
+keep_alive()
+bot.run(os.getenv('DISCORD_TOKEN'))
 
 keep_alive()
 bot.run(os.getenv('DISCORD_TOKEN'))
