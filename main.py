@@ -505,8 +505,8 @@ class RequestHelpView(discord.ui.View):
         button.disabled = True
         button.label = f"בטיפול של {interaction.user.name} ✔️"
         button.style = discord.ButtonStyle.secondary
-        await interaction.response.edit_message(view=self)
-
+        await interaction.response.edit_message(view=self)|
+        
 @bot.command(name="h")
 async def help_call_custom(ctx, *, args: str = None):
     reason = "לא צוינה סיבה"
