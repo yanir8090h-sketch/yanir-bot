@@ -495,18 +495,16 @@ except Exception:
 
 
 class HelpView(discord.ui.View):
-
-# --- פקודת העזרה והתמיכה החדשה ---
-class HelpView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
     @discord.ui.button(label="טפל כאן 🛠️", style=discord.ButtonStyle.success, custom_id="handle_help_btn")
     async def handle_here(self, interaction: discord.Interaction, button: discord.ui.Button):
-        staff_mention = f"<@&{STAFF_ROLE_ID}>"
+        staff_mention = f"<@&{1488259168593772554}>"
         user_mention = interaction.user.mention
         await interaction.channel.send(f"🔔 {staff_mention}, המשתמש {user_mention} ביקש עזרה כאן!")
         await interaction.response.send_message("✅ בקשת העזרה נשלחה לצוות, מייד יתפנו אלייך.", ephemeral=True)
+
 
 @bot.command(name="help_call", aliases=["h"])
 async def help_call_custom(ctx):
