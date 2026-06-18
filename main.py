@@ -274,7 +274,6 @@ class TicketView(discord.ui.View):
         )
         await channel.send(embed=embed)
         await interaction.response.send_message(f"✅ טיקט הנהלה נפתח! כנס לערוץ: {channel.mention}", ephemeral=True)
-
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def setup_ticket(ctx, target_channel: discord.TextChannel = None):
@@ -318,6 +317,12 @@ async def setup_verify(ctx, target_channel: discord.TextChannel = None):
             "• עקבו אחר הוראות הצוות\n\n"
             "• קראו את ערוץ החוקים והתקנון לפני שאתם מתחילים!"
         ),
+        color=discord.Color.from_rgb(47, 49, 54)
+    )
+    if ctx.guild.icon:
+        embed.set_image(url=ctx.guild.icon.url)
+    embed.set_footer(text=f"{ctx.guild.name} • מערכת אימות אוטומטית")
+    await channel_to_send.send(embed=embed, view=VerifyView())
         color=discord.Color.from_rgb(47, 49, 54)
     )
     if ctx.guild.icon:
