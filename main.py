@@ -209,6 +209,24 @@ def keep_alive():
 ADMIN_TICKET_ROLE_ID = 1485440480459227227  # רול הנהלה גבוהה
 STAFF_EXAM_ROLE_ID = 1485440385206456452    # רול בוחני צוות
 GENERAL_STAFF_ROLE_ID = 1488259168593772554 # רול צוות כללי
+# מחלקה נפרדת עבור כפתור האימות בלבד
+class VerifyView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="אימות קבלת גישה ✅", style=discord.ButtonStyle.success, custom_id="verify_member_btn")
+    async def verify_user(self, interaction: discord.Interaction, button: discord.ui.Button):
+        guild = interaction.guild
+        user = interaction.user
+        
+        # הדבק כאן את ה-ID של הרול שחברים מקבלים (Member)
+        member_role = guild.get_role(1483920420414554272) 
+        
+        if member_role:
+            await user.add_roles(member_role)
+            await interaction.response.send_message("🎉 אומתת בהצלחה! כל ערוצי השרת נפתחו בפניך.", ephemeral=True)
+        else:
+            await interaction.response.send_message("❌ שגיאה: רול החברים לא מוגדר נכון בקוד.", ephemeral=True)
 
 class TicketView(discord.ui.View):
     def __init__(self):
