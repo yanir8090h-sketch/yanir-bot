@@ -678,5 +678,9 @@ async def help_call_custom(ctx, *, args: str = None):
     sent_message = await ctx.send(embed=embed)
     await sent_message.edit(view=HelpView(request_msg_url=sent_message.jump_url))
     try: await ctx.message.delete()
+    except Exception:
+        pass
+
 keep_alive()
 bot.run(os.getenv('DISCORD_TOKEN'))
+
