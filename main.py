@@ -323,20 +323,7 @@ async def setup_verify(ctx, target_channel: discord.TextChannel = None):
         embed.set_image(url=ctx.guild.icon.url)
     embed.set_footer(text=f"{ctx.guild.name} • מערכת אימות אוטומטית")
     await channel_to_send.send(embed=embed, view=VerifyView())
-        color=discord.Color.from_rgb(47, 49, 54)
-    )
-    if ctx.guild.icon:
-        embed.set_image(url=ctx.guild.icon.url)
-    embed.set_footer(text=f"{ctx.guild.name} • מערכת אימות אוטומטית")
-    await channel_to_send.send(embed=embed, view=VerifyView())
 
-# ==========================================
-# הפעלת ה-Views הקבועים ואירועים קריטיים
-# ==========================================
-@bot.event
-async def on_ready():
-    # סנכרון פקודות הסלאש (חובה בשביל פקודת /sf שביקשת!)
-    await bot.tree.sync()
     
     # הפעלה בטוחה של ה-views ללא קריסות
     try:
