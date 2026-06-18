@@ -60,16 +60,7 @@ class StaffFriendReview(discord.ui.View):
         await interaction.response.send_message("❌ הבקשה נדחתה בהצלחה.", ephemeral=True)
 
 
-    embed = discord.Embed(title="⚙️ בקשת Staff Friend", color=discord.Color.from_rgb(47, 49, 54))
-    embed.add_field(name="👤 איש צוות:", value=ctx.author.mention, inline=True)
-    embed.add_field(name="👥 חבר מקבל:", value="@unknown-user", inline=True)
-    embed.add_field(name="📅 זמן השליחה:", value=discord.utils.format_dt(ctx.message.created_at), inline=False)
-    embed.add_field(name="📊 בקשות שהוגשו בזמן השליחה:", value="1/1", inline=False)
-    embed.add_field(name="🟡 סטטוס:", value="ממתין לטיפול...", inline=False)
-    embed.set_image(url="https://discordapp.net")
     
-    await log_channel.send(embed=embed, view=StaffFriendReview(ctx.author.id))
-    await ctx.send("✅ בקשתך נשלחה בהצלחה לבדיקת צוות הניהול!", ephemeral=True)
 
 # ==========================================
 # פקודת !xp בעיצוב כרטיס שחור ומיושר
