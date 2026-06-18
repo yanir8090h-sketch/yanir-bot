@@ -285,17 +285,28 @@ async def setup_ticket(ctx, target_channel: discord.TextChannel = None):
     channel_to_send = target_channel if target_channel else ctx.channel
     embed = discord.Embed(
         title=f"🎫 מרכז פניות ותמיכה - {ctx.guild.name}",
-       @bot.command()
+        description=(
+            "ברוכים הבאים למרכז העזרה הרשמי של השרת.\n"
+            "על מנת לקבל מענה מדויק, לחצו על הכפתור המתאים לכם ביותר:\n\n"
+            "📝 **בחינות לצוות** ➔ לפתיחת שאלון הגשת מועמדות לשרת.\n"
+            "🛠️ **עזרה מצוות** ➔ לפתיחת פנייה כללית בנושאי תמיכה וקהילה.\n"
+            "⚠️ **עזרה מהנהלה** ➔ לפתיחת פנייה חסויה ודחופה מול ההנהלה הגבוהה."
+        ),
+        color=discord.Color.from_rgb(47, 49, 54)
+    )
+    if ctx.guild.icon:
+        embed.set_image(url=ctx.guild.icon.url)
+    await channel_to_send.send(embed=embed, view=TicketView())
+
+
+@bot.command()
 @commands.has_permissions(administrator=True)
 async def setup_verify(ctx, target_channel: discord.TextChannel = None):
-    """פקודת אימות מקצועית בעיצוב מדויק לפי התמונה"""
     try:
         await ctx.message.delete()
     except discord.NotFound:
         pass
-        
     channel_to_send = target_channel if target_channel else ctx.channel
-    
     embed = discord.Embed(
         title=f"✅ אימות חברים - {ctx.guild.name}",
         description=(
@@ -309,38 +320,10 @@ async def setup_verify(ctx, target_channel: discord.TextChannel = None):
         ),
         color=discord.Color.from_rgb(47, 49, 54)
     )
-    
     if ctx.guild.icon:
         embed.set_image(url=ctx.guild.icon.url)
-        
     embed.set_footer(text=f"{ctx.guild.name} • מערכת אימות אוטומטית")
-    
     await channel_to_send.send(embed=embed, view=VerifyView())
-
-    try:
-        await ctx.message.delete()
-    except discord.NotFound:
-        pass
-        
-    channel_to_send = target_channel if target_channel else ctx.channel
-    
-    embed = discord.Embed(
-        title=f"✅ אימות חברים - {ctx.guild.name}",
-        description=(
-            "ברוכים הבאים לשרת! על מנת לבצע אימות ולקבל גישה, לכל ערוצי השרת:\n\n"
-            "**📜 חוקים בסיסיים:**\n"
-            "• כבדו את כל חברי השרת\n"
-            "• אין ספאם או פלוד\n"
-            "• עקבו אחר הוראות הצוות\n\n"
-            "• קראו את ערוץ <#1483920420414554272> לפני שאתם מתחילים"
-        ),
-        color=discord.Color.green()
-    )
-    
-    # מציג את תמונת השרת שלך כתמונה גדולה
-    if ctx.guild.icon:
-        embed.set_image(url=ctx.guild.icon.url)
-        
 
 # ==========================================
 # הפעלת ה-Views הקבועים ואירועים קריטיים
