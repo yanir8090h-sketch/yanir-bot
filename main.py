@@ -497,40 +497,41 @@ async def sf_command(interaction: discord.Interaction, member: discord.Member):
             description=f"המשתמש {member.mention} קיבל בהצלחה את הרולים שלו.",
             color=discord.Color.purple()
         )
-        if guild.icon:
-            embed.set_thumbnail(url=guild.icon.url)
-            
-        embed.add_field(name="הרולים שהוענקו:", value=f"• {member_role.mention}\n• {staff_friend_role.mention}", inline=False)
-        embed.set_footer(text=f"בוצע על ידי: {interaction.user.name} • {guild.name}")
-        
-        # שליחת ההודעה לערוץ שבו הופעלה הפקודה
-        await interaction.response.send_message(embed=embed)
-        
-        # שליחת הודעה פרטית למשתמש שקיבל את הרול
-        try:
-            await member.send(f"🎉 תתחדש! הוענקו לך הרולים **Member** ו-**Staff Friend** בשרת {guild.name}!")
-        except:
-            pass # אם הדיאמ שלו סגור הבוט לא יקרוס
-            
-    except discord.Forbidden:
-        await interaction.response.send_message("❌ שגיאה: לבוט אין הרשאה מספקת. ודא שהרול של הבוט נמצא בראש רשימת הרולים בדיסקורד!", ephemeral=True)
-
-STAFF_ROLE_ID = 123456789012345678  # שים כאן את ה-ID של תפקיד הצוות שלך
-
-# הגדרת הכפתור הלחיץ לצוות
-class HelpView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @discord.ui.button(label="טפל כאן 🛠️", style=discord.ButtonStyle.success, custom_id="handle_help_btn")
-    async def handle_here(self, interaction: discord.Interaction, button: discord.ui.Button):
-        staff_mention = f"<@&{STAFF_ROLE_ID}>"
-        user_mention = interaction.user.mention
-        
-        # שליחת הודעת תיוג בערוץ
-        await interaction.channel.send(f"🔔 {staff_mention}, המשתמש {user_mention} ביקש עזרה כאן!")
-        # הודעה זמנית שרק הלוחץ רואה
-        await interaction.response.send_message("✅ בקשת העזרה נשלחה לצוות, מייד יתפנו אלייך.", ephemeral=True)
+       @bot.command(name="xp", aliases=["rank"])
+async def xp_card_command(ctx, member: discord.Member = None):
+    member = member or ctx.author
+    
+    # נתוני דוגמה - המערכת שלך תתאים אותם ל-XP הקיים
+    user_xp = 7681  
+    user_level = 31 
+    next_level_xp = 10000 
+    
+    percentage = int((user_xp / next_level_xp) * 100)
+    
+    # יצירת רקע כהה לכרטיס
+    background = Canvas(shape=(900, 250), color="#2f3136")
+    editor = Editor(background)
+    
+    # התיקון כאן: load_image באותיות קטנות
+    avatar_image = load_image(member.display_avatar.url)
+    editor.avatar(avatar_image, position=(50, 50), size=(150, 150), circle=True)
+    
+    # הוספת טקסטים ומד התקדמות
+    editor.text((240, 60), f"◆ IN|★{member.name}★", color="#ffffff", font=Font.poppins(size=35, variant="bold"))
+    editor.text((240, 120), f"XP: {user_xp:,} / {next_level_xp:,}", color="#aaaaaa", font=Font.poppins(size=25))
+    editor.text((240, 160), f"רמה: {user_level}", color="#ffaa00", font=Font.poppins(size=28, variant="bold"))
+    
+    editor.bar(
+        position=(240, 200),
+        max_width=600,
+        height=20,
+        percentage=percentage,
+        fill="#ffaa00",      
+        background="#4f545c" 
+    )
+    
+    file = discord.File(fp=editor.image_bytes, filename="xp_card.png")
+    await ctx.send(file=file)
 
 # פקודת העזרה החדשה שלך
 STAFF_ROLE_ID = 1488259168593772554
