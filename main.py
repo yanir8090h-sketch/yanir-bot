@@ -203,56 +203,84 @@ def keep_alive():
     t = Thread(target=run)
     t.start()
 
-keep_alive()
 # ==========================================
-# מערכת הטיקטים המלאה - עם כפתור לקיחה וסגירה
+# מערכת 3 כפתורי טיקטים משולבת (לפי רולים)
 # ==========================================
+ADMIN_TICKET_ROLE_ID = 1485440480459227227  # רול הנהלה גבוהה
+STAFF_EXAM_ROLE_ID = 1485440385206456452    # רול בוחני צוות
+GENERAL_STAFF_ROLE_ID = 1488259168593772554 # רול צוות כללי
+
 class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    # כפתור לקיחת הטיקט המעוצב בסטייל של השרת שלך
-    @discord.ui.button(label="טפל כאן 🔓", style=discord.ButtonStyle.green, custom_id="claim_ticket_persistent")
-    async def claim(self, interaction: discord.Interaction, button: discord.ui.Button):
-        global STAFF_ROLE_ID
-        
-        # בדיקה האם המשתמש שלחץ הוא אכן איש צוות
-        if STAFF_ROLE_ID:
-            staff_role = interaction.guild.get_role(STAFF_ROLE_ID)
-            if staff_role and staff_role not in interaction.user.roles:
-                await interaction.response.send_message("❌ שגיאה: רק אנשי צוות מורשים לטפל בטיקט זה!", ephemeral=True)
-                return
-                
-        # שינוי שם הערוץ והודעה חגיגית שהטיקט בטיפול
-        await interaction.channel.edit(name=f"🔒-בטיפול-{interaction.user.name}")
-        
-       # ==========================================
-# פקודות הניהול המעוצבות לעבודה מכל ערוץ
-# ==========================================
+    # 1. כפתור בחינות לצוות
+    @discord.ui.button(label="בחינות לצוות 📝", style=discord.ButtonStyle.primary, custom_id="btn_staff_exam")
+    async def staff_exam(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(StaffModalPart1())
+
+    # 2. כפתור עזרה מצוות
+    @discord.ui.button(label="עזרה מצוות 🛠️", style=discord.ButtonStyle.success, custom_id="btn_general_help")
+    async def general_help(self, interaction: discord.Interaction, button: discord.ui.Button):
+        guild = interaction.guild
+        user = interaction.user
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            user: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+            guild.get_role(GENERAL_STAFF_ROLE_ID): discord.PermissionOverwrite(read_messages=True, send_messages=True)
+        }
+        channel = await guild.create_text_channel(name=f"עזרה-{user.name}", overwrites=overwrites)
+        embed = discord.Embed(
+            title="🛠️ פנייה לצוות התמיכה",
+            description=f"שלום {user.mention},\nפתחת פנייה לצוות הכללי. נציג מתוך <@&{GENERAL_STAFF_ROLE_ID}> יתפנה אלייך בהקדם.",
+            color=discord.Color.green()
+        )
+        await channel.send(embed=embed)
+        await interaction.response.send_message(f"✅ הטיקט שלך נפתח! כנס לערוץ: {channel.mention}", ephemeral=True)
+
+    # 3. כפתור עזרה מהנהלה
+    @discord.ui.button(label="עזרה מהנהלה ⚠️", style=discord.ButtonStyle.danger, custom_id="btn_admin_help")
+    async def admin_help(self, interaction: discord.Interaction, button: discord.ui.Button):
+        guild = interaction.guild
+        user = interaction.user
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            user: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+            guild.get_role(ADMIN_TICKET_ROLE_ID): discord.PermissionOverwrite(read_messages=True, send_messages=True)
+        }
+        channel = await guild.create_text_channel(name=f"הנהלה-{user.name}", overwrites=overwrites)
+        embed = discord.Embed(
+            title="⚠️ פנייה חסויה להנהלה הגבוהה",
+            description=f"שלום {user.mention},\nפנייתך חסויה ורגישה. רק חברי <@&{ADMIN_TICKET_ROLE_ID}> יכולים לצפות בה. אנא רשום את סיבת הפנייה.",
+            color=discord.Color.red()
+        )
+        await channel.send(embed=embed)
+        await interaction.response.send_message(f"✅ טיקט הנהלה נפתח! כנס לערוץ: {channel.mention}", ephemeral=True)
+
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def setup_ticket(ctx, target_channel: discord.TextChannel = None):
-    """פקודה להקמת מערכת טיקטים עם כפתורים רגילים ותמונה גדולה"""
     try:
         await ctx.message.delete()
     except discord.NotFound:
         pass
-        
     channel_to_send = target_channel if target_channel else ctx.channel
-    
     embed = discord.Embed(
-        title=f"🎫 פתיחת פנייה לצוות - {ctx.guild.name}",
+        title=f"🎫 מרכז פניות ותמיכה - {ctx.guild.name}",
         description=(
-            "על מנת לפתוח פנייה חדשה ולקבל עזרה מהצוות, "
-            "לחצו על הכפתור הירוק למטה.\n\n"
-            "**⚠️ שימו לב:** נא לא לפתוח פניות סתם ללא סיבה מוצדקת."
+            "ברוכים הבאים למרכז העזרה הרשמי של השרת.\n"
+            "על מנת לקבל מענה מדויק, לחצו על הכפתור המתאים לכם ביותר:\n\n"
+            "📝 **בחינות לצוות** ➔ לפתיחת שאלון הגשת מועמדות לשרת.\n"
+            "🛠️ **עזרה מצוות** ➔ לפתיחת פנייה כללית בנושאי תמיכה וקהילה.\n"
+            "⚠️ **עזרה מהנהלה** ➔ לפתיחת פנייה חסויה ודחופה מול ההנהלה הגבוהה."
         ),
         color=discord.Color.from_rgb(47, 49, 54)
     )
-    
-    # מציג את תמונת השרת שלך כתמונה גדולה
     if ctx.guild.icon:
         embed.set_image(url=ctx.guild.icon.url)
+    await channel_to_send.send(embed=embed, view=TicketView())
+
+
         
     await channel_to_send.send(embed=embed, view=TicketView())
 
