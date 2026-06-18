@@ -480,7 +480,7 @@ async def blackjack_game(ctx, amount: int = 0):
    # ==========================================
 # 1. פקדת ה-XP המעוצבת (שונה ל-myxp כדי למנוע כפילות)
 # ==========================================
-@bot.command(name="myxp", aliases=["rank"])
+@bot.command(name="myxp")
 async def xp_card_command(ctx, member: discord.Member = None):
     member = member or ctx.author
     user_id = str(member.id)
