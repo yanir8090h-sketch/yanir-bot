@@ -487,10 +487,14 @@ async def sf_command(interaction: discord.Interaction, member: discord.Member):
         await interaction.response.send_message("❌ שגיאה: הרול בשם 'Member' לא נמצא בשרת. ודא שהשם שלו מדויק!", ephemeral=True)
         return
 
-    # הענקת הרולים למשתמש שתוייג
     try:
-        await member.add_roles(member_role, staff_friend_role)
-        
+    await member.add_roles(member_role, staff_friend_role)
+except Exception:
+    pass
+
+
+class HelpView(discord.ui.View):
+
 # --- פקודת העזרה והתמיכה החדשה ---
 class HelpView(discord.ui.View):
     def __init__(self):
