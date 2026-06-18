@@ -104,32 +104,7 @@ async def apply_staff_friend(ctx):
 
 
 
-# =================================================================
-# 🛒 פקודת הקמת חנות ה-XP
-# =================================================================
-@bot.command(name="myshop")
-@commands.has_permissions(administrator=True)
-async def myshop(ctx, target_channel: discord.TextChannel = None):
-    guild = ctx.guild
-    
-    embed = discord.Embed(
-        title=f"🛒 חנות ה-XP של השרת - {guild.name}",
-        description=(
-            "ברוכים הבאים לחנות! כאן תוכלו לבזבז את נקודות ה-XP שלכם על רולים שווים:\n\n"
-            "• **רול 10K XP** ➔ עלות: 10,000 XP\n"
-            "• **רול 18K XP** ➔ עלות: 18,000 XP\n"
-            "• **רול 28K XP** ➔ עלות: 28,000 XP"
-        ),
-        color=discord.Color.from_rgb(142, 203, 57)
-    )
-    if guild.icon:
-        embed.set_thumbnail(url=guild.icon.url)
-        
-    #try:
-        #await channel_to_send.send(embed=embed, view=ShopDropdownView())
-    #except NameError:
-        #await channel_to_send.send(embed=embed, view=View())
-    await channel_to_send.send(embed=embed)
+
 # =================================================================
 # 📩 פקודת הקמת מערכת האימות (Verify)
 # =================================================================
