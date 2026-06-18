@@ -1,2 +1,3 @@
-discord.py
+discord
 Flask
+easy-pil
