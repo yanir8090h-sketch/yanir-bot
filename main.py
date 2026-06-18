@@ -6,7 +6,7 @@ from threading import Thread
 import asyncio
 import random
 import io
-from easy_pil import Editor, Canvas, LoadImage, Font
+from easy_pil import Editor, Canvas, load_image, Font
 
 intents = discord.Intents.all()
 intents.message_content = True
