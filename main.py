@@ -543,6 +543,75 @@ async def slot_machine(ctx):
     if slot1 == slot2 == slot3: await ctx.send("🔥 ג'קפוט מטורף! 3 סמלים זהים! זכית!")
     elif slot1 == slot2 or slot2 == slot3 or slot1 == slot3: await ctx.send("✨ נחמד מאוד! 2 סמלים זהים. זכית!")
     else: await ctx.send("💸 אין התאמה, נסה את מזלך שוב בפעם הבאה!")
+class HelpView(discord.ui.View):
+    def __init__(self, request_msg_url=None):
+        super().__init__(timeout=None)
+        self.request_msg_url = request_msg_url
+
+    @discord.ui.button(label="טפל כאן 🛠️", style=discord.ButtonStyle.success, custom_id="handle_help_btn")
+    async def handle_here(self, interaction: discord.Interaction, button: discord.ui.Button):
+        has_staff_role = interaction.user.get_role(GENERAL_STAFF_ROLE_ID) is not None
+        is_admin = interaction.user.guild_permissions.administrator
+        
+        if not has_staff_role and not is_admin:
+            return await interaction.response.send_message("❌ כפתור זה מיועד לחברי צוות השרת בלבד!", ephemeral=True)
+
+        await interaction.channel.send(f"🙋‍♂️ הפנייה נלקחה לטיפול על ידי איש הצוות: {interaction.user.mention}")
+        
+        try:
+            dm_embed = discord.Embed(
+                title="🚀 קריאת עזרה נלקחה בהצלחה",
+                description=f"לקחת לטיפול את הפנייה בערוץ {interaction.channel.mention}.\n"
+                            f"🔗 [לחץ כאן כדי לקפוץ ישירות להודעת הקריאה]({self.request_msg_url or ''})",
+                color=discord.Color.green()
+            )
+            await interaction.user.send(embed=dm_embed)
+        except discord.Forbidden:
+            pass
+
+        button.disabled = True
+        button.label = f"בטיפול של {interaction.user.name} ✔️"
+        button.style = discord.ButtonStyle.secondary
+        await interaction.response.edit_message(view=self)
+
+
+@bot.command(name="help_call", aliases=["h"])
+async def help_call_custom(ctx, *, args: str = None):
+    reason = "לא צוינה סיבה"
+    voice_room = "לא צוין חדר וויס"
+    
+    if args:
+        if "|" in args:
+            parts = args.split("|", 1)
+            reason = parts[0].strip()
+            voice_room = parts[1].strip()
+        else:
+            reason = args.strip()
+
+    guild = ctx.guild
+    embed = discord.Embed(
+        title=f"⚠️ קריאת עזרה דחופה - {guild.name} ⚠️",
+        description=(
+            f"**👤 המבקש:** {ctx.author.mention}\n"
+            f"**📂 ערוץ טקסט:** {ctx.channel.mention}\n\n"
+            f"**📝 סיבת הפנייה:**\n`{reason}`\n\n"
+            f"**🔊 חדר וויס נוכחי:**\n`{voice_room}`\n\n"
+            f"**💡 מידע לצוות:**\n"
+            f"נציג פנוי מתוך <@&{GENERAL_STAFF_ROLE_ID}> מתבקש ללחוץ למטה ולהתייצב לעזרה."
+        ),
+        color=discord.Color.from_rgb(47, 49, 54)
+    )
+    if guild.icon:
+        embed.set_thumbnail(url=guild.icon.url)
+    embed.set_footer(text=f"נשלח על ידי: {ctx.author.name} • {guild.name}")
+    
+    sent_message = await ctx.send(embed=embed)
+    await sent_message.edit(view=HelpView(request_msg_url=sent_message.jump_url))
+    
+    try:
+        await ctx.message.delete()
+    except discord.NotFound:
+        pass
 
 keep_alive()
 bot.run(os.getenv('DISCORD_TOKEN'))
