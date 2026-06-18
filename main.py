@@ -207,12 +207,17 @@ class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    # 1. כפתור בחינות לצוות
-    @discord.ui.button(label="בחינות לצוות 📝", style=discord.ButtonStyle.primary, custom_id="btn_staff_exam")
-    async def staff_exam(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(StaffModalPart1())
-
-    
+    @bot.command()
+@commands.has_permissions(administrator=True)
+async def setup_ticket(ctx, target_channel: discord.TextChannel = None):
+    try:
+        await ctx.message.delete()
+    except discord.NotFound:
+        pass
+    channel_to_send = target_channel if target_channel else ctx.channel
+    embed = discord.Embed(
+        title=f"🎫 מרכז פניות ותמיכה - {ctx.guild.name}",
+        description=(
             "ברוכים הבאים למרכז העזרה הרשמי של השרת.\n"
             "על מנת לקבל מענה מדויק, לחצו על הכפתור המתאים לכם ביותר:\n\n"
             "📝 **בחינות לצוות** ➔ לפתיחת שאלון הגשת מועמדות לשרת.\n"
@@ -251,11 +256,6 @@ async def setup_verify(ctx, target_channel: discord.TextChannel = None):
         embed.set_image(url=ctx.guild.icon.url)
     embed.set_footer(text=f"{ctx.guild.name} • מערכת אימות אוטומטית")
     await channel_to_send.send(embed=embed, view=VerifyView())
-
-    
-   
-        
-    print(f' {bot.user.name} is online and fully synced!')
 
 
 @bot.event
