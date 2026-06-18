@@ -235,11 +235,10 @@ class TicketView(discord.ui.View):
        # ==========================================
 # פקודות הניהול המעוצבות לעבודה מכל ערוץ
 # ==========================================
-
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def setup_ticket(ctx, target_channel: discord.TextChannel = None):
-    """פקודה להקמת מערכת טיקטים"""
+    """פקודה להקמת מערכת טיקטים עם כפתורים רגילים ותמונה גדולה"""
     try:
         await ctx.message.delete()
     except discord.NotFound:
@@ -248,21 +247,26 @@ async def setup_ticket(ctx, target_channel: discord.TextChannel = None):
     channel_to_send = target_channel if target_channel else ctx.channel
     
     embed = discord.Embed(
-        title="🎫 פתיחת פנייה לצוות",
-        description="על מנת לפתוח פנייה חדשה לצוות השרת, לחצו על הכפתור הירוק למטה.",
+        title=f"🎫 פתיחת פנייה לצוות - {ctx.guild.name}",
+        description=(
+            "על מנת לפתוח פנייה חדשה ולקבל עזרה מהצוות, "
+            "לחצו על הכפתור הירוק למטה.\n\n"
+            "**⚠️ שימו לב:** נא לא לפתוח פניות סתם ללא סיבה מוצדקת."
+        ),
         color=discord.Color.from_rgb(47, 49, 54)
     )
+    
+    # מציג את תמונת השרת שלך כתמונה גדולה
     if ctx.guild.icon:
-        embed.set_thumbnail(url=ctx.guild.icon.url)
+        embed.set_image(url=ctx.guild.icon.url)
         
-    # שינוי כאן: שימוש ב-TicketView() הקיים בקוד שלך
     await channel_to_send.send(embed=embed, view=TicketView())
 
 
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def setup_verify(ctx, target_channel: discord.TextChannel = None):
-    """פקודה להקמת מערכת אימות"""
+    """פקודה להקמת מערכת אימות עם ה-ID הנכון ותמונה גדולה"""
     try:
         await ctx.message.delete()
     except discord.NotFound:
@@ -270,6 +274,25 @@ async def setup_verify(ctx, target_channel: discord.TextChannel = None):
         
     channel_to_send = target_channel if target_channel else ctx.channel
     
+    embed = discord.Embed(
+        title=f"✅ אימות חברים - {ctx.guild.name}",
+        description=(
+            "ברוכים הבאים לשרת! על מנת לבצע אימות ולקבל גישה, לכל ערוצי השרת:\n\n"
+            "**📜 חוקים בסיסיים:**\n"
+            "• כבדו את כל חברי השרת\n"
+            "• אין ספאם או פלוד\n"
+            "• עקבו אחר הוראות הצוות\n\n"
+            "• קראו את ערוץ <#1483920420414554272> לפני שאתם מתחילים"
+        ),
+        color=discord.Color.green()
+    )
+    
+    # מציג את תמונת השרת שלך כתמונה גדולה
+    if ctx.guild.icon:
+        embed.set_image(url=ctx.guild.icon.url)
+        
+    await channel_to_send.send(embed=embed, view=TicketView())
+
     embed = discord.Embed(
         title="✅ מערכת אימות - Verification",
         description="ברוכים הבאים לשרת! כדי לקבל גישה לשאר הערוצים, לחצו על הכפתור למטה.",
