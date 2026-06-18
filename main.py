@@ -59,14 +59,6 @@ class StaffFriendReview(discord.ui.View):
         await interaction.message.edit(embed=embed, view=None)
         await interaction.response.send_message("❌ הבקשה נדחתה בהצלחה.", ephemeral=True)
 
-@bot.command()
-async def apply_staff_friend(ctx):
-    log_channel = bot.get_channel(STAFF_FRIENDS_LOG_CHANNEL_ID)
-    if not log_channel:
-        await ctx.send("❌ ערוץ הלוגים של המערכת לא הוגדר כראוי בקוד.", ephemeral=True)
-        return
-    #try: await ctx.message.delete()
-    #except discord.NotFound: pass
 
     embed = discord.Embed(title="⚙️ בקשת Staff Friend", color=discord.Color.from_rgb(47, 49, 54))
     embed.add_field(name="👤 איש צוות:", value=ctx.author.mention, inline=True)
