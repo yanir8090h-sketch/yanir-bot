@@ -508,7 +508,7 @@ async def xp_card_command(ctx, member: discord.Member = None):
 # ==========================================
 # 2. חנות ה-XP המקצועית בשרת (!myshop)
 # ==========================================
-@bot.command(name="myshop", aliases=["shop"])
+@bot.command(name="xpshop")
 async def xp_shop_command(ctx):
     embed = discord.Embed(
         title=f"🛒 חנות ה-XP הרשמית - {ctx.guild.name}",
