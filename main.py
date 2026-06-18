@@ -331,18 +331,6 @@ async def setup_verify(ctx, target_channel: discord.TextChannel = None):
     if ctx.guild.icon:
         embed.set_image(url=ctx.guild.icon.url)
         
-    await channel_to_send.send(embed=embed, view=TicketView())
-
-    embed = discord.Embed(
-        title="✅ מערכת אימות - Verification",
-        description="ברוכים הבאים לשרת! כדי לקבל גישה לשאר הערוצים, לחצו על הכפתור למטה.",
-        color=discord.Color.green()
-    )
-    if ctx.guild.icon:
-        embed.set_thumbnail(url=ctx.guild.icon.url)
-        
-    # שינוי כאן: שימוש ב-TicketView() הקיים בקוד שלך במקום ב-VerifyView הלא קיים
-    await channel_to_send.send(embed=embed, view=TicketView())
 
 # ==========================================
 # הפעלת ה-Views הקבועים ואירועים קריטיים
@@ -489,64 +477,26 @@ class SFApprovalButtons(discord.ui.View):
         for child in self.children:
             child.disabled = True
             
-        await interaction.message.edit(embed=embed, view=self)
-        await interaction.response.send_message("הבקשה נדחתה בהצלחה.", ephemeral=True)
-
-# --- פקודת הסלאש המקורית ששולחת את הכפתורים ---
-@bot.tree.command(name="sf", description="שליחת בקשת אישור לרולים Member ו-Staff Friend")
-@discord.app_commands.describe(member="המשתמש שברצונך להעניק לו את הרולים לאחר אישור")
-async def sf_command(interaction: discord.Interaction, member: discord.Member):
-    if not interaction.user.guild_permissions.manage_roles:
-        await interaction.response.send_message("❌ פקודה זו מיועדת לצוות הניהול בלבד!", ephemeral=True)
-        return
-
-    guild = interaction.guild
-    
-    # יצירת ההודעה המעוצבת עם הכפתורים
-    embed = discord.Embed(
-        title="❓ בקשת אישור דרגה חדשה",
-        description=f"האם להעניק למשתמש {member.mention} את הרולים שלו?",
-        color=discord.Color.orange()
-    )
-    if guild.icon:
-        embed.set_thumbnail(url=guild.icon.url)
-        
-    embed.add_field(name="הרולים המיועדים:", value="• Member\n• Staff Friend", inline=False)
-    embed.add_field(name="נשלח על ידי:", value=interaction.user.mention, inline=False)
-    embed.set_footer(text=f"User ID: {member.id} • {guild.name}")
-    
-    # הצמדת הכפתורים להודעה
-    view = SFApprovalButtons(target_member_id=member.id)
-    await interaction.response.send_message(embed=embed, view=view)
-
-    
-    # שליפת הרולים מהשרת (סטאף פרנד לפי ID וממבר לפי שם)
-    staff_friend_role = guild.get_role(1493335218004820180)
-    member_role = discord.utils.get(guild.roles, name="Member")
-    
-    # בדיקה אם הרולים קיימים בשרת
-    if not staff_friend_role:
-        await interaction.response.send_message("❌ שגיאה: רול ה-Staff Friend לא נמצא בשרת באמצעות ה-ID שסופק.", ephemeral=True)
-        return
-        
-    if not member_role:
-        await interaction.response.send_message("❌ שגיאה: הרול בשם 'Member' לא נמצא בשרת. ודא שהשם שלו מדויק!", ephemeral=True)
-        return
-
-
-
-
+       # ==========================================
+# 1. פקודת העזרה והתמיכה (!h) + הגבלת סטאף
+# ==========================================
 class HelpView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
     @discord.ui.button(label="טפל כאן 🛠️", style=discord.ButtonStyle.success, custom_id="handle_help_btn")
     async def handle_here(self, interaction: discord.Interaction, button: discord.ui.Button):
-        staff_mention = f"<@&{1488259168593772554}>"
-        user_mention = interaction.user.mention
-        await interaction.channel.send(f"🔔 {staff_mention}, המשתמש {user_mention} ביקש עזרה כאן!")
-        await interaction.response.send_message("✅ בקשת העזרה נשלחה לצוות, מייד יתפנו אלייך.", ephemeral=True)
-
+        # בדיקה: האם ללוחץ יש את רול הסטאף הכללי?
+        has_staff_role = interaction.user.get_role(GENERAL_STAFF_ROLE_ID) is not None
+        is_admin = interaction.user.guild_permissions.administrator
+        
+        if not has_staff_role and not is_admin:
+            return await interaction.response.send_message("❌ כפתור זה מיועד לחברי צוות השרת בלבד!", ephemeral=True)
+            
+        # הכרזה מי איש הצוות שלקח את הטיפול
+        await interaction.channel.send(f"🙋‍♂️ הפנייה נלקחה לטיפול על ידי איש הצוות: {interaction.user.mention}")
+        button.disabled = True
+        await interaction.response.edit_message(view=self)
 
 @bot.command(name="help_call", aliases=["h"])
 async def help_call_custom(ctx):
@@ -567,7 +517,30 @@ async def help_call_custom(ctx):
     embed.set_footer(text=f"בקשה נשלחה על ידי: {ctx.author.name} • {guild.name}")
     await ctx.send(embed=embed, view=HelpView())
 
-# --- פקדת ה-XP המעוצבת ---
+
+# ==========================================
+# 2. חנות ה-XP המקצועית בשרת (!myshop)
+# ==========================================
+@bot.command(name="myshop", aliases=["shop"])
+async def xp_shop_command(ctx):
+    embed = discord.Embed(
+        title=f"🛒 חנות ה-XP הרשמית - {ctx.guild.name}",
+        description="צברתם מספיק נקודות? זה הזמן לרכוש רולים ייחודיים ולהשתדרג בשרת!",
+        color=discord.Color.gold()
+    )
+    embed.add_field(name="🎖️ רול: Iron Member", value="💰 עלות: **5,000 XP**\n*רמה נדרשת: 5*", inline=False)
+    embed.add_field(name="🥇 רול: Bronze Member", value="💰 עלות: **10,000 XP**\n*רמה נדרשת: 10*", inline=False)
+    embed.add_field(name="💎 רול: Silver Member", value="💰 עלות: **25,000 XP**\n*רמה נדרשת: 20*", inline=False)
+    embed.add_field(name="👑 רול: Gold VIP", value="💰 עלות: **50,000 XP**\n*רמה נדרשת: 35*", inline=False)
+    embed.set_footer(text="לקנייה יש לרשום בקשה בטיקט מול אחד מבוחני או מנהלי השרת.")
+    if ctx.guild.icon:
+        embed.set_thumbnail(url=ctx.guild.icon.url)
+    await ctx.send(embed=embed)
+
+
+# ==========================================
+# 3. פקודת ה-XP המעוצבת (כרטיס רמות)
+# ==========================================
 @bot.command(name="xp", aliases=["rank"])
 async def xp_card_command(ctx, member: discord.Member = None):
     member = member or ctx.author
@@ -589,39 +562,33 @@ async def xp_card_command(ctx, member: discord.Member = None):
     file = discord.File(fp=editor.image_bytes, filename="xp_card.png")
     await ctx.send(file=file)
 
-# --- משחקי XP ---
+
+# ==========================================
+# 4. קטגוריית משחקי ה-XP
+# ==========================================
 @bot.command(name="rps", aliases=["rock", "paper", "scissors"])
 async def rps_game(ctx, choice: str = None):
-    if not choice or choice.lower() not in ["אבן", "נייר", "מספריים"]:
-        return await ctx.send("❌ נא לבחור: `!rps אבן`, `!rps נייר` או `!rps מספריים`")
+    if not choice or choice.lower() not in ["אבן", "נייר", "מספריים"]: return await ctx.send("❌ נא לבחור: `!rps אבן`, `!rps נייר` או `!rps מספריים`")
     bot_choice = random.choice(["אבן", "נייר", "מספריים"])
     user_choice = choice.lower()
-    if user_choice == bot_choice:
-        await ctx.send("🤝 תיקו! שנינו בחרנו את אותו הדבר.")
+    if user_choice == bot_choice: await ctx.send("🤝 תיקו! שנינו בחרנו את אותו הדבר.")
     elif (user_choice == "אבן" and bot_choice == "מספריים") or (user_choice == "נייר" and bot_choice == "אבן") or (user_choice == "מספריים" and bot_choice == "נייר"):
         await ctx.send(f"🎉 ניצחת! בחרת {user_choice} ואני בחרתי {bot_choice}. זכית!")
-    else:
-        await ctx.send(f"😢 הפסדת! בחרת {user_choice} ואני בחרתי {bot_choice}.")
+    else: await ctx.send(f"😢 הפסדת! בחרת {user_choice} ואני בחרתי {bot_choice}.")
 
 @bot.command(name="guess", aliases=["g"])
 async def guess_game(ctx, number: int = None):
-    if not number or number < 1 or number > 5:
-        return await ctx.send("❌ נא לנחש מספר בין 1 ל-5! דוגמה: `!guess 3`")
+    if not number or number < 1 or number > 5: return await ctx.send("❌ נא לנחש מספר בין 1 ל-5! דוגמה: `!guess 3`")
     secret_number = random.randint(1, 5)
-    if number == secret_number:
-        await ctx.send(f"🎯 בול! המספר היה {secret_number}. זכית!")
-    else:
-        await ctx.send(f"❌ פספוס! ניחשת {number} אבל המספר האמיתי היה {secret_number}.")
+    if number == secret_number: await ctx.send(f"🎯 בול! המספר היה {secret_number}. זכית!")
+    else: await ctx.send(f"❌ פספוס! ניחשת {number} אבל המספר האמיתי היה {secret_number}.")
 
 @bot.command(name="football", aliases=["fb", "goal"])
 async def football_game(ctx, direction: str = None):
-    if not direction or direction not in ["ימין", "שמאל", "אמצע"]:
-        return await ctx.send("⚽ לאן לבעוט? תבחר: `!football ימין`, `!football שמאל` או `!football אמצע`")
+    if not direction or direction not in ["ימין", "שמאל", "אמצע"]: return await ctx.send("⚽ לאן לבעוט? תבחר: `!football ימין`, `!football שמאל` או `!football אמצע`")
     gk_jump = random.choice(["ימין", "שמאל", "אמצע"])
-    if direction == gk_jump:
-        await ctx.send(f"🧤 השוער זינק ל{gk_jump} והדף את הכדור! אין גול.")
-    else:
-        await ctx.send(f"⚽ GOAL!! השוער זינק ל{gk_jump} ואתה הבקעת ל{direction}! זכית!")
+    if direction == gk_jump: await ctx.send(f"🧤 השוער זינק ל{gk_jump} והדף את הכדור! אין גול.")
+    else: await ctx.send(f"⚽ GOAL!! השוער זינק ל{gk_jump} ואתה הבקעת ל{direction}! זכית!")
 
 @bot.command(name="blackjack", aliases=["bj"])
 async def blackjack_game(ctx, amount: int = 0):
@@ -629,34 +596,24 @@ async def blackjack_game(ctx, amount: int = 0):
     user_card2 = random.randint(1, 10)
     user_total = user_card1 + user_card2
     bot_total = random.randint(15, 22)
-    if user_total > 21:
-        await ctx.send(f"💥 נשרפת! הקלפים שלך: {user_card1} + {user_card2} = {user_total}. הפסדת.")
-    elif bot_total > 21 or user_total > bot_total:
-        await ctx.send(f"🃏 ניצחת בבלאקג'ק! לך יש {user_total} ולבוט יש {bot_total}. זכית!")
-    elif user_total == bot_total:
-        await ctx.send(f"🤝 תיקו! לשניכם יש {user_total}.")
-    else:
-        await ctx.send(f"😢 הפסדת! לך יש {user_total} ולבוט יש {bot_total}.")
+    if user_total > 21: await ctx.send(f"💥 נשרפת! הקלפים שלך: {user_card1} + {user_card2} = {user_total}. הפסדת.")
+    elif bot_total > 21 or user_total > bot_total: await ctx.send(f"🃏 ניצחת בבלאקג'ק! לך יש {user_total} ולבוט יש {bot_total}. זכית!")
+    elif user_total == bot_total: await ctx.send(f"🤝 תיקו! לשניכם יש {user_total}.")
+    else: await ctx.send(f"😢 הפסדת! לך יש {user_total} ולבוט יש {bot_total}.")
 
 @bot.command(name="gamble", aliases=["gift"])
 async def gamble_gift(ctx, box: int = None):
-    if not box or box < 1 or box > 3:
-        return await ctx.send("🎁 יש 3 קופסאות. נחש איפה המתנה: `!gamble 1`, `!gamble 2` או `!gamble 3`")
+    if not box or box < 1 or box > 3: return await ctx.send("🎁 יש 3 קופסאות. נחש איפה המתנה: `!gamble 1`, `!gamble 2` או `!gamble 3`")
     gift_box = random.randint(1, 3)
-    if box == gift_box:
-        await ctx.send(f"🎉 מצאת את המתנה בקופסה {gift_box}! זכית!")
-    else:
-        await ctx.send(f"📦 קופסה ריקה! המתנה הייתה בקופסה מספר {gift_box}.")
+    if box == gift_box: await ctx.send(f"🎉 מצאת את המתנה בקופסה {gift_box}! זכית!")
+    else: await ctx.send(f"📦 קופסה ריקה! המתנה הייתה בקופסה מספר {gift_box}.")
 
 @bot.command(name="coinsflip", aliases=["cf", "flip"])
 async def coins_flip(ctx, choice: str = None, amount: int = 0):
-    if not choice or choice not in ["עץ", "פאלי"]:
-        return await ctx.send("🪙 תבחר צד: `!coinsflip עץ` או `!coinsflip פאלי`")
+    if not choice or choice not in ["עץ", "פאלי"]: return await ctx.send("🪙 תבחר צד: `!coinsflip עץ` או `!coinsflip פאלי`")
     side = random.choice(["עץ", "פאלי"])
-    if choice == side:
-        await ctx.send(f"🤑 יצא {side}! ניחשת נכון וזכית!")
-    else:
-        await ctx.send(f"😭 יצא {side}! ניחשת {choice} והפסדת.")
+    if choice == side: await ctx.send(f"🤑 יצא {side}! ניחשת נכון וזכית!")
+    else: await ctx.send(f"😭 יצא {side}! ניחשת {choice} והפסדת.")
 
 @bot.command(name="mathquiz", aliases=["math"])
 async def math_quiz(ctx):
@@ -665,16 +622,12 @@ async def math_quiz(ctx):
     operator = random.choice(["+", "-", "*"])
     correct_answer = eval(f"{num1} {operator} {num2}")
     await ctx.send(f"🧮 פתור את התרגיל תוך 15 שניות: **{num1} {operator} {num2} = ?**")
-    def check(m):
-        return m.author == ctx.author and m.channel == ctx.channel and m.content.strip().replace('-', '').isdigit()
+    def check(m): return m.author == ctx.author and m.channel == ctx.channel and m.content.strip().replace('-', '').isdigit()
     try:
         msg = await bot.wait_for("message", check=check, timeout=15.0)
-        if int(msg.content) == correct_answer:
-            await ctx.send(f"👑 גאון! התשובה נכונה. זכית!")
-        else:
-            await ctx.send(f"❌ טעות! התשובה הנכונה היא {correct_answer}.")
-    except asyncio.TimeoutError:
-        await ctx.send(f"⏰ נגמר הזמן! התשובה הייתה {correct_answer}.")
+        if int(msg.content) == correct_answer: await ctx.send(f"👑 גאון! התשובה נכונה. זכית!")
+        else: await ctx.send(f"❌ טעות! התשובה הנכונה היא {correct_answer}.")
+    except asyncio.TimeoutError: await ctx.send(f"⏰ נגמר הזמן! התשובה הייתה {correct_answer}.")
 
 @bot.command(name="slot", aliases=["slots"])
 async def slot_machine(ctx):
@@ -683,98 +636,9 @@ async def slot_machine(ctx):
     slot2 = random.choice(emojis)
     slot3 = random.choice(emojis)
     await ctx.send(f"🎰 **[ {slot1} | {slot2} | {slot3} ]** 🎰")
-    if slot1 == slot2 == slot3:
-        await ctx.send("🔥 ג'קפוט מטורף! 3 סמלים זהים! זכית!")
-    elif slot1 == slot2 or slot2 == slot3 or slot1 == slot3:
-        await ctx.send("✨ נחמד מאוד! 2 סמלים זהים. זכית!")
-    else:
-        await ctx.send("💸 אין התאמה, נסה את מזלך שוב בפעם הבאה!")
-# ==========================================
-# המודאלים של 14 שאלות המבחן (שלב 1, 2, 3)
-# ==========================================
-
-# שלב 3 - שאלות 11-14
-class StaffModalPart3(discord.ui.Modal, title="טופס מועמדות - שלב 3 מתוך 3"):
-    def __init__(self, answers_part1, answers_part2):
-        super().__init__()
-        self.answers_part1 = answers_part1
-        self.answers_part2 = answers_part2
-
-        self.q11 = discord.ui.TextInput(label="11. איך תתרום לשרת, וכמה רחוק תגיע?", style=discord.TextStyle.paragraph, max_length=300)
-        self.q12 = discord.ui.TextInput(label="12. מאיפה הרצון להצטרף לצוות?", style=discord.TextStyle.paragraph, max_length=300)
-        self.q13 = discord.ui.TextInput(label="13. למה אתה מתאים ורעיונות לשיפור?", style=discord.TextStyle.paragraph, max_length=400)
-        self.q14 = discord.ui.TextInput(label="14. האם יש לך 2FA פעיל בחשבון? (כן/לא)", style=discord.TextStyle.short, max_length=10)
-
-        self.add_item(self.q11)
-        self.add_item(self.q12)
-        self.add_item(self.q13)
-        self.add_item(self.q14)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.send_message("⌛ מעבד ושולח את הטופס המלא להנהלה...", ephemeral=True)
-        logs_channel = interaction.guild.get_channel(STAFF_LOGS_CHANNEL_ID)
-        if not logs_channel:
-            return
-            
-        embed = discord.Embed(
-            title=f"📝 טופס מועמדות חדש - {interaction.user.name}",
-            description=f"**מגיש הטופס:** {interaction.user.mention}\n**ID:** {interaction.user.id}",
-            color=discord.Color.blue()
-        )
-        
-        embed.add_field(name="📋 פרטים אישיים (שם, גיל, זמן בשרת):", value=str(self.answers_part1), inline=False)
-        embed.add_field(name="🧠 תשובות סיטואציות וזמן השקעה:", value=str(self.answers_part2), inline=False)
-        embed.add_field(name="11. תרומה ושאיפות:", value=self.q11.value, inline=False)
-        embed.add_field(name="12. מאיפה הרצון להצטרף:", value=self.q12.value, inline=False)
-        embed.add_field(name="13. למה דווקא אתה ושיפורים:", value=self.q13.value, inline=False)
-        embed.add_field(name="14. האם יש 2FA?", value=self.q14.value, inline=False)
-        
-        if interaction.user.display_avatar:
-            embed.set_thumbnail(url=interaction.user.display_avatar.url)
-            
-        await logs_channel.send(embed=embed, view=StaffApprovalButtons(interaction.user.id))
-
-# שלב 2 - שאלות 6-10
-class StaffModalPart2(discord.ui.Modal, title="טופס מועמדות - שלב 2 מתוך 3"):
-    def __init__(self, answers_part1):
-        super().__init__()
-        self.answers_part1 = answers_part1
-
-        self.q6 = discord.ui.TextInput(label="6. התמודדות עם סיטואציה פחות נעימה/ריב", style=discord.TextStyle.paragraph, max_length=400)
-        self.q7 = discord.ui.TextInput(label="7. איך תגיב אם צוות מתחתיך/מעליך תוקף?", style=discord.TextStyle.paragraph, max_length=300)
-        self.q8 = discord.ui.TextInput(label="8. כמה זמן תוכל לתת לשרת בשבוע/יום?", style=discord.TextStyle.short, max_length=100)
-        self.q9 = discord.ui.TextInput(label="9. השרת לא פעיל, איך תשנה את המצב?", style=discord.TextStyle.paragraph, max_length=300)
-        self.q10 = discord.ui.TextInput(label="10. באיזה תחומים אתה רוצה לעזור בשרת?", style=discord.TextStyle.paragraph, max_length=200)
-
-        self.add_item(self.q6)
-        self.add_item(self.q7)
-        self.add_item(self.q8)
-        self.add_item(self.q9)
-        self.add_item(self.q10)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        answers_part2 = [self.q6.value, self.q7.value, self.q8.value, self.q9.value, self.q10.value]
-        await interaction.response.send_modal(StaffModalPart3(self.answers_part1, answers_part2))
-
-# שלב 1 - שאלות 1-5
-class StaffModalPart1(discord.ui.Modal, title="טופס מועמדות - שלב 1 מתוך 3"):
-    def __init__(self):
-        super().__init__()
-        self.q1 = discord.ui.TextInput(label="1. שם מלא / כינוי בדיסקורד", style=discord.TextStyle.short, max_length=100)
-        self.q2 = discord.ui.TextInput(label="2. גיל", style=discord.TextStyle.short, max_length=3)
-        self.q3 = discord.ui.TextInput(label="3. כמה זמן אתה בשרת שלנו?", style=discord.TextStyle.short, max_length=100)
-        self.q4 = discord.ui.TextInput(label="4. ניסיון קודם בניהול וסיבת עזיבה", style=discord.TextStyle.paragraph, max_length=400)
-        self.q5 = discord.ui.TextInput(label="5. איך אתה מגדיר צוות טוב ותכונותיו?", style=discord.TextStyle.paragraph, max_length=400)
-
-        self.add_item(self.q1)
-        self.add_item(self.q2)
-        self.add_item(self.q3)
-        self.add_item(self.q4)
-        self.add_item(self.q5)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        answers_part1 = [self.q1.value, self.q2.value, self.q3.value, self.q4.value, self.q5.value]
-        await interaction.response.send_modal(StaffModalPart2(answers_part1))
+    if slot1 == slot2 == slot3: await ctx.send("🔥 ג'קפוט מטורף! 3 סמלים זהים! זכית!")
+    elif slot1 == slot2 or slot2 == slot3 or slot1 == slot3: await ctx.send("✨ נחמד מאוד! 2 סמלים זהים. זכית!")
+    else: await ctx.send("💸 אין התאמה, נסה את מזלך שוב בפעם הבאה!")
 
 keep_alive()
 bot.run(os.getenv('DISCORD_TOKEN'))
