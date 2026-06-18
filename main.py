@@ -515,10 +515,6 @@ async def sf_command(interaction: discord.Interaction, member: discord.Member):
         await interaction.response.send_message("❌ שגיאה: הרול בשם 'Member' לא נמצא בשרת. ודא שהשם שלו מדויק!", ephemeral=True)
         return
 
-try:
-    await member.add_roles(member_role, staff_friend_role)
-except Exception:
-    pass
 
 
 
