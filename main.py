@@ -497,26 +497,22 @@ async def sf_command(interaction: discord.Interaction, member: discord.Member):
             description=f"המשתמש {member.mention} קיבל בהצלחה את הרולים שלו.",
             color=discord.Color.purple()
         )
-       @bot.command(name="xp", aliases=["rank"])
+      @bot.command(name="xp", aliases=["rank"])
 async def xp_card_command(ctx, member: discord.Member = None):
     member = member or ctx.author
     
-    # נתוני דוגמה - המערכת שלך תתאים אותם ל-XP הקיים
     user_xp = 7681  
     user_level = 31 
     next_level_xp = 10000 
     
     percentage = int((user_xp / next_level_xp) * 100)
     
-    # יצירת רקע כהה לכרטיס
     background = Canvas(shape=(900, 250), color="#2f3136")
     editor = Editor(background)
     
-    # התיקון כאן: load_image באותיות קטנות
     avatar_image = load_image(member.display_avatar.url)
     editor.avatar(avatar_image, position=(50, 50), size=(150, 150), circle=True)
     
-    # הוספת טקסטים ומד התקדמות
     editor.text((240, 60), f"◆ IN|★{member.name}★", color="#ffffff", font=Font.poppins(size=35, variant="bold"))
     editor.text((240, 120), f"XP: {user_xp:,} / {next_level_xp:,}", color="#aaaaaa", font=Font.poppins(size=25))
     editor.text((240, 160), f"רמה: {user_level}", color="#ffaa00", font=Font.poppins(size=28, variant="bold"))
@@ -532,6 +528,7 @@ async def xp_card_command(ctx, member: discord.Member = None):
     
     file = discord.File(fp=editor.image_bytes, filename="xp_card.png")
     await ctx.send(file=file)
+
 
 # פקודת העזרה החדשה שלך
 STAFF_ROLE_ID = 1488259168593772554
