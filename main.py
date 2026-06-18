@@ -7,6 +7,11 @@ import asyncio
 import random
 import io
 from easy_pil import Editor, Canvas, load_image, Font
+intents = discord.Intents.all()
+intents.message_content = True
+
+bot = commands.Bot(command_prefix='!', intents=intents)
+bot.remove_command('help')
 
 
 # הגדרת משתנים ורולים
