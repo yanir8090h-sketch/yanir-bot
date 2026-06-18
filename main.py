@@ -607,38 +607,53 @@ async def slot_machine(ctx):
 
 
 # ==========================================
-# 4. פקודת עזרה משודרגת עם סיבה וחדר וויס (!h)
+# פקודת עזרה משודרגת עם סיבה וחדר וויס (!h)
 # ==========================================
-class HelpView(discord.ui.View):
+class RequestHelpView(discord.ui.View):
     def __init__(self, request_msg_url=None):
         super().__init__(timeout=None)
         self.request_msg_url = request_msg_url
 
-    @discord.ui.button(label="טפל כאן 🛠️", style=discord.ButtonStyle.success, custom_id="handle_help_btn")
+    @discord.ui.button(label="טפל כאן 🛠️", style=discord.ButtonStyle.success, custom_id="btn_handle_help_request")
     async def handle_here(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # בדיקה: רק לצוות השרת מותר ללחוץ
         has_staff_role = interaction.user.get_role(GENERAL_STAFF_ROLE_ID) is not None
         is_admin = interaction.user.guild_permissions.administrator
+        
         if not has_staff_role and not is_admin:
             return await interaction.response.send_message("❌ כפתור זה מיועד לחברי צוות השרת בלבד!", ephemeral=True)
+
+        # הכרזה בצ'אט מי איש הצוות שלקח את הטיפול
         await interaction.channel.send(f"🙋‍♂️ הפנייה נלקחה לטיפול על ידי איש הצוות: {interaction.user.mention}")
+        
+        # שליחת הודעה פרטית (DM) לנציג עם קישור מהיר לחדר
         try:
             dm_embed = discord.Embed(
                 title="🚀 קריאת עזרה נלקחה בהצלחה",
-                description=f"לקחת לטיפול את הפנייה בערוץ {interaction.channel.mention}.\n🔗 [לחץ כאן כדי לקפוץ ישירות להודעת הקריאה]({self.request_msg_url or ''})",
+                description=f"לקחת לטיפול את הפנייה בערוץ {interaction.channel.mention}.\n"
+                            f"🔗 [לחץ כאן כדי לקפוץ ישירות להודעה]({self.request_msg_url or ''})",
                 color=discord.Color.green()
             )
             await interaction.user.send(embed=dm_embed)
         except discord.Forbidden:
             pass
+
+        # נעילת הכפתור
         button.disabled = True
         button.label = f"בטיפול של {interaction.user.name} ✔️"
         button.style = discord.ButtonStyle.secondary
         await interaction.response.edit_message(view=self)
 
-@bot.command(name="help_call", aliases=["h"])
+
+@bot.command(name="h")
 async def help_call_custom(ctx, *, args: str = None):
+    """
+    שימוש בדיסקורד:
+    !h הסיבה שלי כאן | שם חדר הוויס
+    """
     reason = "לא צוינה סיבה"
     voice_room = "לא צוין חדר וויס"
+    
     if args:
         if "|" in args:
             parts = args.split("|", 1)
@@ -646,23 +661,32 @@ async def help_call_custom(ctx, *, args: str = None):
             voice_room = parts[1].strip()
         else:
             reason = args.strip()
+
     guild = ctx.guild
     embed = discord.Embed(
         title=f"⚠️ קריאת עזרה דחופה - {guild.name} ⚠️",
         description=(
-            f"**👤 המבקש:** {ctx.author.mention}\n**📂 ערוץ טקסט:** {ctx.channel.mention}\n\n"
-            f"**📝 סיבת הפנייה:**\n`{reason}`\n\n**🔊 חדר וויס נוכחי:**\n`{voice_room}`\n\n"
-            f"**💡 מידע לצוות:**\nנציג פנוי מתוך <@&{GENERAL_STAFF_ROLE_ID}> מתבקש ללחוץ למטה ולהתייצב לעזרה."
+            f"**👤 המבקש:** {ctx.author.mention}\n"
+            f"**📂 ערוץ טקסט:** {ctx.channel.mention}\n\n"
+            f"**📝 סיבת הפנייה:**\n`{reason}`\n\n"
+            f"**🔊 חדר וויס נוכחי:**\n`{voice_room}`\n\n"
+            f"**💡 מידע לצוות:**\n"
+            f"נציג פנוי מתוך <@&{GENERAL_STAFF_ROLE_ID}> מתבקש ללחוץ למטה ולהתייצב לעזרה."
         ),
         color=discord.Color.from_rgb(47, 49, 54)
     )
-    if guild.icon: embed.set_thumbnail(url=guild.icon.url)
+    if guild.icon:
+        embed.set_thumbnail(url=guild.icon.url)
     embed.set_footer(text=f"נשלח על ידי: {ctx.author.name} • {guild.name}")
+    
     sent_message = await ctx.send(embed=embed)
-    await sent_message.edit(view=HelpView(request_msg_url=sent_message.jump_url))
-    try: await ctx.message.delete()
-    except Exception:
+    await sent_message.edit(view=RequestHelpView(request_msg_url=sent_message.jump_url))
+    
+    try:
+        await ctx.message.delete()
+    except discord.NotFound:
         pass
+
 
 keep_alive()
 bot.run(os.getenv('DISCORD_TOKEN'))
