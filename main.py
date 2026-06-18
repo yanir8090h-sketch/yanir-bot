@@ -485,52 +485,50 @@ async def sf_command(interaction: discord.Interaction, member: discord.Member):
     except discord.Forbidden:
         await interaction.response.send_message("❌ שגיאה: לבוט אין הרשאה מספקת. ודא שהרול של הבוט נמצא בראש רשימת הרולים בדיסקורד!", ephemeral=True)
 
-# --- פקודת עזרה ותמיכה (!h) בעיצוב המקצועי של מאסטר אוהד ---
+STAFF_ROLE_ID = 123456789012345678  # שים כאן את ה-ID של תפקיד הצוות שלך
+
+# הגדרת הכפתור הלחיץ לצוות
+class HelpView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="טפל כאן 🛠️", style=discord.ButtonStyle.success, custom_id="handle_help_btn")
+    async def handle_here(self, interaction: discord.Interaction, button: discord.ui.Button):
+        staff_mention = f"<@&{STAFF_ROLE_ID}>"
+        user_mention = interaction.user.mention
+        
+        # שליחת הודעת תיוג בערוץ
+        await interaction.channel.send(f"🔔 {staff_mention}, המשתמש {user_mention} ביקש עזרה כאן!")
+        # הודעה זמנית שרק הלוחץ רואה
+        await interaction.response.send_message("✅ בקשת העזרה נשלחה לצוות, מייד יתפנו אלייך.", ephemeral=True)
+
+# פקודת העזרה החדשה שלך
+STAFF_ROLE_ID = 1488259168593772554
 @bot.command(name="help_call", aliases=["h"])
 async def help_call_custom(ctx):
     guild = ctx.guild
     
-    # יצירת אמבד יוקרתי ומעוצב
     embed = discord.Embed(
         title=f"⚠️ מרכז התמיכה והעזרה - {guild.name} ⚠️",
         description=(
-            "שלום חברים! נתקלתם בבעיה, שגיאה, או שאתם זקוקים לעזרת צוות הניהול המורחב?\n"
-            "הגעתם למקום הנכון. אנו זמינים עבורכם לכל פנייה, שאלה או בקשת עזרה בשרת.\n\n"
-            "**💡 דגשים חשובים לפני פתיחת פנייה:**\n"
-            "• נא לשמור על שפה מכבדת מול חברי הסטאף.\n"
-            "• אין לפתוח טיקטים סתם ללא סיבה מוצדקת (הדבר עלול לגרור ענישה).\n"
-            "• צוות השרת עושה את מירב המאמצים לענות במהירות האפשרית."
+            "שלום חברים! נתקלתם בבעיה, שגיאה, או שאתם זקוקים לעזרה כלשהי?\n"
+            "הגעתם למקום הנכון. אנו זמינים עבורכם לכל פנייה, שאלה או בקשת עזרה רשתית.\n\n"
+            "**💡 מידע על כל הפקודות:**\n"
+            "• ניתן ללחוץ על הכפתור למטה כדי להזעיק תמיכה.\n"
+            "• נציג מהצוות יתייג את עצמו ויטפל בכם מיד."
         ),
-        color=discord.Color.from_rgb(47, 49, 54) # צבע כהה ומקצועי כמו של דיסקורד
+        color=discord.Color.from_rgb(47, 49, 54)
     )
     
-    # הוספת תמונת השרת (לוגו) בצד האמבד
     if guild.icon:
         embed.set_thumbnail(url=guild.icon.url)
         
-    # שדות מידע מעוצבים
-    embed.add_field(name="⏰ שעות פעילות הטיקטים", value="```24/7 - בהתאם לזמינות הצוות```", inline=False)
-    embed.add_field(name="🛡️ בורר פניות אוטומטי", value="לאחר לחיצה על הכפתור, ייפתח לכם חדר אישי ומאובטח.", inline=False)
+    embed.set_footer(text=f"בקשה נשלחה על ידי: {ctx.author.name} • {guild.name}")
     
-    # שורת תחתית (Footer) עם השם שלך/שם השרת
-    embed.set_footer(text=f"MasterOhad Network • כל הזכויות שמורות", icon_url=guild.icon.url if guild.icon else None)
-    
-    # חיבור כפתור הטיקט הקיים שלך מהקוד (TicketView) בשביל לפתוח חדר
-    try:
-        view = TicketView()
-    except NameError:
-        # פתרון גיבוי במידה והקלאס לא מוגדר תחת השם הזה
-        view = None
-        
-    if view:
-        await ctx.send(embed=embed, view=view)
-    else:
-        await ctx.send(embed=embed)
-        await ctx.send("⚠️ שגיאה זמנית: מערכת הכפתורים של הטיקטים (TicketView) לא נמצאה בקוד.")
+    # שליחת האמבד יחד עם הכפתור
+    await ctx.send(embed=embed, view=HelpView())
 
 keep_alive()
 bot.run(os.getenv('DISCORD_TOKEN'))
-
-
 
 
