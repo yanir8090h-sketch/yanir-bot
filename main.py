@@ -239,34 +239,47 @@ class TicketView(discord.ui.View):
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def setup_ticket(ctx, target_channel: discord.TextChannel = None):
-    """פקודת טיקטים - מריצים כך: setup_ticket #ערוץ_הטיקטים!"""
-    try: await ctx.message.delete()
-    except discord.NotFound: pass
+    """פקודה להקמת מערכת טיקטים"""
+    try:
+        await ctx.message.delete()
+    except discord.NotFound:
+        pass
+        
     channel_to_send = target_channel if target_channel else ctx.channel
     
     embed = discord.Embed(
-        title="תמיכה טכנית 🎫", 
-        description="בחר את סוג הפנייה שברצונך לפתוח מתוך תפריט הבחירה שלמטה.\nצוות המנהלים יתפנה אליך בהקדם האפשרי!", 
+        title="🎫 פתיחת פנייה לצוות",
+        description="על מנת לפתוח פנייה חדשה לצוות השרת, לחצו על הכפתור הירוק למטה.",
         color=discord.Color.from_rgb(47, 49, 54)
     )
-    if ctx.guild.icon: embed.set_image(url=ctx.guild.icon.url)
-    await channel_to_send.send(embed=embed, view=TicketDropdownView())
+    if ctx.guild.icon:
+        embed.set_thumbnail(url=ctx.guild.icon.url)
+        
+    # שינוי כאן: שימוש ב-TicketView() הקיים בקוד שלך
+    await channel_to_send.send(embed=embed, view=TicketView())
+
 
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def setup_verify(ctx, target_channel: discord.TextChannel = None):
-    """פקודת אימות - מריצים כך: setup_verify #ערוץ_האימות!"""
-    try: await ctx.message.delete()
-    except discord.NotFound: pass
+    """פקודה להקמת מערכת אימות"""
+    try:
+        await ctx.message.delete()
+    except discord.NotFound:
+        pass
+        
     channel_to_send = target_channel if target_channel else ctx.channel
     
     embed = discord.Embed(
-        title="🔒 אימות חשבון - Verification", 
-        description="ברוך הבא לשרת!\nכדי לקבל גישה לשאר הערוצים, לחץ על הכפתור הירוק למטה.", 
+        title="✅ מערכת אימות - Verification",
+        description="ברוכים הבאים לשרת! כדי לקבל גישה לשאר הערוצים, לחצו על הכפתור למטה.",
         color=discord.Color.green()
     )
-    if ctx.guild.icon: embed.set_thumbnail(url=ctx.guild.icon.url)
-    await channel_to_send.send(embed=embed, view=VerifyView())
+    if ctx.guild.icon:
+        embed.set_thumbnail(url=ctx.guild.icon.url)
+        
+    # שינוי כאן: שימוש ב-TicketView() הקיים בקוד שלך במקום ב-VerifyView הלא קיים
+    await channel_to_send.send(embed=embed, view=TicketView())
 
 # ==========================================
 # הפעלת ה-Views הקבועים ואירועים קריטיים
