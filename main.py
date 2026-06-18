@@ -206,8 +206,7 @@ class VerifyView(discord.ui.View):
 class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
-
-    @bot.command()
+@bot.command()
 @commands.has_permissions(administrator=True)
 async def setup_ticket(ctx, target_channel: discord.TextChannel = None):
     try:
