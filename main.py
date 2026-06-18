@@ -671,6 +671,92 @@ async def slot_machine(ctx):
         await ctx.send("✨ נחמד מאוד! 2 סמלים זהים. זכית!")
     else:
         await ctx.send("💸 אין התאמה, נסה את מזלך שוב בפעם הבאה!")
+# ==========================================
+# המודאלים של 14 שאלות המבחן (שלב 1, 2, 3)
+# ==========================================
+
+# שלב 3 - שאלות 11-14
+class StaffModalPart3(discord.ui.Modal, title="טופס מועמדות - שלב 3 מתוך 3"):
+    def __init__(self, answers_part1, answers_part2):
+        super().__init__()
+        self.answers_part1 = answers_part1
+        self.answers_part2 = answers_part2
+
+        self.q11 = discord.ui.TextInput(label="11. איך תתרום לשרת, וכמה רחוק תגיע?", style=discord.TextStyle.paragraph, max_length=300)
+        self.q12 = discord.ui.TextInput(label="12. מאיפה הרצון להצטרף לצוות?", style=discord.TextStyle.paragraph, max_length=300)
+        self.q13 = discord.ui.TextInput(label="13. למה אתה מתאים ורעיונות לשיפור?", style=discord.TextStyle.paragraph, max_length=400)
+        self.q14 = discord.ui.TextInput(label="14. האם יש לך 2FA פעיל בחשבון? (כן/לא)", style=discord.TextStyle.short, max_length=10)
+
+        self.add_item(self.q11)
+        self.add_item(self.q12)
+        self.add_item(self.q13)
+        self.add_item(self.q14)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.send_message("⌛ מעבד ושולח את הטופס המלא להנהלה...", ephemeral=True)
+        logs_channel = interaction.guild.get_channel(STAFF_LOGS_CHANNEL_ID)
+        if not logs_channel:
+            return
+            
+        embed = discord.Embed(
+            title=f"📝 טופס מועמדות חדש - {interaction.user.name}",
+            description=f"**מגיש הטופס:** {interaction.user.mention}\n**ID:** {interaction.user.id}",
+            color=discord.Color.blue()
+        )
+        
+        embed.add_field(name="📋 פרטים אישיים (שם, גיל, זמן בשרת):", value=str(self.answers_part1), inline=False)
+        embed.add_field(name="🧠 תשובות סיטואציות וזמן השקעה:", value=str(self.answers_part2), inline=False)
+        embed.add_field(name="11. תרומה ושאיפות:", value=self.q11.value, inline=False)
+        embed.add_field(name="12. מאיפה הרצון להצטרף:", value=self.q12.value, inline=False)
+        embed.add_field(name="13. למה דווקא אתה ושיפורים:", value=self.q13.value, inline=False)
+        embed.add_field(name="14. האם יש 2FA?", value=self.q14.value, inline=False)
+        
+        if interaction.user.display_avatar:
+            embed.set_thumbnail(url=interaction.user.display_avatar.url)
+            
+        await logs_channel.send(embed=embed, view=StaffApprovalButtons(interaction.user.id))
+
+# שלב 2 - שאלות 6-10
+class StaffModalPart2(discord.ui.Modal, title="טופס מועמדות - שלב 2 מתוך 3"):
+    def __init__(self, answers_part1):
+        super().__init__()
+        self.answers_part1 = answers_part1
+
+        self.q6 = discord.ui.TextInput(label="6. התמודדות עם סיטואציה פחות נעימה/ריב", style=discord.TextStyle.paragraph, max_length=400)
+        self.q7 = discord.ui.TextInput(label="7. איך תגיב אם צוות מתחתיך/מעליך תוקף?", style=discord.TextStyle.paragraph, max_length=300)
+        self.q8 = discord.ui.TextInput(label="8. כמה זמן תוכל לתת לשרת בשבוע/יום?", style=discord.TextStyle.short, max_length=100)
+        self.q9 = discord.ui.TextInput(label="9. השרת לא פעיל, איך תשנה את המצב?", style=discord.TextStyle.paragraph, max_length=300)
+        self.q10 = discord.ui.TextInput(label="10. באיזה תחומים אתה רוצה לעזור בשרת?", style=discord.TextStyle.paragraph, max_length=200)
+
+        self.add_item(self.q6)
+        self.add_item(self.q7)
+        self.add_item(self.q8)
+        self.add_item(self.q9)
+        self.add_item(self.q10)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        answers_part2 = [self.q6.value, self.q7.value, self.q8.value, self.q9.value, self.q10.value]
+        await interaction.response.send_modal(StaffModalPart3(self.answers_part1, answers_part2))
+
+# שלב 1 - שאלות 1-5
+class StaffModalPart1(discord.ui.Modal, title="טופס מועמדות - שלב 1 מתוך 3"):
+    def __init__(self):
+        super().__init__()
+        self.q1 = discord.ui.TextInput(label="1. שם מלא / כינוי בדיסקורד", style=discord.TextStyle.short, max_length=100)
+        self.q2 = discord.ui.TextInput(label="2. גיל", style=discord.TextStyle.short, max_length=3)
+        self.q3 = discord.ui.TextInput(label="3. כמה זמן אתה בשרת שלנו?", style=discord.TextStyle.short, max_length=100)
+        self.q4 = discord.ui.TextInput(label="4. ניסיון קודם בניהול וסיבת עזיבה", style=discord.TextStyle.paragraph, max_length=400)
+        self.q5 = discord.ui.TextInput(label="5. איך אתה מגדיר צוות טוב ותכונותיו?", style=discord.TextStyle.paragraph, max_length=400)
+
+        self.add_item(self.q1)
+        self.add_item(self.q2)
+        self.add_item(self.q3)
+        self.add_item(self.q4)
+        self.add_item(self.q5)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        answers_part1 = [self.q1.value, self.q2.value, self.q3.value, self.q4.value, self.q5.value]
+        await interaction.response.send_modal(StaffModalPart2(answers_part1))
 
 keep_alive()
 bot.run(os.getenv('DISCORD_TOKEN'))
