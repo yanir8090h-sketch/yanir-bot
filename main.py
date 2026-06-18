@@ -4,21 +4,15 @@ from discord.ext import commands
 from flask import Flask
 from threading import Thread
 import asyncio
-class HelpButtonView(discord.ui.View):
-   class HelpButtonView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
+import random
+import io
+from easy_pil import Editor, Canvas, LoadImage, Font
 
-    @discord.ui.button(label="עזרה", style=discord.ButtonStyle.success, custom_id="take_help_call")
-    async def take_call(self, interaction: discord.Interaction, button: discord.ui.Button):
-        embed = interaction.message.embeds
-        embed.set_field_at(2, name="טופל על ידי", value=f"{interaction.user.mention}", inline=False)
-        embed.color = discord.Color.green()
-        button.disabled = True
-        button.label = "בטיפול"
-        button.style = discord.ButtonStyle.secondary
-        await interaction.response.edit_message(embed=embed, view=self)
-        await interaction.followup.send(f"{interaction.user.mention} קיבל את הקריאה!", ephemeral=False)
+intents = discord.Intents.all()
+intents.message_content = True
+
+bot = commands.Bot(command_prefix='!', intents=intents)
+bot.remove_command('help')
 
 # הגדרות השרת והאינטנטים
 intents = discord.Intents.all()
@@ -563,6 +557,148 @@ async def help_call_custom(ctx):
     
     # שליחת האמבד יחד עם הכפתור
     await ctx.send(embed=embed, view=HelpView())
+# ==========================================
+# קטגוריית משחקי XP (XP GAMES) עם קיצורים
+# ==========================================
+
+# 1. אבן נייר ומספריים (קיצורים: !rps, !rock)
+@bot.command(name="rps", aliases=["rock", "paper", "scissors"])
+async def rps_game(ctx, choice: str = None):
+    if not choice or choice.lower() not in ["אבן", "נייר", "מספריים"]:
+        return await ctx.send("❌ נא לבחור: `!rps אבן`, `!rps נייר` או `!rps מספריים`")
+    
+    bot_choice = random.choice(["אבן", "נייר", "מספריים"])
+    user_choice = choice.lower()
+    
+    if user_choice == bot_choice:
+        result = "🤝 תיקו! שנינו בחרנו את אותו הדבר."
+    elif (user_choice == "אבן" and bot_choice == "מספריים") or \
+         (user_choice == "נייר" and bot_choice == "אבן") or \
+         (user_choice == "מספריים" and bot_choice == "נייר"):
+        result = f"🎉 ניצחת! בחרת {user_choice} ואני בחרתי {bot_choice}. קיבלת 50 XP!"
+        await update_user_xp(ctx.author.id, 50)
+    else:
+        result = f"😢 הפסדת! בחרת {user_choice} ואני בחרתי {bot_choice}."
+        
+    await ctx.send(result)
+
+# 2. נחש את המספר 1-5 (קיצורים: !guess, !g)
+@bot.command(name="guess", aliases=["g"])
+async def guess_game(ctx, number: int = None):
+    if not number or number < 1 or number > 5:
+        return await ctx.send("❌ נא לנחש מספר בין 1 ל-5! דוגמה: `!guess 3`")
+    
+    secret_number = random.randint(1, 5)
+    if number == secret_number:
+        await ctx.send(f"🎯 בול! המספר היה {secret_number}. זכית ב-100 XP!")
+        await update_user_xp(ctx.author.id, 100)
+    else:
+        await ctx.send(f"❌ פספוס! ניחשת {number} אבל המספר האמיתי היה {secret_number}.")
+
+# 3. פנדל כדורגל (קיצורים: !football, !fb, !goal)
+@bot.command(name="football", aliases=["fb", "goal"])
+async def football_game(ctx, direction: str = None):
+    if not direction or direction not in ["ימין", "שמאל", "אמצע"]:
+        return await ctx.send("⚽ לאן לבעוט? תבחר: `!football ימין`, `!football שמאל` או `!football אמצע`")
+    
+    gk_jump = random.choice(["ימין", "שמאל", "אמצע"])
+    if direction == gk_jump:
+        await ctx.send(f"🧤 השוער זינק ל{gk_jump} והדף את הכדור! אין גול.")
+    else:
+        await ctx.send(f"⚽ GOAL!! השוער זינק ל{gk_jump} ואתה הבקעת ל{direction}! זכית ב-150 XP!")
+        await update_user_xp(ctx.author.id, 150)
+
+# 4. בלאק ג'ק 21 (קיצורים: !blackjack, !bj)
+@bot.command(name="blackjack", aliases=["bj"])
+async def blackjack_game(ctx, amount: int = 0):
+    if amount < 0:
+        return await ctx.send("❌ אי אפשר להמר על סכום שלילי!")
+    
+    user_card1 = random.randint(1, 11)
+    user_card2 = random.randint(1, 10)
+    user_total = user_card1 + user_card2
+    bot_total = random.randint(15, 22)
+    
+    if user_total > 21:
+        await ctx.send(f"💥 נשרפת! הקלפים שלך: {user_card1} + {user_card2} = {user_total}. הפסדת {amount} XP.")
+        await update_user_xp(ctx.author.id, -amount)
+    elif bot_total > 21 or user_total > bot_total:
+        await ctx.send(f"🃏 ניצחת בבלאקג'ק! לך יש {user_total} ולבוט יש {bot_total}. זכית ב-{amount * 2 if amount > 0 else 200} XP!")
+        await update_user_xp(ctx.author.id, amount if amount > 0 else 200)
+    elif user_total == bot_total:
+        await ctx.send(f"🤝 תיקו! לשניכם יש {user_total}. ה-XP שלך נשאר במקומו.")
+    else:
+        await ctx.send(f"😢 הפסדת! לך יש {user_total} ולבוט יש {bot_total}. הפסדת {amount} XP.")
+        await update_user_xp(ctx.author.id, -amount)
+
+# 5. נחש איפה המתנה (קיצורים: !gamble, !gift)
+@bot.command(name="gamble", aliases=["gift"])
+async def gamble_gift(ctx, box: int = None):
+    if not box or box < 1 or box > 3:
+        return await ctx.send("🎁 יש 3 קופסאות. נחש איפה המתנה: `!gamble 1`, `!gamble 2` או `!gamble 3`")
+    
+    gift_box = random.randint(1, 3)
+    if box == gift_box:
+        await ctx.send(f"🎉 מצאת את המתנה בקופסה {gift_box}! קיבלת 300 XP!")
+        await update_user_xp(ctx.author.id, 300)
+    else:
+        await ctx.send(f"📦 קופסה ריקה! המתנה הייתה בקופסה מספר {gift_box}.")
+
+# 6. עץ או פאלי (קיצורים: !coinsflip, !cf, !flip)
+@bot.command(name="coinsflip", aliases=["cf", "flip"])
+async def coins_flip(ctx, choice: str = None, amount: int = 0):
+    if not choice or choice not in ["עץ", "פאלי"]:
+        return await ctx.send("🪙 תבחר צד: `!coinsflip עץ <סכום>` או `!coinsflip פאלי <סכום>`")
+    
+    side = random.choice(["עץ", "פאלי"])
+    if choice == side:
+        await ctx.send(f"🤑 יצא {side}! ניחשת נכון וזכית ב-{amount if amount > 0 else 100} XP!")
+        await update_user_xp(ctx.author.id, amount if amount > 0 else 100)
+    else:
+        await ctx.send(f"😭 יצא {side}! ניחשת {choice} והפסדת {amount} XP.")
+        await update_user_xp(ctx.author.id, -amount)
+
+# 7. חידון מתמטיקה (קיצורים: !mathquiz, !math)
+@bot.command(name="mathquiz", aliases=["math"])
+async def math_quiz(ctx):
+    num1 = random.randint(1, 20)
+    num2 = random.randint(1, 20)
+    operator = random.choice(["+", "-", "*"])
+    correct_answer = eval(f"{num1} {operator} {num2}")
+    
+    await ctx.send(f"🧮 פתור את התרגיל תוך 15 שניות: **{num1} {operator} {num2} = ?**")
+    
+    def check(m):
+        return m.author == ctx.author and m.channel == ctx.channel and m.content.strip().replace('-', '').isdigit()
+
+    try:
+        msg = await bot.wait_for("message", check=check, timeout=15.0)
+        if int(msg.content) == correct_answer:
+            await ctx.send(f"👑 גאון! התשובה נכונה. קיבלת 120 XP!")
+            await update_user_xp(ctx.author.id, 120)
+        else:
+            await ctx.send(f"❌ טעות! התשובה הנכונה היא {correct_answer}.")
+    except asyncio.TimeoutError:
+        await ctx.send(f"⏰ נגמר הזמן! התשובה הייתה {correct_answer}.")
+
+# 8. מכונת מזל (קיצורים: !slot, !slots)
+@bot.command(name="slot", aliases=["slots"])
+async def slot_machine(ctx):
+    emojis = ["🍒", "🍋", "🍇", "💎", "7️⃣"]
+    slot1 = random.choice(emojis)
+    slot2 = random.choice(emojis)
+    slot3 = random.choice(emojis)
+    
+    await ctx.send(f"🎰 **[ {slot1} | {slot2} | {slot3} ]** 🎰")
+    
+    if slot1 == slot2 == slot3:
+        await ctx.send("🔥 ג'קפוט מטורף! 3 סמלים זהים! זכית ב-1000 XP!")
+        await update_user_xp(ctx.author.id, 1000)
+    elif slot1 == slot2 or slot2 == slot3 or slot1 == slot3:
+        await ctx.send("✨ נחמד מאוד! 2 סמלים זהים. זכית ב-100 XP!")
+        await update_user_xp(ctx.author.id, 100)
+    else:
+        await ctx.send("💸 אין התאמה, נסה את מזלך שוב בפעם הבאה!")
 
 keep_alive()
 bot.run(os.getenv('DISCORD_TOKEN'))
