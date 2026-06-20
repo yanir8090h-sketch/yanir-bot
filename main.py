@@ -672,7 +672,6 @@ class AdvancedTicketDropdown(discord.ui.Select):
         target_role = guild.get_role(target_role_id)
 
         overwrites = {
-                    super().__init__(placeholder="בחר את סוג הפנייה שלך...", min_values=1, max_values=1, options=options, custom_id="dropdown_advanced_tickets")
             user: discord.PermissionOverwrite(read_messages=True, send_messages=True, embed_links=True, attach_files=True),
             guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True)
         }
