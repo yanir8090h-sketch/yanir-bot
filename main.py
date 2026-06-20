@@ -35,8 +35,9 @@ async def on_ready():
 
 
 class StaffFriendReview(discord.ui.View):
-    def __init__(self):
+    def __init__(self, applicant_id: int):
         super().__init__(timeout=None)
+        self.applicant_id = applicant_id
 
     @discord.ui.button(label="Accept ✅", style=discord.ButtonStyle.green, custom_id="staff_friend_accept_persistent")
     async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
