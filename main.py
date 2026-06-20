@@ -871,43 +871,56 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 @bot.event
 async def on_ready():
     print(f'הבוט מחובר בהצלחה בתור: {bot.user.name}')
+import discord
+from discord import app_commands
+from discord.ext import commands
+import os
 
-# יצירת הפקודה !appxp
-@bot.command(name="appxp")
-async def app_xp(ctx, amount: int):
-    # אם המספר חיובי - הוספת XP
-    if amount > 0:
-        minecraft_command = f"/xp add @p {amount}L"
-        title = "➕ הוספת רמות XP"
-        description = f"כדי להוסיף {amount} רמות, העתק את הפקודה הבאה למשחק:"
-        color = discord.Color.green()
+# הגדרת הבוט
+intents = discord.Intents.default()
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+@bot.event
+async def on_ready():
+    print(f'Your service is live 🚀')
+    print(f'הבוט מחובר בתור: {bot.user.name}')
+    try:
+        # סנכרון הפקודות מול השרתים של דיסקורד
+        synced = await bot.tree.sync()
+        print(f"סונכרנו בהצלחה {len(synced)} פקודות סלאש!")
+    except Exception as e:
+        print(f"שגיאה בסנכרון פקודות: {e}")
+
+# יצירת פקודת סלאש /appxp הכוללת כמות ושחקן לבחירה
+@bot.tree.command(name="appxp", description="יצירת פקודה להוספה או הורדת XP במיינקראפט")
+@app_commands.describe(amount="כמות הרמות (מספר חיובי להוספה, שלילי להורדה)", member="השחקן בדיסקורד עבורו מיועדת הפקודה (אופציונלי)")
+async def app_xp(interaction: discord.Interaction, amount: int, member: discord.Member = None):
     
-    # אם המספר שלילי - הורדת XP
+    # הגדרת השחקן שיופיע בפקודה (אם תויג מישהו, נשים את השם שלו, אחרת @p)
+    target_player = "@p" if member is None else member.display_name
+
+    if amount > 0:
+        minecraft_command = f"/xp add {target_player} {amount}L"
+        title = "➕ הוספת רמות XP"
+        description = f"כדי להוסיף {amount} רמות, העתק את הפקודה למשחק:"
+        color = discord.Color.green()
     elif amount < 0:
-        minecraft_command = f"/xp add @p {amount}L"
+        minecraft_command = f"/xp add {target_player} {amount}L"
         title = "➖ הורדת רמות XP"
-        description = f"כדי להוריד {abs(amount)} רמות, העתק את הפקודה הבאה למשחק:"
+        description = f"כדי להוריד {abs(amount)} רמות, העתק את הפקודה למשחק:"
         color = discord.Color.red()
-        
-    # אם המשתמש רשם 0
     else:
-        await ctx.send("נא להזין מספר גדול או קטן מ-0.")
+        await interaction.response.send_message("נא להזין מספר גדול או קטן מ-0.", ephemeral=True)
         return
 
-    # יצירת הודעה מעוצבת (Embed)
-    embed = discord.DataFrame() # שים לב: בגרסאות דיסקורד משתמשים ב-Embed
+    # יצירת ההודעה המעוצבת
     embed = discord.Embed(title=title, description=description, color=color)
     embed.add_field(name="📋 פקודה להעתקה:", value=f"`{minecraft_command}`", inline=False)
     
-    await ctx.send(embed=embed)
+    if member:
+        embed.set_footer(text=f"עבור השחקן: {member.display_name}")
 
-# תפסן שגיאות במידה והמשתמש לא הזין מספר
-@app_xp.error
-async def app_xp_error(ctx, error):
-    if isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send("❌ שגיאה! יש לכתוב את הפקודה בצורה הבאה: `!appxp 10` (או `-10` להורדה)")
-    elif isinstance(error, commands.BadArgument):
-        await ctx.send("❌ שגיאה! יש להזין מספר שלם בלבד.")
+    await interaction.response.send_message(embed=embed)
 
 keep_alive()
 bot.run(os.getenv('DISCORD_TOKEN'))
