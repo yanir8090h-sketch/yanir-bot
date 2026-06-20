@@ -507,29 +507,7 @@ async def xp_shop_command(ctx):
         
     await ctx.send(embed=embed, view=ShopView())
 
-# ==========================================
-# 3. פקודת ה-XP המעוצבת (כרטיס רמות)
-# ==========================================
-@bot.command(name="xp", aliases=["rank"])
-async def xp_card_command(ctx, member: discord.Member = None):
-    member = member or ctx.author
-    user_xp = 7681  
-    user_level = 31 
-    next_level_xp = 10000 
-    percentage = int((user_xp / next_level_xp) * 100)
-    
-    background = Canvas(shape=(900, 250), color="#2f3136")
-    editor = Editor(background)
-    avatar_image = load_image(member.display_avatar.url)
-    editor.avatar(avatar_image, position=(50, 50), size=(150, 150), circle=True)
-    
-    editor.text((240, 60), f"◆ IN|★{member.name}★", color="#ffffff", font=Font.poppins(size=35, variant="bold"))
-    editor.text((240, 120), f"XP: {user_xp:,} / {next_level_xp:,}", color="#aaaaaa", font=Font.poppins(size=25))
-    editor.text((240, 160), f"רמה: {user_level}", color="#ffaa00", font=Font.poppins(size=28, variant="bold"))
-    
-    editor.bar(position=(240, 200), max_width=600, height=20, percentage=percentage, fill="#ffaa00", background="#4f545c")
-    file = discord.File(fp=editor.image_bytes, filename="xp_card.png")
-    await ctx.send(file=file)
+
 
 
 # ==========================================
