@@ -34,7 +34,6 @@ async def on_ready():
     await bot.tree.sync()
 
 
-
 class StaffFriendReview(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
