@@ -637,6 +637,29 @@ class TicketActionButtons(discord.ui.View):
         await interaction.response.edit_message(view=self)
         await interaction.channel.send(f"🔒 החדר ננעל לטיפולו הבלעדי של {interaction.user.mention}.")
 
+   # הגדרת הרולים שסיפקת
+ROLE_MANAGEMENT_HELP = 1485440480459227227  # עזרה מההנהלה
+ROLE_GENERAL_QUESTIONS = 1488259168593772554  # שאלות כלליות
+ROLE_STAFF_TEST = 1485440385206456452  # בחינות לצוות
+
+TICKET_CATEGORY_ID = None 
+
+class TicketActionButtons(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="טפל בפנייה 👮", style=discord.ButtonStyle.success, custom_id="btn_ticket_handle")
+    async def handle_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
+        user_roles = [role.id for role in interaction.user.roles]
+        if not any(r in user_roles for r in [ROLE_MANAGEMENT_HELP, ROLE_GENERAL_QUESTIONS, ROLE_STAFF_TEST]) and not interaction.user.guild_permissions.administrator:
+            return await interaction.response.send_message("❌ אין לך הרשאה לטפל בטיקט זה!", ephemeral=True)
+            
+        button.disabled = True
+        button.label = f"בטיפול של {interaction.user.name} ✔"
+        button.style = discord.ButtonStyle.secondary
+        await interaction.response.edit_message(view=self)
+        await interaction.channel.send(f"🔒 החדר ננעל לטיפולו הבלעדי של {interaction.user.mention}.")
+
     @discord.ui.button(label="סגור טיקט ❌", style=discord.ButtonStyle.danger, custom_id="btn_ticket_close")
     async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         user_roles = [role.id for role in interaction.user.roles]
@@ -654,12 +677,12 @@ class AdvancedTicketDropdown(discord.ui.Select):
             discord.SelectOption(label="שאלות כלליות", description="בירורים, שאלות ועזרה כללית מהסטאף", emoji="💬"),
             discord.SelectOption(label="בחינות לצוות", description="פתיחת חדר ומילוי טופס מועמדות לצוות", emoji="📝")
         ]
-        super().__init__(placeholder="בחר את סוג הפנייה שלך...", min_values=1, max_values=1, options=options)
+        super().__init__(placeholder="בחר את סוג הפנייה שלך...", min_values=1, max_values=1, options=options, custom_id="dropdown_advanced_tickets")
 
     async def callback(self, interaction: discord.Interaction):
         guild = interaction.guild
         user = interaction.user
-        choice = self.values
+        choice = self.values[0]
 
         target_role_id = None
         if choice == "עזרה מההנהלה":
@@ -667,35 +690,6 @@ class AdvancedTicketDropdown(discord.ui.Select):
         elif choice == "שאלות כלליות":
             target_role_id = ROLE_GENERAL_QUESTIONS
         elif choice == "בחינות לצוות":
-            target_role_id = ROLE_STAFF_TEST
-
-        target_role = guild.get_role(target_role_id)
-
-        overwrites = {
-            user: discord.PermissionOverwrite(read_messages=True, send_messages=True, embed_links=True, attach_files=True),
-            guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True)
-        }
-
-        if target_role:
-            overwrites[target_role] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
-
-        category = guild.get_channel(TICKET_CATEGORY_ID) if TICKET_CATEGORY_ID else None
-        clean_name = choice.replace(" ", "-")
-        
-        channel = await guild.create_text_channel(
-            name=f"🎫-{user.name}-{clean_name}",
-            category=category,
-            overwrites=overwrites
-        )
-
-        await interaction.response.send_message(f"✅ הטיקט שלך נפתח בהצלחה! {channel.mention}", ephemeral=True)
-
-        # הודעת בסיס רגילה לשאלות כלליות ועזרה מההנהלה
-        embed = discord.Embed(
-            title=f"🎫 פנייה בנושא: {choice}",
-            description=f"שלום {user.mention},\nפתחת בהצלחה פנייה לצוות. אנא פרט את כל המידע הרלוונטי כאן.\n\n**לצוות השרת:** השתמשו בכפתורים למטה כדי לנהל את הפנייה.",
-            color=discord.Color.blue()
-               elif choice == "בחינות לצוות":
             target_role_id = ROLE_STAFF_TEST
 
         target_role = guild.get_role(target_role_id)
@@ -719,6 +713,18 @@ class AdvancedTicketDropdown(discord.ui.Select):
         )
 
         await interaction.response.send_message(f"✅ הטיקט שלך נפתח בהצלחה! {channel.mention}", ephemeral=True)
+
+        embed = discord.Embed(
+            title=f"🎫 פנייה בנושא: {choice}",
+            description=f"שלום {user.mention},\nפתחת בהצלחה פנייה לצוות. אנא פרט את כל המידע הרלוונטי כאן.\n\n**לצוות השרת:** השתמשו בכפתורים למטה כדי לנהל את הפנייה.",
+            color=discord.Color.blue()
+        )
+        role_mention = target_role.mention if target_role else "@צוות"
+
+        if choice == "בחינות לצוות":
+            embed.title = "📝 טופס מועמדות לצוות השרת"
+            embed.color = discord.Color.gold()
+            embed.description = (
                 f"שלום {user.mention},\n"
                 "על מנת להגיש מועמדות לצוות, אנא **העתק את השאלות הבאות, ענה עליהן ושלח אותן כאן בצ'אט**:\n\n"
                 "1. שם מלא (שלך) / כינוי בדיסקורד:\n"
@@ -740,6 +746,24 @@ class AdvancedTicketDropdown(discord.ui.Select):
 
         await channel.send(content=f"{user.mention} | {role_mention}", embed=embed, view=TicketActionButtons())
 
+class AdvancedTicketView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(AdvancedTicketDropdown())
+
+@bot.command(name="setup_tickets", aliases=["פתיחת_טיקטים"])
+@commands.has_permissions(administrator=True)
+async def setup_tickets_cmd(ctx):
+    await ctx.message.delete()
+    embed = discord.Embed(
+        title="🎫 מרכז הפניות והתמיכה",
+        description="צריכים עזרה מההנהלה? רוצים לשאול שאלה או להבחן לצוות השרת?\nבצעו בחירה מהתפריט הנפתח למטה והבוט יפתח לכם חדר פרטי מיידי.",
+        color=discord.Color.purple()
+    )
+    if ctx.guild.icon:
+        embed.set_thumbnail(url=ctx.guild.icon.url)
+    await ctx.send(embed=embed, view=AdvancedTicketView())
+    
 class AdvancedTicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
