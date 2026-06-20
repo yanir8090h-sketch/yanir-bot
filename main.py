@@ -786,7 +786,7 @@ async def setup_tickets_cmd(ctx):
         embed.set_thumbnail(url=ctx.guild.icon.url)
     await ctx.send(embed=embed, view=AdvancedTicketView())
 # שינוי האיידי לאיידי האמיתי של רול הסטאף-פרנד בשרת שלך!
-ROLE_STAFF_FRIEND_ID = 1485440385206456452 
+ROLE_STAFF_FRIEND_ID = 1493335218004820180
 
 class StaffFriendReview(discord.ui.View):
     def __init__(self, target_member_id=None):
