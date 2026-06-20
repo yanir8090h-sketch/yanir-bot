@@ -478,14 +478,7 @@ async def blackjack_game(ctx, amount: int = 0):
     if user_total > 21: await ctx.send(f"💥 נשרפת! הקלפים שלך: {user_card1} + {user_card2} = {user_total}. הפסדת.")
     elif bot_total > 21 or user_total > bot_total: await ctx.send(f"🃏 ניצחת בבלאקג'ק! לך יש {user_total} ולבוט יש {bot_total}. זכית!")
   # ==========================================
-@bot.command(name="blackjack", aliases=["bj"])
-async def blackjack_game(ctx, amount: int = 0):
-    user_card1 = random.randint(1, 11)
-    user_card2 = random.randint(5, 10)
-    user_total = user_card1 + user_card2
-    bot_total = random.randint(15, 22)
-    if user_total > 21: await ctx.send(f"--- הודעת הפסד כלשהי ---")
-    elif bot_total > 21 or user_total > bot_total: await ctx.send(f"--- הודעת ניצחון כלשהי ---")
+
 
 class RequestHelpView(discord.ui.View):
     def __init__(self, request_msg_url=None):
