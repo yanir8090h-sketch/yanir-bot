@@ -860,6 +860,54 @@ async def staff_friend_slash(interaction: discord.Interaction, member: discord.M
 
     # שליחת הודעת ההצבעה יחד עם האיידי של המועמד מוצמד אליה
     await interaction.response.send_message(embed=embed, view=StaffFriendReview(target_member_id=str(member.id)))
+import discord
+from discord.ext import commands
+
+# הגדרת הבוט והקידומת לפקודות (!)
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+@bot.event
+async def on_ready():
+    print(f'הבוט מחובר בהצלחה בתור: {bot.user.name}')
+
+# יצירת הפקודה !appxp
+@bot.command(name="appxp")
+async def app_xp(ctx, amount: int):
+    # אם המספר חיובי - הוספת XP
+    if amount > 0:
+        minecraft_command = f"/xp add @p {amount}L"
+        title = "➕ הוספת רמות XP"
+        description = f"כדי להוסיף {amount} רמות, העתק את הפקודה הבאה למשחק:"
+        color = discord.Color.green()
+    
+    # אם המספר שלילי - הורדת XP
+    elif amount < 0:
+        minecraft_command = f"/xp add @p {amount}L"
+        title = "➖ הורדת רמות XP"
+        description = f"כדי להוריד {abs(amount)} רמות, העתק את הפקודה הבאה למשחק:"
+        color = discord.Color.red()
+        
+    # אם המשתמש רשם 0
+    else:
+        await ctx.send("נא להזין מספר גדול או קטן מ-0.")
+        return
+
+    # יצירת הודעה מעוצבת (Embed)
+    embed = discord.DataFrame() # שים לב: בגרסאות דיסקורד משתמשים ב-Embed
+    embed = discord.Embed(title=title, description=description, color=color)
+    embed.add_field(name="📋 פקודה להעתקה:", value=f"`{minecraft_command}`", inline=False)
+    
+    await ctx.send(embed=embed)
+
+# תפסן שגיאות במידה והמשתמש לא הזין מספר
+@app_xp.error
+async def app_xp_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send("❌ שגיאה! יש לכתוב את הפקודה בצורה הבאה: `!appxp 10` (או `-10` להורדה)")
+    elif isinstance(error, commands.BadArgument):
+        await ctx.send("❌ שגיאה! יש להזין מספר שלם בלבד.")
 
 keep_alive()
 bot.run(os.getenv('DISCORD_TOKEN'))
