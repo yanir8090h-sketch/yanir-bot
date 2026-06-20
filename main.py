@@ -27,7 +27,11 @@ STAFF_FRIENDS_LOG_CHANNEL_ID = 1434311487832883406
 async def on_ready():
     print(f'{bot.user.name} מחובר בהצלחה ומערכות הסטאף והטיקטים פעילות!')
     bot.add_view(StaffFriendReview())
+    bot.add_view(AdvancedTicketView())
     bot.add_view(TicketActionButtons())
+    
+    # שורת הסנכרון שמפעילה את ה-/ בדיסקורד:
+    await bot.tree.sync()
 
 
 
@@ -781,6 +785,33 @@ async def setup_tickets_cmd(ctx):
     if ctx.guild.icon:
         embed.set_thumbnail(url=ctx.guild.icon.url)
     await ctx.send(embed=embed, view=AdvancedTicketView())
+# פקודת סלאש /sf לפתיחת מערכת הסטאף פרנד
+@bot.tree.command(name="sf", description="פתיחת בקשת סטאף פרנד חדשה")
+async def staff_friend_slash(interaction: discord.Interaction):
+    # בדיקה אם המשתמש לוחץ הוא אדמין/צוות גבוה
+    if not interaction.user.guild_permissions.administrator:
+        return await interaction.response.send_message("❌ פקודה זו מיועדת למנהלי השרת בלבד!", ephemeral=True)
+    
+    # יצירת הודעת Embed מעוצבת בהשראת התמונה שלך
+    embed = discord.Embed(
+        title="⚔️ בקשת Staff Friend חדשה",
+        description="צוות השרת, אנא עברו על פרטי המועמד והצביעו באמצעות הכפתורים למטה.",
+        color=discord.Color.purple()
+    )
+    
+    # הוספת תמונת הפרופיל של השרת (הלוגו העגול) בצד
+    if interaction.guild.icon:
+        embed.set_thumbnail(url=interaction.guild.icon.url)
+    
+    # הוספת באנר השרת לתחתית ה-Embed (במידה ויש לשרת באנר)
+    if interaction.guild.banner:
+        embed.set_image(url=interaction.guild.banner.url)
+    
+    embed.add_field(name="📋 סטטוס בקשה:", value="⏳ ממתין להצבעות הצוות", inline=False)
+    embed.set_footer(text=f"שרת {interaction.guild.name} • מערכת בדיקת חברי צוות")
+
+    # שליחת ההודעה יחד עם ה-View של הסטאף פרנד (שמכיל את כפתורי Accept ו-Deny)
+    await interaction.response.send_message(embed=embed, view=StaffFriendReview())
 
 
 keep_alive()
