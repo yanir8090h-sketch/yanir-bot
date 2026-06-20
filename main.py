@@ -485,27 +485,33 @@ class RequestHelpView(discord.ui.View):
         super().__init__(timeout=None)
         self.request_msg_url = request_msg_url
 
-    @discord.ui.button(label="טפל כאן 🛠️", style=discord.ButtonStyle.success, custom_id="btn_handle_help_request")
-         async def handle_here(self, interaction: discord.Interaction, button: discord.ui.Button):
+   class RequestHelpView(discord.ui.View):
+    def __init__(self, request_msg_url=None):
+        super().__init__(timeout=None)
+        self.request_msg_url = request_msg_url
+
+    @discord.ui.button(label="טפל בפנייה", style=discord.ButtonStyle.success, custom_id="btn_handle_help_request")
+    async def handle_here(self, interaction: discord.Interaction, button: discord.ui.Button):
         has_staff_role = interaction.user.get_role(GENERAL_STAFF_ROLE_ID) is not None
         is_admin = interaction.user.guild_permissions.administrator
         if not has_staff_role and not is_admin:
-            return await interaction.response.send_message("❌ כפתור זה מיועד לחברי צוות השרת בלבד!", ephemeral=True)
-        
-        await interaction.channel.send(f"🙋‍♂️ הפנייה נלקחה לטיפול על ידי איש הצוות: {interaction.user.mention}")
+            return await interaction.response.send_message("אין לך הרשאות מתאימות לפעולה זו.", ephemeral=True)
+            
+        await interaction.channel.send(f"הפנייה מטופלת כעת על ידי: {interaction.user.mention}")
         try:
             dm_embed = discord.Embed(
-                title="🚀 קריאת עזרה נלקחה בהצלחה",
-                description=f"לקחת לטיפול את הפנייה בערוץ {interaction.channel.mention}.\n🔗 [לחץ כאן כדי לקפוץ ישירות להודעה]({self.request_msg_url or ''})",
+                title="פנייתך בטיפול",
+                description=f"הפנייה שלך בשרת {interaction.channel.mention} בטיפול. [לחץ כאן למעבר להודעה]({self.request_msg_url or ''})",
                 color=discord.Color.green()
             )
             await interaction.user.send(embed=dm_embed)
         except discord.Forbidden:
             pass
+            
         button.disabled = True
-        button.label = f"בטיפול של {interaction.user.name} ✔️"
+        button.label = f"טופל על ידי {interaction.user.name} ✔"
         button.style = discord.ButtonStyle.secondary
-        await interaction.response.edit_message(view=self)|
+        await interaction.response.edit_message(view=self)
         
 @bot.command(name="h")
 async def help_call_custom(ctx, *, args: str = None):
