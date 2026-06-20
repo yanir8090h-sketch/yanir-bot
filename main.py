@@ -859,7 +859,7 @@ async def staff_friend_slash(interaction: discord.Interaction, member: discord.M
     embed.set_footer(text=f"שרת {interaction.guild.name} • החלטת הנהלה בלבד")
 
     # שליחת הודעת ההצבעה יחד עם האיידי של המועמד מוצמד אליה
-    await interaction.response.send_message(embed=embed, view=StaffFriendReview(target_member_id=str(member.id)))
+    view=StaffFriendReview(target_member_id=str(member.id))
 import discord
 from discord.ext import commands
 
