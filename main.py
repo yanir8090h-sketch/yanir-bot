@@ -891,36 +891,6 @@ async def on_ready():
     except Exception as e:
         print(f"שגיאה בסנכרון פקודות: {e}")
 
-# יצירת פקודת סלאש /appxp הכוללת כמות ושחקן לבחירה
-@bot.tree.command(name="appxp", description="יצירת פקודה להוספה או הורדת XP במיינקראפט")
-@app_commands.describe(amount="כמות הרמות (מספר חיובי להוספה, שלילי להורדה)", member="השחקן בדיסקורד עבורו מיועדת הפקודה (אופציונלי)")
-async def app_xp(interaction: discord.Interaction, amount: int, member: discord.Member = None):
-    
-    # הגדרת השחקן שיופיע בפקודה (אם תויג מישהו, נשים את השם שלו, אחרת @p)
-    target_player = "@p" if member is None else member.display_name
-
-    if amount > 0:
-        minecraft_command = f"/xp add {target_player} {amount}L"
-        title = "➕ הוספת רמות XP"
-        description = f"כדי להוסיף {amount} רמות, העתק את הפקודה למשחק:"
-        color = discord.Color.green()
-    elif amount < 0:
-        minecraft_command = f"/xp add {target_player} {amount}L"
-        title = "➖ הורדת רמות XP"
-        description = f"כדי להוריד {abs(amount)} רמות, העתק את הפקודה למשחק:"
-        color = discord.Color.red()
-    else:
-        await interaction.response.send_message("נא להזין מספר גדול או קטן מ-0.", ephemeral=True)
-        return
-
-    # יצירת ההודעה המעוצבת
-    embed = discord.Embed(title=title, description=description, color=color)
-    embed.add_field(name="📋 פקודה להעתקה:", value=f"`{minecraft_command}`", inline=False)
-    
-    if member:
-        embed.set_footer(text=f"עבור השחקן: {member.display_name}")
-
-    await interaction.response.send_message(embed=embed)
 
 keep_alive()
 bot.run(os.getenv('DISCORD_TOKEN'))
