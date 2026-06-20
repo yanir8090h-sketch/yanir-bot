@@ -64,20 +64,54 @@ class StaffFriendReview(discord.ui.View):
 # ==========================================
 # פקודת !xp בעיצוב כרטיס שחור ומיושר
 # ==========================================
-@bot.command()
-async def apply_staff_friend2(ctx):2
-   except discord.NotFound: pass
-    if member is None: member = ctx.author
-    guild = ctx.guild
-    embed = discord.Embed(title="📊 מידע XP והתקדמות", color=discord.Color.from_rgb(47, 49, 54))
+# --- מערכת XP ורמות פשוטה ---
+user_xp = {} # שומר את ה-XP של המשתמשים בזיכרון
+
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+        
+    # הוספת XP על כל הודעה
+    user_id = str(message.author.id)
+    if user_id not in user_xp:
+        user_xp[user_id] = {"xp": 0, "level": 1}
+        
+    user_xp[user_id]["xp"] += random.randint(15, 25)
+    
+    # חישוב עליית רמה (כל 1000 XP עולים רמה)
+    xp_needed = user_xp[user_id]["level"] * 1000
+    if user_xp[user_id]["xp"] >= xp_needed:
+        user_xp[user_id]["level"] += 1
+        await message.channel.send(f"🎉 כל הכבוד {message.author.mention}! עלית לרמה **{user_xp[user_id]['level']}**!")
+
+    await bot.process_commands(message)
+
+@bot.command(name="xp", aliases=["rank", "רמה"])
+async def show_xp(ctx, member: discord.Member = None):
+    member = member or ctx.author
+    user_id = str(member.id)
+    
+    # אם המשתמש עדיין לא דיבר בצ'אט
+    if user_id not in user_xp:
+        user_xp[user_id] = {"xp": 0, "level": 1}
+        
+    current_xp = user_xp[user_id]["xp"]
+    current_lvl = user_xp[user_id]["level"]
+    next_lvl_xp = current_lvl * 1000
+    
+    embed = discord.Embed(title=f"📊 כרטיס ה-XP של {member.name}", color=discord.Color.from_rgb(47, 49, 54))
+    if member.avatar:
+        embed.set_thumbnail(url=member.display_avatar.url)
+        
     embed.add_field(name="👤 משתמש:", value=member.mention, inline=True)
-    embed.add_field(name="⭐ רמה נוכחית:", value="`Level 5`", inline=True)
-    embed.add_field(name="📈 נקודות XP:", value="`1,500 / 3,000 XP`", inline=False)
-    embed.add_field(name="🏅 מיקום בשרת:", value="`Rank #1`", inline=False)
-    if guild.icon: embed.set_image(url=guild.icon.url)
+    embed.add_field(name="⭐ רמה:", value=f"Level {current_lvl}", inline=True)
+    embed.add_field(name="✨ נקודות XP:", value=f"{current_xp:,} / {next_lvl_xp:,} XP", inline=False)
+    
+    if ctx.guild.icon:
+        embed.set_image(url=ctx.guild.icon.url)
+        
     await ctx.send(embed=embed)
-
-
 
 
 # =================================================================
