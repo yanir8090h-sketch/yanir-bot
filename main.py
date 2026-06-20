@@ -433,22 +433,79 @@ async def help_call_custom(ctx):
 # ==========================================
 # 2. חנות ה-XP המקצועית בשרת (!myshop)
 # ==========================================
-@bot.command(name="myshop", aliases=["shop"])
+# הגדרת מחירי הדרגות ב-XP
+SHOP_PRICES = {
+    "Iron Member": 5000,
+    "Bronze Member": 10000,
+    "Silver Member": 25000,
+    "Gold VIP": 50000
+}
+
+# הגדרת האיידי (ID) של הרולים בשרת שלך - שנה את המספרים לאיידי האמיתי מהשרת שלך!
+SHOP_ROLES = {
+    "Iron Member": 1517997156173217945,
+    "Bronze Member": 1517997331822284912,
+    "Silver Member": 1517997465566052493,
+    "Gold VIP": 123456789012345678
+}
+
+class ShopDropdown(discord.ui.Select):
+    def __init__(self):
+        options = [
+            discord.SelectOption(label="Iron Member", description="מחיר: 5,000 XP", emoji="🪙"),
+            discord.SelectOption(label="Bronze Member", description="מחיר: 10,000 XP", emoji="🥉"),
+            discord.SelectOption(label="Silver Member", description="מחיר: 25,000 XP", emoji="🥈"),
+            discord.SelectOption(label="Gold VIP", description="מחיר: 50,000 XP", emoji="👑")
+        ]
+        super().__init__(placeholder="בחר דרגה לקנייה...", min_values=1, max_values=1, options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        user_id = str(interaction.user.id)
+        selected_item = self.values[0]
+        price = SHOP_PRICES[selected_item]
+        role_id = SHOP_ROLES[selected_item]
+        
+        # 1. בדיקה אם למשתמש יש בכלל XP במערכת
+        if user_id not in user_xp:
+            return await interaction.response.send_message("❌ אין לך מספיק XP בשביל לקנות בחנות!", ephemeral=True)
+            
+        # 2. בדיקה אם יש לו מספיק נקודות לקנייה
+        if user_xp[user_id]["xp"] < price:
+            missing_xp = price - user_xp[user_id]["xp"]
+            return await interaction.response.send_message(f"❌ חסרים לך עוד {missing_xp:,} XP כדי לקנות את הדרגה {selected_item}!", ephemeral=True)
+            
+        # 3. בדיקה אם כבר יש לו את הרול הזה
+        role = interaction.guild.get_role(role_id)
+        if not role:
+            return await interaction.response.send_message("❌ שגיאה: הרול הזה לא נמצא בשרת, פנה למנהל.", ephemeral=True)
+            
+        if role in interaction.user.roles:
+            return await interaction.response.send_message("❌ כבר יש לך את הדרגה הזו!", ephemeral=True)
+            
+        # 4. ביצוע הקנייה: הורדת XP והוספת הרול
+        user_xp[user_id]["xp"] -= price
+        await interaction.user.add_role(role)
+        await interaction.response.send_message(f"🎉 תתחדש! קנית את הדרגה **{selected_item}** בהצלחה! ירדו מחשבונך {price:,} XP.", ephemeral=False)
+
+class ShopView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(ShopDropdown())
+
+@bot.command(name="myshop", aliases=["shop", "חנות"])
 async def xp_shop_command(ctx):
     embed = discord.Embed(
-        title=f"🛒 חנות ה-XP הרשמית - {ctx.guild.name}",
-        description="צברתם מספיק נקודות? זה הזמן לרכוש רולים ייחודיים ולהשתדרג בשרת!",
+        title=f"🛒 חנות ה-XP של {ctx.guild.name}",
+        description="כאן תוכלו לבזבז את נקודות ה-XP שצברתם מדיבורים בצ'אט כדי לקנות תפקידים ודרגות ייחודיות!",
         color=discord.Color.gold()
     )
-    embed.add_field(name="🎖️ רול: Iron Member", value="💰 עלות: **5,000 XP**\n*רמה נדרשת: 5*", inline=False)
-    embed.add_field(name="🥇 רול: Bronze Member", value="💰 עלות: **10,000 XP**\n*רמה נדרשת: 10*", inline=False)
-    embed.add_field(name="💎 רול: Silver Member", value="💰 עלות: **25,000 XP**\n*רמה נדרשת: 20*", inline=False)
-    embed.add_field(name="👑 רול: Gold VIP", value="💰 עלות: **50,000 XP**\n*רמה נדרשת: 35*", inline=False)
-    embed.set_footer(text="לקנייה יש לרשום בקשה בטיקט מול אחד מבוחני או מנהלי השרת.")
+    for role_name, price in SHOP_PRICES.items():
+        embed.add_field(name=f"✨ דרגת {role_name}", value=f"מחיר: **{price:,} XP**", inline=False)
+        
     if ctx.guild.icon:
         embed.set_thumbnail(url=ctx.guild.icon.url)
-    await ctx.send(embed=embed)
-
+        
+    await ctx.send(embed=embed, view=ShopView())
 
 # ==========================================
 # 3. פקודת ה-XP המעוצבת (כרטיס רמות)
