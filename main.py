@@ -64,16 +64,16 @@ class StaffFriendReview(discord.ui.View):
 # ==========================================
 # פקודת !xp בעיצוב כרטיס שחור ומיושר
 # ==========================================
-#@bot.command()
-#async def apply_staff_friend2(ctx):2
-   #except discord.NotFound: pass
-    #if member is None: member = ctx.author
-    #guild = ctx.guild
-    #embed = discord.Embed(title="📊 מידע XP והתקדמות", color=discord.Color.from_rgb(47, 49, 54))
-    #embed.add_field(name="👤 משתמש:", value=member.mention, inline=True)
-    #embed.add_field(name="⭐ רמה נוכחית:", value="`Level 5`", inline=True)
-    #embed.add_field(name="📈 נקודות XP:", value="`1,500 / 3,000 XP`", inline=False)
-    #embed.add_field(name="🏅 מיקום בשרת:", value="`Rank #1`", inline=False)
+@bot.command()
+async def apply_staff_friend2(ctx):2
+   except discord.NotFound: pass
+    if member is None: member = ctx.author
+    guild = ctx.guild
+    embed = discord.Embed(title="📊 מידע XP והתקדמות", color=discord.Color.from_rgb(47, 49, 54))
+    embed.add_field(name="👤 משתמש:", value=member.mention, inline=True)
+    embed.add_field(name="⭐ רמה נוכחית:", value="`Level 5`", inline=True)
+    embed.add_field(name="📈 נקודות XP:", value="`1,500 / 3,000 XP`", inline=False)
+    embed.add_field(name="🏅 מיקום בשרת:", value="`Rank #1`", inline=False)
     if guild.icon: embed.set_image(url=guild.icon.url)
     await ctx.send(embed=embed)
 
