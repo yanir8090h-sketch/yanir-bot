@@ -785,34 +785,81 @@ async def setup_tickets_cmd(ctx):
     if ctx.guild.icon:
         embed.set_thumbnail(url=ctx.guild.icon.url)
     await ctx.send(embed=embed, view=AdvancedTicketView())
-# פקודת סלאש /sf לפתיחת מערכת הסטאף פרנד
-@bot.tree.command(name="sf", description="פתיחת בקשת סטאף פרנד חדשה")
-async def staff_friend_slash(interaction: discord.Interaction):
-    # בדיקה אם המשתמש לוחץ הוא אדמין/צוות גבוה
-    if not interaction.user.guild_permissions.administrator:
-        return await interaction.response.send_message("❌ פקודה זו מיועדת למנהלי השרת בלבד!", ephemeral=True)
+# שינוי האיידי לאיידי האמיתי של רול הסטאף-פרנד בשרת שלך!
+ROLE_STAFF_FRIEND_ID = 1485440385206456452 
+
+class StaffFriendReview(discord.ui.View):
+    def __init__(self, target_member_id=None):
+        super().__init__(timeout=None)
+        # שמירת האיידי של החבר שעליו ממליצים
+        self.target_member_id = target_member_id 
+
+    @discord.ui.button(label="Accept ✔", style=discord.ButtonStyle.success, custom_id="btn_sf_accept")
+    async def accept_friend(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # 1. אבטחה: רק מנהל (Administrator) רשאי לאשר
+        if not interaction.user.guild_permissions.administrator:
+            return await interaction.response.send_message("❌ רק הנהלת השרת יכולה לאשר בקשות!", ephemeral=True)
+            
+        guild = interaction.guild
+        member = guild.get_member(int(self.target_member_id)) if self.target_member_id else None
+        role = guild.get_role(ROLE_STAFF_FRIEND_ID)
+        
+        if not member or not role:
+            return await interaction.response.send_message("❌ שגיאה: המשתמש או הרול לא נמצאו בשרת.", ephemeral=True)
+            
+        # 2. הוספת הרול ועדכון כפתורים
+        await member.add_roles(role)
+        
+        button.disabled = True
+        button.label = "Approved 🟩"
+        # כיבוי כפתור הדחייה
+        self.children[1].disabled = True 
+        
+        await interaction.response.edit_message(view=self)
+        await interaction.channel.send(f"🎉 הבקשה אושרה! {member.mention} קיבל את הרול {role.mention} על ידי {interaction.user.mention}.")
+
+    @discord.ui.button(label="Deny ✖", style=discord.ButtonStyle.danger, custom_id="btn_sf_deny")
+    async def deny_friend(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # אבטחה: רק מנהל (Administrator) רשאי לדחות
+        if not interaction.user.guild_permissions.administrator:
+            return await interaction.response.send_message("❌ רק הנהלת השרת יכולה לדחות בקשות!", ephemeral=True)
+            
+        button.disabled = True
+        button.label = "Denied 🟥"
+        # כיבוי כפתור האישור
+        self.children[0].disabled = True 
+        
+        await interaction.response.edit_message(view=self)
+        await interaction.channel.send(f"❌ הבקשה נדחתה על ידי {interaction.user.mention}.")
+
+# פקודת הסלאש שבה הסטאף מתייג את החבר שלו
+@bot.tree.command(name="sf", description="המלצה על חבר לקבלת רול סטאף פרנד")
+async def staff_friend_slash(interaction: discord.Interaction, member: discord.Member):
+    # בדיקה שהשולח הוא איש צוות (מנעת ממשתמשים רגילים להמליץ)
+    # כאן השתמשנו ברול הכללי של הסטאף שסיפקת לנו קודם (שאלות כלליות)
+    ROLE_GENERAL_QUESTIONS = 1488259168593772554
+    user_roles = [r.id for r in interaction.user.roles]
     
-    # יצירת הודעת Embed מעוצבת בהשראת התמונה שלך
+    if ROLE_GENERAL_QUESTIONS not in user_roles and not interaction.user.guild_permissions.administrator:
+        return await interaction.response.send_message("❌ רק חברי צוות יכולים להמליץ על חברים!", ephemeral=True)
+        
     embed = discord.Embed(
         title="⚔️ בקשת Staff Friend חדשה",
-        description="צוות השרת, אנא עברו על פרטי המועמד והצביעו באמצעות הכפתורים למטה.",
+        description=f"חבר הצוות {interaction.user.mention} ממליץ להעניק רול לחבר שלו.",
         color=discord.Color.purple()
     )
+    embed.add_field(name="👤 המועמד:", value=member.mention, inline=True)
+    embed.add_field(name="📋 סטטוס בקשה:", value="⏳ ממתין לאישור הנהלת השרת", inline=True)
     
-    # הוספת תמונת הפרופיל של השרת (הלוגו העגול) בצד
     if interaction.guild.icon:
         embed.set_thumbnail(url=interaction.guild.icon.url)
-    
-    # הוספת באנר השרת לתחתית ה-Embed (במידה ויש לשרת באנר)
     if interaction.guild.banner:
         embed.set_image(url=interaction.guild.banner.url)
-    
-    embed.add_field(name="📋 סטטוס בקשה:", value="⏳ ממתין להצבעות הצוות", inline=False)
-    embed.set_footer(text=f"שרת {interaction.guild.name} • מערכת בדיקת חברי צוות")
+        
+    embed.set_footer(text=f"שרת {interaction.guild.name} • החלטת הנהלה בלבד")
 
-    # שליחת ההודעה יחד עם ה-View של הסטאף פרנד (שמכיל את כפתורי Accept ו-Deny)
-    await interaction.response.send_message(embed=embed, view=StaffFriendReview())
-
+    # שליחת הודעת ההצבעה יחד עם האיידי של המועמד מוצמד אליה
+    await interaction.response.send_message(embed=embed, view=StaffFriendReview(target_member_id=str(member.id)))
 
 keep_alive()
 bot.run(os.getenv('DISCORD_TOKEN'))
