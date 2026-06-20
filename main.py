@@ -508,6 +508,7 @@ class RequestHelpView(discord.ui.View):
         button.style = discord.ButtonStyle.secondary
         await interaction.response.edit_message(view=self)
         
+bot.remove_command('h')        
 @bot.command(name="h")
 async def help_call_custom(ctx, *, args: str = None):
     reason = "לא צוינה סיבה"
