@@ -478,17 +478,28 @@ async def blackjack_game(ctx, amount: int = 0):
     if user_total > 21: await ctx.send(f"💥 נשרפת! הקלפים שלך: {user_card1} + {user_card2} = {user_total}. הפסדת.")
     elif bot_total > 21 or user_total > bot_total: await ctx.send(f"🃏 ניצחת בבלאקג'ק! לך יש {user_total} ולבוט יש {bot_total}. זכית!")
   # ==========================================
-# פקודת עזרה משודרגת עם סיבה וחדר וויס (!h)
-# ==========================================
+@bot.command(name="blackjack", aliases=["bj"])
+async def blackjack_game(ctx, amount: int = 0):
+    user_card1 = random.randint(1, 11)
+    user_card2 = random.randint(5, 10)
+    user_total = user_card1 + user_card2
+    bot_total = random.randint(15, 22)
+    if user_total > 21: await ctx.send(f"--- הודעת הפסד כלשהי ---")
+    elif bot_total > 21 or user_total > bot_total: await ctx.send(f"--- הודעת ניצחון כלשהי ---")
+
 class RequestHelpView(discord.ui.View):
     def __init__(self, request_msg_url=None):
         super().__init__(timeout=None)
         self.request_msg_url = request_msg_url
 
-   class RequestHelpView(discord.ui.View):
-    def __init__(self, request_msg_url=None):
-        super().__init__(timeout=None)
+    @discord.ui.button(label="טפל בפנייה", style=discord.ButtonStyle.success, custom_id="btn_handle_help_request")
+    async def handle_here(self, interaction: discord.Interaction, button: discord.ui.Button):
+        has_staff_role = interaction.user.get_role(GENERAL_STAFF_ROLE_ID) is not None
+        is_admin = interaction.user.guild_permissions.administrator
+        if not has_staff_role and not is_admin:
+            return await interaction.response.send_message("אין לך הרשאות מתאימות לפעולה זו.", ephemeral=True)
         self.request_msg_url = request_msg_url
+
 
     @discord.ui.button(label="טפל בפנייה", style=discord.ButtonStyle.success, custom_id="btn_handle_help_request")
     async def handle_here(self, interaction: discord.Interaction, button: discord.ui.Button):
