@@ -23,6 +23,13 @@ ROLE_5_ID = 1434034812251396305
 STAFF_ROLE_ID = 1484235285220202100 
 STAFF_FRIENDS_LOG_CHANNEL_ID = 1434311487832883406 
 
+@bot.event
+async def on_ready():
+    print(f'{bot.user.name} מחובר בהצלחה ומערכת הטיקטים פעילה!')
+    bot.add_view(AdvancedTicketView())
+    bot.add_view(TicketActionButtons())
+
+
 class StaffFriendReview(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
