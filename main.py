@@ -74,8 +74,8 @@ class StaffFriendReview(discord.ui.View):
     #embed.add_field(name="⭐ רמה נוכחית:", value="`Level 5`", inline=True)
     #embed.add_field(name="📈 נקודות XP:", value="`1,500 / 3,000 XP`", inline=False)
     #embed.add_field(name="🏅 מיקום בשרת:", value="`Rank #1`", inline=False)
-    #if guild.icon: embed.set_image(url=guild.icon.url)
-    #await ctx.send(embed=embed)
+    if guild.icon: embed.set_image(url=guild.icon.url)
+    await ctx.send(embed=embed)
 
 
 
@@ -170,7 +170,7 @@ class VerifyView(discord.ui.View):
         user = interaction.user
         
         # הדבק כאן את ה-ID של הרול שחברים מקבלים (Member)
-        member_role = guild.get_role(1483920420414554272) 
+        member_role = guild.get_role(1485680386972455042) 
         
         if member_role:
             await user.add_roles(member_role)
