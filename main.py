@@ -605,12 +605,12 @@ async def help_call_custom(ctx, *, args: str = None):
     await sent_message.edit(view=RequestHelpView(request_msg_url=sent_message.jump_url))
     try: await ctx.message.delete()
     except discord.NotFound: pass
+
 # הגדרת הרולים שסיפקת
 ROLE_MANAGEMENT_HELP = 1485440480459227227  # עזרה מההנהלה
 ROLE_GENERAL_QUESTIONS = 1488259168593772554  # שאלות כלליות
 ROLE_STAFF_TEST = 1485440385206456452  # בחינות לצוות
 
-# קטגוריה שבה ייפתחו הטיקטים - שנה לאיידי הקטגוריה שלך אם תרצה
 TICKET_CATEGORY_ID = None 
 
 class TicketActionButtons(discord.ui.View):
@@ -619,7 +619,6 @@ class TicketActionButtons(discord.ui.View):
 
     @discord.ui.button(label="טפל בפנייה 👮", style=discord.ButtonStyle.success, custom_id="btn_ticket_handle")
     async def handle_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # בדיקה אם הלוחץ הוא איש צוות (מחזיק באחד מהרולים של המערכת)
         user_roles = [role.id for role in interaction.user.roles]
         if not any(r in user_roles for r in [ROLE_MANAGEMENT_HELP, ROLE_GENERAL_QUESTIONS, ROLE_STAFF_TEST]) and not interaction.user.guild_permissions.administrator:
             return await interaction.response.send_message("❌ אין לך הרשאה לטפל בטיקט זה!", ephemeral=True)
@@ -645,16 +644,15 @@ class AdvancedTicketDropdown(discord.ui.Select):
         options = [
             discord.SelectOption(label="עזרה מההנהלה", description="פנייה ישירה להנהלת השרת", emoji="👑"),
             discord.SelectOption(label="שאלות כלליות", description="בירורים, שאלות ועזרה כללית מהסטאף", emoji="💬"),
-            discord.SelectOption(label="בחינות לצוות", description="הגשת מועמדות ופניות בנושאי קבלת לצוות", emoji="📝")
+            discord.SelectOption(label="בחינות לצוות", description="פתיחת חדר ומילוי טופס מועמדות לצוות", emoji="📝")
         ]
         super().__init__(placeholder="בחר את סוג הפנייה שלך...", min_values=1, max_values=1, options=options)
 
     async def callback(self, interaction: discord.Interaction):
         guild = interaction.guild
         user = interaction.user
-        choice = self.values[0]
+        choice = self.values
 
-        # קביעת הרול שיקבל התראה לפי הבחירה
         target_role_id = None
         if choice == "עזרה מההנהלה":
             target_role_id = ROLE_MANAGEMENT_HELP
@@ -665,21 +663,18 @@ class AdvancedTicketDropdown(discord.ui.Select):
 
         target_role = guild.get_role(target_role_id)
 
-        # הגדרת הרשאות בסיסיות לחדר
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(read_messages=False),
             user: discord.PermissionOverwrite(read_messages=True, send_messages=True, embed_links=True, attach_files=True),
             guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True)
         }
 
-        # הוספת הרשאה ספציפית לרול הרלוונטי שיקרא את ההודעה
         if target_role:
             overwrites[target_role] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
 
         category = guild.get_channel(TICKET_CATEGORY_ID) if TICKET_CATEGORY_ID else None
         clean_name = choice.replace(" ", "-")
         
-        # יצירת חדר הטקסט
         channel = await guild.create_text_channel(
             name=f"🎫-{user.name}-{clean_name}",
             category=category,
@@ -688,13 +683,38 @@ class AdvancedTicketDropdown(discord.ui.Select):
 
         await interaction.response.send_message(f"✅ הטיקט שלך נפתח בהצלחה! {channel.mention}", ephemeral=True)
 
-        # שליחת הודעת פתיחה עם כפתורי השליטה
+        # הודעת בסיס רגילה לשאלות כלליות ועזרה מההנהלה
         embed = discord.Embed(
             title=f"🎫 פנייה בנושא: {choice}",
             description=f"שלום {user.mention},\nפתחת בהצלחה פנייה לצוות. אנא פרט את כל המידע הרלוונטי כאן.\n\n**לצוות השרת:** השתמשו בכפתורים למטה כדי לנהל את הפנייה.",
             color=discord.Color.blue()
         )
         role_mention = target_role.mention if target_role else "@צוות"
+
+        # אם המשתמש בחר בבחינות לצוות - נשנה את ה-Embed ונציג את כל 14 השאלות שלך
+        if choice == "בחינות לצוות":
+            embed.title = "📝 טופס מועמדות לצוות השרת"
+            embed.color = discord.Color.gold()
+            embed.description = (
+                f"שלום {user.mention},\n"
+                "על מנת להגיש מועמדות לצוות, אנא **העתק את השאלות הבאות, ענה עליהן ושלח אותן כאן בצ'אט**:\n\n"
+                "1. שם מלא (שלך) / כינוי בדיסקורד:\n"
+                "2. גיל:\n"
+                "3. כמה זמן אתה בשרת שלנו?\n"
+                "4. ניסיון קודם בצוות ניהול / מודרטור? ספר קצת.. ואם עזבת אז מדוע? (שלח הוכחה במידה ויש)\n"
+                "5. איך אתה מגדיר צוות טוב? מה בעינייך התכונות שצריכות להיות לחבר צוות?\n"
+                "6. בתור צוות, מה היית עושה במידה ויש סיטואציה פחות נעימה בחדרי השרת / הוויס (מישהו מתחצף/ עובר על החוקים, ריבים בין כמה חברי השרת… תן דוגמה):\n"
+                "7. איך היית מגיב אם צוות מתחתיך תוקף אותך? ואיך היית מגיב אם הוא היה מעליך?\n"
+                "8. כמה זמן בערך אתה חושב שתוכל לתת ממך למען השרת בשבוע כל יום?\n"
+                "9. במידה והשרת מתחיל טיפה להראות חוסר פעילות האם לדעתך תוכל לשנות את המצב? איך?\n"
+                "10. באיזה תחומים אתה רוצה לעזור בשרת?\n"
+                "11. איך אתה חושב שתוכל לתרום לשרת, וכמה רחוק אתה חושב שתוכל להגיע?\n"
+                "12. מאיפה הרצון להצטרף לצוות?\n"
+                "13. למה דווקא אתה מתאים לצוות שלנו? יש לך רעיון לשיפור השרת?\n"
+                "14. האם יש לך 2FA?\n\n"
+                "**לצוות השרת:** השתמשו בכפתורים למטה כדי לנהל את הפנייה."
+            )
+
         await channel.send(content=f"{user.mention} | {role_mention}", embed=embed, view=TicketActionButtons())
 
 class AdvancedTicketView(discord.ui.View):
@@ -715,9 +735,8 @@ async def setup_tickets_cmd(ctx):
         embed.set_thumbnail(url=ctx.guild.icon.url)
     await ctx.send(embed=embed, view=AdvancedTicketView())
 
-keep_alive()
-bot.run(os.getenv('DISCORD_TOKEN'))
 
 keep_alive()
 bot.run(os.getenv('DISCORD_TOKEN'))
+
 
