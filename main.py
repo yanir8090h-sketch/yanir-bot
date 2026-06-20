@@ -27,7 +27,6 @@ STAFF_FRIENDS_LOG_CHANNEL_ID = 1434311487832883406
 async def on_ready():
     print(f'{bot.user.name} מחובר בהצלחה ומערכות הסטאף והטיקטים פעילות!')
     bot.add_view(StaffFriendReview())
-    bot.add_view(AdvancedTicketView())
     bot.add_view(TicketActionButtons())
 
 
