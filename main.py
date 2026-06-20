@@ -672,7 +672,7 @@ class AdvancedTicketDropdown(discord.ui.Select):
         target_role = guild.get_role(target_role_id)
 
         overwrites = {
-            guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                    super().__init__(placeholder="בחר את סוג הפנייה שלך...", min_values=1, max_values=1, options=options, custom_id="dropdown_advanced_tickets")
             user: discord.PermissionOverwrite(read_messages=True, send_messages=True, embed_links=True, attach_files=True),
             guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True)
         }
@@ -696,14 +696,30 @@ class AdvancedTicketDropdown(discord.ui.Select):
             title=f"🎫 פנייה בנושא: {choice}",
             description=f"שלום {user.mention},\nפתחת בהצלחה פנייה לצוות. אנא פרט את כל המידע הרלוונטי כאן.\n\n**לצוות השרת:** השתמשו בכפתורים למטה כדי לנהל את הפנייה.",
             color=discord.Color.blue()
-        )
-        role_mention = target_role.mention if target_role else "@צוות"
+               elif choice == "בחינות לצוות":
+            target_role_id = ROLE_STAFF_TEST
 
-        # אם המשתמש בחר בבחינות לצוות - נשנה את ה-Embed ונציג את כל 14 השאלות שלך
-        if choice == "בחינות לצוות":
-            embed.title = "📝 טופס מועמדות לצוות השרת"
-            embed.color = discord.Color.gold()
-            embed.description = (
+        target_role = guild.get_role(target_role_id)
+
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            user: discord.PermissionOverwrite(read_messages=True, send_messages=True, embed_links=True, attach_files=True),
+            guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True)
+        }
+
+        if target_role:
+            overwrites[target_role] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
+
+        category = guild.get_channel(TICKET_CATEGORY_ID) if TICKET_CATEGORY_ID else None
+        clean_name = choice.replace(" ", "-")
+        
+        channel = await guild.create_text_channel(
+            name=f"🎫-{user.name}-{clean_name}",
+            category=category,
+            overwrites=overwrites
+        )
+
+        await interaction.response.send_message(f"✅ הטיקט שלך נפתח בהצלחה! {channel.mention}", ephemeral=True)
                 f"שלום {user.mention},\n"
                 "על מנת להגיש מועמדות לצוות, אנא **העתק את השאלות הבאות, ענה עליהן ושלח אותן כאן בצ'אט**:\n\n"
                 "1. שם מלא (שלך) / כינוי בדיסקורד:\n"
