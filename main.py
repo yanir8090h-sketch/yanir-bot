@@ -491,15 +491,6 @@ class RequestHelpView(discord.ui.View):
         is_admin = interaction.user.guild_permissions.administrator
         if not has_staff_role and not is_admin:
             return await interaction.response.send_message("אין לך הרשאות מתאימות לפעולה זו.", ephemeral=True)
-        self.request_msg_url = request_msg_url
-
-
-    @discord.ui.button(label="טפל בפנייה", style=discord.ButtonStyle.success, custom_id="btn_handle_help_request")
-    async def handle_here(self, interaction: discord.Interaction, button: discord.ui.Button):
-        has_staff_role = interaction.user.get_role(GENERAL_STAFF_ROLE_ID) is not None
-        is_admin = interaction.user.guild_permissions.administrator
-        if not has_staff_role and not is_admin:
-            return await interaction.response.send_message("אין לך הרשאות מתאימות לפעולה זו.", ephemeral=True)
             
         await interaction.channel.send(f"הפנייה מטופלת כעת על ידי: {interaction.user.mention}")
         try:
@@ -511,6 +502,7 @@ class RequestHelpView(discord.ui.View):
             await interaction.user.send(embed=dm_embed)
         except discord.Forbidden:
             pass
+
             
         button.disabled = True
         button.label = f"טופל על ידי {interaction.user.name} ✔"
