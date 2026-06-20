@@ -752,7 +752,7 @@ class AdvancedTicketView(discord.ui.View):
         self.add_item(AdvancedTicketDropdown())
 
 
-@bot.command(name="setup_tickets2", aliases=["פתיחת_טיקטים"])
+@bot.command(name="setup_tickets2")
 async def setup_tickets_cmd(ctx):
     await ctx.message.delete()
     embed = discord.Embed(
