@@ -486,7 +486,7 @@ class RequestHelpView(discord.ui.View):
         self.request_msg_url = request_msg_url
 
     @discord.ui.button(label="טפל כאן 🛠️", style=discord.ButtonStyle.success, custom_id="btn_handle_help_request")
-        async def handle_here(self, interaction: discord.Interaction, button: discord.ui.Button):
+         async def handle_here(self, interaction: discord.Interaction, button: discord.ui.Button):
         has_staff_role = interaction.user.get_role(GENERAL_STAFF_ROLE_ID) is not None
         is_admin = interaction.user.guild_permissions.administrator
         if not has_staff_role and not is_admin:
