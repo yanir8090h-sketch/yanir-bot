@@ -888,7 +888,7 @@ async def on_ready():
         # סנכרון הפקודות מול השרתים של דיסקורד
         synced = await bot.tree.sync()
         print(f"סונכרנו בהצלחה {len(synced)} פקודות סלאש!")
-    except Exception as e:
+        except Exception as e:
         print(f"שגיאה בסנכרון פקודות: {e}")
 
 keep_alive()
