@@ -893,7 +893,7 @@ async def on_ready():
 @bot.event
 async def on_message(message):
     # קוד כלשהו שבודק הודעות...
-
+await bot.process_commands(message)
 keep_alive()
 bot.run(os.getenv('DISCORD_TOKEN'))
 
