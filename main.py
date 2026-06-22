@@ -890,6 +890,9 @@ async def on_ready():
         print(f"סונכרנו בהצלחה {len(synced)} פקודות סלאש!")
     except Exception as e:
         print(f"שגיאה בסנכרון פקודות: {e}")
+@bot.event
+async def on_message(message):
+    # קוד כלשהו שבודק הודעות...
 
 keep_alive()
 bot.run(os.getenv('DISCORD_TOKEN'))
