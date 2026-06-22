@@ -894,6 +894,13 @@ async def on_ready():
 async def on_message(message):
     # קוד כלשהו שבודק הודעות...
 await bot.process_commands(message)
+
+@bot.event
+async def on_command_error(ctx, error):
+    print(f"⚠️ שגיאה בפקודה: {error}")
+    await ctx.send(f"התרחשה שגיאה בהרצת הפקודה: {error}")
+
+
 keep_alive()
 bot.run(os.getenv('DISCORD_TOKEN'))
 
