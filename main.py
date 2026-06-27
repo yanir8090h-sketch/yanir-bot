@@ -14,7 +14,7 @@ import io
 from easy_pil import Editor, Canvas, load_image, Font
 intents = discord.Intents.all()
 intents.message_content = True
-intents.messages = True
+intents.messages = True  # לשנות כאן מ-Intents ל-intents קטנה!
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
