@@ -901,6 +901,12 @@ async def on_ready():
 async def on_ready():
     print(f'הבוט מחובר בהצלחה בתור {bot.user.name}')
     print('Your service is live 🚀')
+@bot.event
+async def on_message(message):
+    # ... כל הקוד הקיים שלך של מערכת ה-XP / הודעות ...
+    
+    # שורה חובה שמאפשרת לפקודות לעבוד!
+    await bot.process_commands(message)
 
 keep_alive()
 bot.run(os.getenv('DISCORD_TOKEN'))
