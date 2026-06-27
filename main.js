@@ -1,29 +1,6 @@
-import discord
-import os
-from discord.ext import commands
-from dotenv import load_dotenv
+import { Client, GatewayIntentBits, Partials, Events, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, PermissionFlagsBits, ChannelType, ComponentType } from 'discord.js';
 
-  Client,
-  GatewayIntentBits,
-  Partials,
-  Events,
-  EmbedBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  StringSelectMenuBuilder,
-  StringSelectMenuOptionBuilder,
-  PermissionFlagsBits,
-  ChannelType,
-  ComponentType,
-  type Interaction,
-  type Message,
-  type ButtonInteraction,
-  type StringSelectMenuInteraction,
-  type GuildMember,
-  type TextChannel,
-} from "discord.js";
-import { logger } from "./lib/logger.js";
+import { Logger } from "./lib/logger.js";
 
 
 
