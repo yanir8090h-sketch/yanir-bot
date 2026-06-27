@@ -1,6 +1,11 @@
 import discord
 import os
 from discord.ext import commands
+from dotenv import load_dotenv
+
+# טעינת הקובץ בצורה מפורשת
+load_dotenv()
+
 from flask import Flask
 from threading import Thread
 import asyncio
@@ -9,10 +14,9 @@ import io
 from easy_pil import Editor, Canvas, load_image, Font
 intents = discord.Intents.all()
 intents.message_content = True
+intents.messages = True
 
-bot = commands.Bot(command_prefix='!', intents=intents, help_command=None)
-
-
+bot = commands.Bot(command_prefix="!", intents=intentsדדדד
 # הגדרת משתנים ורולים
 ROLE_1_ID = 1434226514051665920 
 ROLE_2_ID = 1434236285220202100 
@@ -21,16 +25,15 @@ ROLE_4_ID = 1434023485618195577
 ROLE_5_ID = 1434034812251396305 
 
 STAFF_ROLE_ID = 1484235285220202100 
-STAFF_FRIENDS_LOG_CHANNEL_ID = 1434311487832883406 
+STAFF_FRIENDS_LOG_CHANNEL_ID = 1434311487832883406
+
 
 @bot.event
 async def on_ready():
-    print(f'{bot.user.name} מחובר בהצלחה ומערכות הסטאף והטיקטים פעילות!')
+    print(f'{bot.user.name} מחובר בהצלחה ומערכת הסטאף והטיקטים פעילה!')
     bot.add_view(StaffFriendReview())
     bot.add_view(AdvancedTicketView())
     bot.add_view(TicketActionButtons())
-    
-    # שורת הסנכרון שמפעילה את ה-/ בדיסקורד:
     await bot.tree.sync()
 
 
@@ -890,16 +893,13 @@ async def on_ready():
         print(f"סונכרנו בהצלחה {len(synced)} פקודות סלאש!")
     except Exception as e:
         print(f"שגיאה בסנכרון פקודות: {e}")
-@bot.event
-async def on_message(message):
-    # קוד כלשהו שבודק הודעות...
-await bot.process_commands(message)
+
+
 
 @bot.event
-async def on_command_error(ctx, error):
-    print(f"⚠️ שגיאה בפקודה: {error}")
-    await ctx.send(f"התרחשה שגיאה בהרצת הפקודה: {error}")
-
+async def on_ready():
+    print(f'הבוט מחובר בהצלחה בתור {bot.user.name}')
+    print('Your service is live 🚀')
 
 keep_alive()
 bot.run(os.getenv('DISCORD_TOKEN'))
