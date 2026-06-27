@@ -1,0 +1,9 @@
+{
+  "name": "yanir-bot",
+  "version": "1.0.0",
+  "description": "Discord Bot",
+  "main": "main.py",
+  "dependencies": {
+    "discord.js": "^14.15.3"
+  }
+}
