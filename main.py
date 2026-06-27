@@ -16,7 +16,8 @@ intents = discord.Intents.all()
 intents.message_content = True
 intents.messages = True
 
-bot = commands.Bot(command_prefix="!", intents=intentsדדדד
+bot = commands.Bot(command_prefix="!", intents=intents)
+
 # הגדרת משתנים ורולים
 ROLE_1_ID = 1434226514051665920 
 ROLE_2_ID = 1434236285220202100 
