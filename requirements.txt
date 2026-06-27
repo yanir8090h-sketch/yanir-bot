@@ -1,3 +1,4 @@
-discord
-Flask
-easy-pil
+discord.py
+python-dotenv
+easy_pil
+flask
