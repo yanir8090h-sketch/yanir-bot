@@ -1,8 +1,1 @@
-[tools]
-python = "3.13"
 
-[settings]
-python.venv_auto_create = true
-
-[tasks]
-start = { run = "pip install -r requirements.txt && python main.py" }
