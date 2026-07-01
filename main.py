@@ -28,6 +28,7 @@ ROLE_LEAK_TEAM = 1520870990505312430      # Leaks Team
 STAFF_FRIEND_ROLE_ID = 1520870990526021694  # Staff Friend
 STAFF_REQUEST_CHANNEL_ID = None  # אם תרצה, שנה ל-ID של חדר staff-request
 GUILD_ID = int(os.getenv("GUILD_ID", "0")) or None
+WELCOME_CHANNEL_ID = int(os.getenv("1520870990588936448", "0")) or None
 TOKEN = os.getenv("TOKEN")
 
 # 🔄 חיבור לבסיס הנתונים הסופי והנקי:
@@ -174,11 +175,20 @@ class StaffFriendApproveView(discord.ui.View):
         except Exception:
             pass
 
+async def update_member_presence():
+    member_count = 0
+    if GUILD_ID:
+        guild = bot.get_guild(GUILD_ID)
+        if guild:
+            member_count = guild.member_count
+    if member_count == 0:
+        member_count = sum(g.member_count for g in bot.guilds)
+    await bot.change_presence(status=discord.Status.dnd, activity=discord.Game(name=f"{member_count} חברים"))
+
 @bot.event
 async def on_ready():
     bot.add_view(TicketView()); bot.add_view(VerifyView()); bot.add_view(ShopView())
-    member_count = sum(g.member_count for g in bot.guilds)
-    await bot.change_presence(status=discord.Status.dnd, activity=discord.Game(name=f"{member_count} חברים"))
+    await update_member_presence()
     try:
         if GUILD_ID:
             synced = await bot.tree.sync(guild=discord.Object(id=GUILD_ID))
@@ -188,6 +198,14 @@ async def on_ready():
     except Exception as e:
         print(f"Slash command sync failed: {e}")
     print("Your Bot is officially live, logging and ready! 🚀")
+
+@bot.event
+async def on_member_join(member):
+    await update_member_presence()
+
+@bot.event
+async def on_member_remove(member):
+    await update_member_presence()
 
 @bot.hybrid_command(name="ping", description="בדוק אם הבוט חי")
 async def ping(ctx):
