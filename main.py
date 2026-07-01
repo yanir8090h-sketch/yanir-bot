@@ -18,7 +18,7 @@ ROLE_SUP_TEAM = 1520870990535312431       # Support Team
 ROLE_LEAK_TEAM = 1520870990505312430      # Leaks Team
 
 # 🔄 חיבור לבסיס הנתונים הסופי והנקי:
-conn = sqlite3.connect("xp_final.db")
+conn = sqlite3.connect("xp_server_final.db")
 cursor = conn.cursor()
 cursor.execute("CREATE TABLE IF NOT EXISTS users (user_id INTEGER PRIMARY KEY, xp INTEGER DEFAULT 0)")
 conn.commit()
@@ -60,7 +60,7 @@ class TicketDropdown(discord.ui.Select):
 
     async def callback(self, inter):
         g = inter.guild; u = inter.user
-        choice = self.values
+        choice = self.values[0]
         
         if choice == "staff":
             ch = await g.create_text_channel(name=f"📝-בחינה-{u.name}", overwrites={g.default_role: discord.PermissionOverwrite(read_messages=False), u: discord.PermissionOverwrite(read_messages=True, send_messages=True)})
@@ -87,7 +87,7 @@ class ShopDropdown(discord.ui.Select):
         super().__init__(placeholder="🛒 בחר את הרול שברצונך לקנות מתוך התפריט...", custom_id="shop_drop", options=options)
 
     async def callback(self, inter):
-        item_id, price = self.values.split(":")
+        item_id, price = self.values[0].split(":")
         price = int(price)
         
         if get_xp(inter.user.id) < price:
@@ -144,7 +144,7 @@ async def on_message(msg):
     elif text == "!setup_shop":
         await msg.delete(); await msg.channel.send("🛒 **XP Shop** 🛒\n\nפתח את התפריט למטה ובחר את הרול החדש שברצונך לרכוש באמצעות נקודות ה-XP שלך:", view=ShopView())
     elif text.startswith("!xp"):
-        # 👥 מנגנון חכם: אם תייגת חבר, הבוט יבדוק אותו. אם לא, הוא יבדוק אותך!
+        # 👑 מנגנון התיוג המתוקן והחסין ב-100%!
         target = msg.author
         if msg.mentions:
             target = msg.mentions[0]
