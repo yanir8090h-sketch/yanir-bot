@@ -17,8 +17,8 @@ ROLE_EV_MNG = 1520807998505312431         # Event Manager
 ROLE_SUP_TEAM = 1520870990535312431       # Support Team
 ROLE_LEAK_TEAM = 1520870990505312430      # Leaks Team
 
-# 🔄 חיבור לבסיס הנתונים הסופי והנקי קומפלט - עוקף את הנעילות לצמיתות!
-conn = sqlite3.connect("xp_server_final.db")
+# 🔄 חיבור לבסיס הנתונים הסופי והנקי:
+conn = sqlite3.connect("xp_final.db")
 cursor = conn.cursor()
 cursor.execute("CREATE TABLE IF NOT EXISTS users (user_id INTEGER PRIMARY KEY, xp INTEGER DEFAULT 0)")
 conn.commit()
@@ -26,7 +26,7 @@ conn.commit()
 def get_xp(uid):
     cursor.execute("SELECT xp FROM users WHERE user_id = ?", (uid,))
     r = cursor.fetchone()
-    return r[0] if r else 0
+    return r if r else 0
 
 def add_xp(uid, amt):
     nxp = max(0, get_xp(uid) + amt)
@@ -60,7 +60,7 @@ class TicketDropdown(discord.ui.Select):
 
     async def callback(self, inter):
         g = inter.guild; u = inter.user
-        choice = self.values[0]
+        choice = self.values
         
         if choice == "staff":
             ch = await g.create_text_channel(name=f"📝-בחינה-{u.name}", overwrites={g.default_role: discord.PermissionOverwrite(read_messages=False), u: discord.PermissionOverwrite(read_messages=True, send_messages=True)})
@@ -87,7 +87,7 @@ class ShopDropdown(discord.ui.Select):
         super().__init__(placeholder="🛒 בחר את הרול שברצונך לקנות מתוך התפריט...", custom_id="shop_drop", options=options)
 
     async def callback(self, inter):
-        item_id, price = self.values[0].split(":")
+        item_id, price = self.values.split(":")
         price = int(price)
         
         if get_xp(inter.user.id) < price:
@@ -143,8 +143,12 @@ async def on_message(msg):
         await msg.delete(); await msg.channel.send("📩 **Staff & Support Center** 📩\n\nבחר את סוג הפנייה שלך מתוך התפריט הנפתח למטה כדי לפתוח כרטיס אישי:", view=TicketView())
     elif text == "!setup_shop":
         await msg.delete(); await msg.channel.send("🛒 **XP Shop** 🛒\n\nפתח את התפריט למטה ובחר את הרול החדש שברצונך לרכוש באמצעות נקודות ה-XP שלך:", view=ShopView())
-    elif text == "!xp":
-        await msg.channel.send(f"✨ היתרה שלך תקינה ומסונכרנת! ה-XP שלך הוא: `{get_xp(msg.author.id):,}`")
+    elif text.startswith("!xp"):
+        # 👥 מנגנון חכם: אם תייגת חבר, הבוט יבדוק אותו. אם לא, הוא יבדוק אותך!
+        target = msg.author
+        if msg.mentions:
+            target = msg.mentions[0]
+        await msg.channel.send(f"✨ יתרת ה-XP של {target.mention} היא: **{get_xp(target.id):,} XP**")
     elif text.startswith("!h"):
         reason = msg.content[3:].strip()
         await msg.delete()
@@ -159,6 +163,4 @@ async def on_message(msg):
         emb = discord.Embed(title=f"🕸️ סטטוס הוותק שלך בשרת | {msg.author.name}", color=0x2f3136)
         emb.add_field(name="📅 מתי נכנסת לשרת?", value=f"```text\n{jd.strftime('%d/%m/%Y')}\n```", inline=False)
         emb.add_field(name="⏳ לפני כמה זמן זה היה?", value=f"```text\n{days} ימים\n```", inline=False)
-        emb.set_thumbnail(url=msg.author.display_avatar.url)
-        await msg.channel.send(embed=emb, view=VeteranView(days))
         bot.run("DISCORD_TOKEN")
