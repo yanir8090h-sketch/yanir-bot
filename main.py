@@ -15,18 +15,18 @@ intents.reactions = True
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 # 🆔 מזהי רולים כלליים של השרת שלך:
-STAFF_ROLE = 1520870990543065111       
-MNG_ROLE = 1520870990564032614   
-MEMBER_ROLE = 1520870990526021694       
-VETERAN_ROLE_ID = 1521720542314780684  
+STAFF_ROLE = 1521955150334263437      
+MNG_ROLE = 1521955150334263437  
+MEMBER_ROLE = 1521955150246445184       
+VETERAN_ROLE_ID = 1521955150246445184  
 
 # 🆔 מזהי ארבעת הרולים החדשים של החנות:
 ROLE_MNG_SUPPORT = 1520802461306271825    # Manager Support
 ROLE_EV_MNG = 1520807998505312431         # Event Manager
 ROLE_SUP_TEAM = 1520870990535312431       # Support Team
 ROLE_LEAK_TEAM = 1520870990505312430      # Leaks Team
-STAFF_FRIEND_ROLE_ID = 1520870990526021694  # Staff Friend
-STAFF_REQUEST_CHANNEL_ID = None  # אם תרצה, שנה ל-ID של חדר staff-request
+STAFF_FRIEND_ROLE_ID = 1521955150275809377  # Staff Friend
+STAFF_REQUEST_CHANNEL_ID = 1522010120089895032  # אם תרצה, שנה ל-ID של חדר staff-request
 GUILD_ID = int(os.getenv("GUILD_ID", "0")) or None
 WELCOME_CHANNEL_ID = int(os.getenv("", "0")) or None
 CASINO_START_BALANCE = 10000
@@ -87,7 +87,9 @@ class MngButtons(discord.ui.View):
         btn.label = "בטיפול"; btn.disabled = True; await inter.response.edit_message(view=self)
         await inter.channel.send(embed=discord.Embed(title="⚡ הטיקט נלקח לטיפול ⚡", description=f"איש הצוות {inter.user.mention} לקח את הטיקט לטיפול!", color=0x00ff00))
     @discord.ui.button(label="סגור כאן", style=discord.ButtonStyle.danger, custom_id="t_s", emoji="🔒")
-    async def close(self, inter, btn): await inter.channel.delete()
+    async def close(self, inter, btn):
+        await inter.response.defer()
+        await inter.channel.delete()
 
 class TicketDropdown(discord.ui.Select):
     def __init__(self):
@@ -188,10 +190,20 @@ class VeteranView(discord.ui.View):
         else: await inter.response.send_message(f"❌ חסרים לך עוד {90 - self.days} ימים.", ephemeral=True)
 
 class VerifyView(discord.ui.View):
-    def __init__(self): super().__init__(timeout=None)
+    def __init__(self):
+        super().__init__(timeout=None)
+
     @discord.ui.button(label="✅ לחץ כאן לאימות", style=discord.ButtonStyle.success, custom_id="v_c")
     async def verify(self, inter, btn):
-        r = inter.guild.get_role(MEMBER_ROLE); await inter.user.add_roles(r); await inter.response.send_message("🎉 אימות בוצע בהצלחה!", ephemeral=True)
+        r = inter.guild.get_role(MEMBER_ROLE)
+        if not r:
+            await inter.response.send_message("❌ רול האימות לא נמצא. בקש מהמנהל לבדוק את ההגדרות.", ephemeral=True)
+            return
+        if r in inter.user.roles:
+            await inter.response.send_message("✅ כבר אימתנו אותך. תודה!", ephemeral=True)
+            return
+        await inter.user.add_roles(r)
+        await inter.response.send_message("🎉 אימות בוצע בהצלחה!", ephemeral=True)
 
 class StaffFriendApproveView(discord.ui.View):
     def __init__(self, target, requester, role):
@@ -253,7 +265,7 @@ def get_welcome_channel(guild: discord.Guild) -> discord.TextChannel | None:
 
 @bot.event
 async def on_ready():
-    bot.add_view(TicketView()); bot.add_view(VerifyView()); bot.add_view(ShopView()); bot.add_view(CasinoView())
+    bot.add_view(TicketView()); bot.add_view(VerifyView()); bot.add_view(ShopView()); bot.add_view(CasinoView()); bot.add_view(MngButtons())
     await update_member_presence()
     try:
         if GUILD_ID:
