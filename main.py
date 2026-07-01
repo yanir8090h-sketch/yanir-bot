@@ -28,7 +28,8 @@ ROLE_LEAK_TEAM = 1520870990505312430      # Leaks Team
 STAFF_FRIEND_ROLE_ID = 1521955150275809377  # Staff Friend
 STAFF_REQUEST_CHANNEL_ID = 1522010120089895032  # אם תרצה, שנה ל-ID של חדר staff-request
 GUILD_ID = int(os.getenv("GUILD_ID", "0")) or None
-WELCOME_CHANNEL_ID = int(os.getenv("", "0")) or None
+WELCOME_CHANNEL_ID = int(os.getenv("WELCOME_CHANNEL_ID", "0")) or None
+ROLE_PREFIX = "קזינו - "
 CASINO_START_BALANCE = 10000
 SPECIAL_CASINO_ROLE_ID = 1521955150246445179
 CASINO_ROLE_SHOP = {
@@ -67,10 +68,13 @@ def ensure_casino_balance(uid):
 def find_role(guild, role_identifier):
     if isinstance(role_identifier, int):
         return guild.get_role(role_identifier)
-    if isinstance(role_identifier, str) and role_identifier.isdigit():
-        return guild.get_role(int(role_identifier))
     if isinstance(role_identifier, str):
-        return discord.utils.get(guild.roles, name=role_identifier)
+        if role_identifier.isdigit():
+            return guild.get_role(int(role_identifier))
+        role = discord.utils.get(guild.roles, name=role_identifier)
+        if role:
+            return role
+        return discord.utils.get(guild.roles, name=f"{ROLE_PREFIX}{role_identifier}")
     return None
 
 class HelpView(discord.ui.View):
@@ -120,10 +124,10 @@ class TicketView(discord.ui.View):
 class ShopDropdown(discord.ui.Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label="👤 Manager Support (25,000 XP)", value="mng_sup:25000", emoji="👤", description="רכישת רול מנהל תמיכה בשרת"),
-            discord.SelectOption(label="🎨 Event Manager (20,000 XP)", value="evt_mng:20000", emoji="🎨", description="רכישת רול מנהל איוונטים בשרת"),
-            discord.SelectOption(label="🛠️ Support Team (15,000 XP)", value="sup_team:15000", emoji="🛠️", description="רכישת רול צוות תמיכה בשרת"),
-            discord.SelectOption(label="👁️ Leaks Team (10,000 XP)", value="leak_team:10000", emoji="👁️", description="רכישת רול צוות הדלפות בשרת")
+            discord.SelectOption(label=f"{ROLE_PREFIX}Manager Support (25,000 XP)", value="mng_sup:25000", emoji="👤", description="רכישת רול מנהל תמיכה בשרת"),
+            discord.SelectOption(label=f"{ROLE_PREFIX}Event Manager (20,000 XP)", value="evt_mng:20000", emoji="🎨", description="רכישת רול מנהל איוונטים בשרת"),
+            discord.SelectOption(label=f"{ROLE_PREFIX}Support Team (15,000 XP)", value="sup_team:15000", emoji="🛠️", description="רכישת רול צוות תמיכה בשרת"),
+            discord.SelectOption(label=f"{ROLE_PREFIX}Leaks Team (10,000 XP)", value="leak_team:10000", emoji="👁️", description="רכישת רול צוות הדלפות בשרת")
         ]
         super().__init__(placeholder="🛒 בחר את הרול שברצונך לקנות מתוך התפריט...", custom_id="shop_drop", options=options)
 
@@ -160,7 +164,7 @@ class CasinoView(discord.ui.View):
 
 class CasinoButton(discord.ui.Button):
     def __init__(self, key, label, price):
-        super().__init__(style=discord.ButtonStyle.primary, label=f"{label} ({price:,} XP)", custom_id=f"casino_{key}")
+        super().__init__(style=discord.ButtonStyle.primary, label=f"{ROLE_PREFIX}{label} ({price:,} XP)", custom_id=f"casino_{key}")
         self.key = key
 
     async def callback(self, interaction: discord.Interaction):
