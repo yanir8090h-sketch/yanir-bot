@@ -1,0 +1,4 @@
+discord.py==2.3.4
+python-dotenv==1.0.0
+easy_pil==0.2.10
+Flask==2.3.3
