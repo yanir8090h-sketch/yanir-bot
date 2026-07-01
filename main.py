@@ -272,5 +272,5 @@ async def on_message(msg):
 
     add_xp(msg.author.id, random.randint(15, 25))
     await bot.process_commands(msg)
+bot.run(os.getenv("DISCORD_TOKEN"))
 
-        bot.run("DISCORD_TOKEN")
