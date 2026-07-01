@@ -2,8 +2,12 @@ import os, discord, asyncio, random, sqlite3
 from discord.ext import commands
 from datetime import datetime
 
-intents = discord.Intents.all()
-bot = commands.Bot(command_prefix="!", intents=intents)
+intents = discord.Intents.default()
+intents.message_content = True
+intents.members = True
+intents.guilds = True
+intents.reactions = True
+bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 # 🆔 מזהי רולים כלליים של השרת שלך:
 STAFF_ROLE = 1520870990543065111       
@@ -16,6 +20,8 @@ ROLE_MNG_SUPPORT = 1520802461306271825    # Manager Support
 ROLE_EV_MNG = 1520807998505312431         # Event Manager
 ROLE_SUP_TEAM = 1520870990535312431       # Support Team
 ROLE_LEAK_TEAM = 1520870990505312430      # Leaks Team
+STAFF_FRIEND_ROLE_ID = 1520870990526021694  # Staff Friend
+STAFF_REQUEST_CHANNEL_ID = None  # אם תרצה, שנה ל-ID של חדר staff-request
 
 # 🔄 חיבור לבסיס הנתונים הסופי והנקי:
 conn = sqlite3.connect("xp_server_final.db")
@@ -26,7 +32,7 @@ conn.commit()
 def get_xp(uid):
     cursor.execute("SELECT xp FROM users WHERE user_id = ?", (uid,))
     r = cursor.fetchone()
-    return r if r else 0
+    return r[0] if r else 0
 
 def add_xp(uid, amt):
     nxp = max(0, get_xp(uid) + amt)
@@ -125,42 +131,146 @@ class VerifyView(discord.ui.View):
     async def verify(self, inter, btn):
         r = inter.guild.get_role(MEMBER_ROLE); await inter.user.add_roles(r); await inter.response.send_message("🎉 אימות בוצע בהצלחה!", ephemeral=True)
 
+class StaffFriendApproveView(discord.ui.View):
+    def __init__(self, target, requester, role):
+        super().__init__(timeout=None)
+        self.target = target
+        self.requester = requester
+        self.role = role
+
+    @discord.ui.button(label="אשר", style=discord.ButtonStyle.success, custom_id="sf_approve")
+    async def approve(self, interaction, button):
+        if self.role and self.role not in self.target.roles:
+            await self.target.add_roles(self.role)
+            await interaction.response.edit_message(
+                content=f"✅ בקשת Staff Friend אושרה עבור {self.target.mention} על ידי {interaction.user.mention}.",
+                view=None,
+            )
+            try:
+                await self.requester.send(f"✅ בקשתך אושרה! קיבלת את הרול {self.role.name}.")
+            except Exception:
+                pass
+        else:
+            await interaction.response.edit_message(
+                content=f"⚠️ {self.target.mention} כבר מחזיק ברול זה או שהרול לא קיים.",
+                view=None,
+            )
+
+    @discord.ui.button(label="דחה", style=discord.ButtonStyle.danger, custom_id="sf_reject")
+    async def reject(self, interaction, button):
+        await interaction.response.edit_message(
+            content=f"❌ בקשת Staff Friend נדחתה עבור {self.target.mention} על ידי {interaction.user.mention}.",
+            view=None,
+        )
+        try:
+            await self.requester.send("❌ בקשתך נדחתה.")
+        except Exception:
+            pass
+
 @bot.event
 async def on_ready():
     bot.add_view(TicketView()); bot.add_view(VerifyView()); bot.add_view(ShopView())
+    try:
+        synced = await bot.tree.sync()
+        print(f"Synced {len(synced)} slash commands")
+    except Exception as e:
+        print(f"Slash command sync failed: {e}")
     print("Your Bot is officially live, logging and ready! 🚀")
+
+@bot.command(name="ping")
+async def ping(ctx):
+    await ctx.send("🏓 Pong!")
+
+@bot.tree.command(name="ping", description="בדוק אם הבוט חי")
+async def slash_ping(interaction: discord.Interaction):
+    await interaction.response.send_message("🏓 Pong!", ephemeral=True)
+
+@bot.command(name="xp")
+async def xp_command(ctx, user: discord.Member = None):
+    target = user or ctx.author
+    await ctx.send(f"✨ יתרת ה-XP של {target.mention} היא: **{get_xp(target.id):,} XP**")
+
+@bot.tree.command(name="xp", description="בדוק XP לעצמך או למישהו אחר")
+async def slash_xp(interaction: discord.Interaction, user: discord.Member = None):
+    target = user or interaction.user
+    await interaction.response.send_message(f"✨ יתרת ה-XP של {target.mention} היא: **{get_xp(target.id):,} XP**")
+
+@bot.command(name="vt")
+async def vt_command(ctx):
+    jd = ctx.author.joined_at
+    days = (datetime.now(jd.tzinfo) - jd).days
+    emb = discord.Embed(title=f"🕸️ סטטוס הוותק שלך בשרת | {ctx.author.name}", color=0x2f3136)
+    emb.add_field(name="📅 מתי נכנסת לשרת?", value=f"```text\n{jd.strftime('%d/%m/%Y')}\n```", inline=False)
+    emb.add_field(name="⏳ לפני כמה זמן זה היה?", value=f"```text\n{days} ימים\n```", inline=False)
+    await ctx.send(embed=emb)
+
+@bot.tree.command(name="vt", description="הצג את סטטוס הוותק שלך")
+async def slash_vt(interaction: discord.Interaction):
+    jd = interaction.user.joined_at
+    days = (datetime.now(jd.tzinfo) - jd).days
+    emb = discord.Embed(title=f"🕸️ סטטוס הוותק שלך בשרת | {interaction.user.name}", color=0x2f3136)
+    emb.add_field(name="📅 מתי נכנסת לשרת?", value=f"```text\n{jd.strftime('%d/%m/%Y')}\n```", inline=False)
+    emb.add_field(name="⏳ לפני כמה זמן זה היה?", value=f"```text\n{days} ימים\n```", inline=False)
+    await interaction.response.send_message(embed=emb)
+
+@bot.command(name="sf")
+async def sf_command(ctx, user: discord.Member = None):
+    target = user or ctx.author
+    role = ctx.guild.get_role(STAFF_FRIEND_ROLE_ID)
+    if not role:
+        await ctx.send("❌ לא נמצא רול Staff Friend בשרת.")
+        return
+
+    request_channel = ctx.channel
+    if STAFF_REQUEST_CHANNEL_ID:
+        request_channel = ctx.guild.get_channel(STAFF_REQUEST_CHANNEL_ID)
+        if not request_channel:
+            request_channel = ctx.channel
+
+    embed = discord.Embed(
+        title="📩 בקשת Staff Friend",
+        description=f"{target.mention} ביקש/ה את הרול {role.name}",
+        color=0x00ff00,
+    )
+    embed.add_field(name="מבקש", value=ctx.author.mention, inline=True)
+    embed.add_field(name="מועמד", value=target.mention, inline=True)
+    embed.set_footer(text="לחץ על אשר או דחה")
+
+    await request_channel.send(embed=embed, view=StaffFriendApproveView(target, ctx.author, role))
+    await ctx.send("📨 הבקשה נשלחה לצוות לאישור.")
+
+@bot.tree.command(name="sf", description="בקש רול Staff Friend")
+async def slash_sf(interaction: discord.Interaction, user: discord.Member = None):
+    target = user or interaction.user
+    role = interaction.guild.get_role(1521762736944709742)
+    if not role:
+        await interaction.response.send_message("❌ לא נמצא רול Staff Friend בשרת.", ephemeral=True)
+        return
+
+    request_channel = interaction.channel
+    if STAFF_REQUEST_CHANNEL_ID:
+        request_channel = interaction.guild.get_channel(1521760013557694624)
+        if not request_channel:
+            request_channel = interaction.channel
+
+    embed = discord.Embed(
+        title="📩 בקשת Staff Friend",
+        description=f"{target.mention} ביקש/ה את הרול {role.name}",
+        color=0x00ff00,
+    )
+    embed.add_field(name="מבקש", value=interaction.user.mention, inline=True)
+    embed.add_field(name="מועמד", value=target.mention, inline=True)
+    embed.set_footer(text="לחץ על אשר או דחה")
+
+    await request_channel.send(embed=embed, view=StaffFriendApproveView(target, interaction.user, role))
+    await interaction.response.send_message("📨 הבקשה נשלחה לצוות לאישור.", ephemeral=True)
 
 @bot.event
 async def on_message(msg):
-    if msg.author.bot or not msg.guild: return
+    if msg.author.bot or not msg.guild:
+        return
+
     add_xp(msg.author.id, random.randint(15, 25))
-    
-    text = msg.content.lower().strip()
-    
-    if text == "!setup_verify":
-        await msg.delete(); await msg.channel.send("🔒 **Verification System** 🔒\n\nClick the button below to get verified:", view=VerifyView())
-    elif text == "!setup_tickets":
-        await msg.delete(); await msg.channel.send("📩 **Staff & Support Center** 📩\n\nבחר את סוג הפנייה שלך מתוך התפריט הנפתח למטה כדי לפתוח כרטיס אישי:", view=TicketView())
-    elif text == "!setup_shop":
-        await msg.delete(); await msg.channel.send("🛒 **XP Shop** 🛒\n\nפתח את התפריט למטה ובחר את הרול החדש שברצונך לרכוש באמצעות נקודות ה-XP שלך:", view=ShopView())
-    elif text.startswith("!xp"):
-        # 👑 מנגנון התיוג המתוקן והחסין ב-100%!
-        target = msg.author
-        if msg.mentions:
-            target = msg.mentions[0]
-        await msg.channel.send(f"✨ יתרת ה-XP של {target.mention} היא: **{get_xp(target.id):,} XP**")
-    elif text.startswith("!h"):
-        reason = msg.content[3:].strip()
-        await msg.delete()
-        if not reason:
-            await msg.channel.send("❌ נא לציין סיבה לפתיחת קריאת העזרה!", delete_after=5)
-            return
-        vt = msg.author.voice.channel.mention if msg.author.voice and msg.author.voice.channel else "מחוץ לווייס"
-        emb = discord.Embed(title="⚠️ בקשת עזרה ⚠️", description=f"📝 סיבה: {reason} | 🎧 ווייס: {vt}", color=0xff0000)
-        await msg.channel.send(content=f"<@&{STAFF_ROLE}>", embed=emb, view=HelpView(msg.author, reason, vt))
-    elif text == "!vt":
-        jd = msg.author.joined_at; days = (datetime.now(jd.tzinfo) - jd).days
-        emb = discord.Embed(title=f"🕸️ סטטוס הוותק שלך בשרת | {msg.author.name}", color=0x2f3136)
-        emb.add_field(name="📅 מתי נכנסת לשרת?", value=f"```text\n{jd.strftime('%d/%m/%Y')}\n```", inline=False)
-        emb.add_field(name="⏳ לפני כמה זמן זה היה?", value=f"```text\n{days} ימים\n```", inline=False)
+    await bot.process_commands(msg)
+
         bot.run("DISCORD_TOKEN")
