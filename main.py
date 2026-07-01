@@ -1,6 +1,11 @@
 import os, discord, asyncio, random, sqlite3
+from threading import Thread
+from flask import Flask
+from dotenv import load_dotenv
 from discord.ext import commands
 from datetime import datetime
+
+load_dotenv()
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -22,6 +27,8 @@ ROLE_SUP_TEAM = 1520870990535312431       # Support Team
 ROLE_LEAK_TEAM = 1520870990505312430      # Leaks Team
 STAFF_FRIEND_ROLE_ID = 1520870990526021694  # Staff Friend
 STAFF_REQUEST_CHANNEL_ID = None  # אם תרצה, שנה ל-ID של חדר staff-request
+GUILD_ID = int(os.getenv("GUILD_ID", "0")) or None
+TOKEN = os.getenv("TOKEN")
 
 # 🔄 חיבור לבסיס הנתונים הסופי והנקי:
 conn = sqlite3.connect("xp_server_final.db")
@@ -170,52 +177,39 @@ class StaffFriendApproveView(discord.ui.View):
 @bot.event
 async def on_ready():
     bot.add_view(TicketView()); bot.add_view(VerifyView()); bot.add_view(ShopView())
+    member_count = sum(g.member_count for g in bot.guilds)
+    await bot.change_presence(status=discord.Status.dnd, activity=discord.Game(name=f"{member_count} חברים"))
     try:
-        synced = await bot.tree.sync()
+        if GUILD_ID:
+            synced = await bot.tree.sync(guild=discord.Object(id=GUILD_ID))
+        else:
+            synced = await bot.tree.sync()
         print(f"Synced {len(synced)} slash commands")
     except Exception as e:
         print(f"Slash command sync failed: {e}")
     print("Your Bot is officially live, logging and ready! 🚀")
 
-@bot.command(name="ping")
+@bot.hybrid_command(name="ping", description="בדוק אם הבוט חי")
 async def ping(ctx):
     await ctx.send("🏓 Pong!")
 
-@bot.tree.command(name="ping", description="בדוק אם הבוט חי")
-async def slash_ping(interaction: discord.Interaction):
-    await interaction.response.send_message("🏓 Pong!", ephemeral=True)
+def build_veteran_embed(user):
+    jd = user.joined_at
+    days = (datetime.now(jd.tzinfo) - jd).days
+    emb = discord.Embed(title=f"🕸️ סטטוס הוותק שלך בשרת | {user.name}", color=0x2f3136)
+    emb.add_field(name="📅 מתי נכנסת לשרת?", value=f"```text\n{jd.strftime('%d/%m/%Y')}\n```", inline=False)
+    emb.add_field(name="⏳ לפני כמה זמן זה היה?", value=f"```text\n{days} ימים\n```", inline=False)
+    return emb, days
 
-@bot.command(name="xp")
-async def xp_command(ctx, user: discord.Member = None):
-    target = user or ctx.author
-    await ctx.send(f"✨ יתרת ה-XP של {target.mention} היא: **{get_xp(target.id):,} XP**")
-
-@bot.tree.command(name="xp", description="בדוק XP לעצמך או למישהו אחר")
-async def slash_xp(interaction: discord.Interaction, user: discord.Member = None):
-    target = user or interaction.user
-    await interaction.response.send_message(f"✨ יתרת ה-XP של {target.mention} היא: **{get_xp(target.id):,} XP**")
-
-@bot.command(name="vt")
+@bot.hybrid_command(name="vt", description="הצג את סטטוס הוותק שלך")
 async def vt_command(ctx):
-    jd = ctx.author.joined_at
-    days = (datetime.now(jd.tzinfo) - jd).days
-    emb = discord.Embed(title=f"🕸️ סטטוס הוותק שלך בשרת | {ctx.author.name}", color=0x2f3136)
-    emb.add_field(name="📅 מתי נכנסת לשרת?", value=f"```text\n{jd.strftime('%d/%m/%Y')}\n```", inline=False)
-    emb.add_field(name="⏳ לפני כמה זמן זה היה?", value=f"```text\n{days} ימים\n```", inline=False)
-    await ctx.send(embed=emb)
+    user = getattr(ctx, "author", None) or ctx.user
+    emb, days = build_veteran_embed(user)
+    await ctx.send(embed=emb, view=VeteranView(days))
 
-@bot.tree.command(name="vt", description="הצג את סטטוס הוותק שלך")
-async def slash_vt(interaction: discord.Interaction):
-    jd = interaction.user.joined_at
-    days = (datetime.now(jd.tzinfo) - jd).days
-    emb = discord.Embed(title=f"🕸️ סטטוס הוותק שלך בשרת | {interaction.user.name}", color=0x2f3136)
-    emb.add_field(name="📅 מתי נכנסת לשרת?", value=f"```text\n{jd.strftime('%d/%m/%Y')}\n```", inline=False)
-    emb.add_field(name="⏳ לפני כמה זמן זה היה?", value=f"```text\n{days} ימים\n```", inline=False)
-    await interaction.response.send_message(embed=emb)
-
-@bot.command(name="sf")
+@bot.hybrid_command(name="sf", description="בקש רול Staff Friend")
 async def sf_command(ctx, user: discord.Member = None):
-    target = user or ctx.author
+    target = user or getattr(ctx, "author", None) or ctx.user
     role = ctx.guild.get_role(STAFF_FRIEND_ROLE_ID)
     if not role:
         await ctx.send("❌ לא נמצא רול Staff Friend בשרת.")
@@ -232,38 +226,25 @@ async def sf_command(ctx, user: discord.Member = None):
         description=f"{target.mention} ביקש/ה את הרול {role.name}",
         color=0x00ff00,
     )
-    embed.add_field(name="מבקש", value=ctx.author.mention, inline=True)
+    embed.add_field(name="מבקש", value=getattr(ctx, "author", ctx.user).mention, inline=True)
     embed.add_field(name="מועמד", value=target.mention, inline=True)
     embed.set_footer(text="לחץ על אשר או דחה")
 
-    await request_channel.send(embed=embed, view=StaffFriendApproveView(target, ctx.author, role))
+    await request_channel.send(embed=embed, view=StaffFriendApproveView(target, getattr(ctx, "author", ctx.user), role))
     await ctx.send("📨 הבקשה נשלחה לצוות לאישור.")
 
-@bot.tree.command(name="sf", description="בקש רול Staff Friend")
-async def slash_sf(interaction: discord.Interaction, user: discord.Member = None):
-    target = user or interaction.user
-    role = interaction.guild.get_role(1521762736944709742)
-    if not role:
-        await interaction.response.send_message("❌ לא נמצא רול Staff Friend בשרת.", ephemeral=True)
-        return
+app = Flask(__name__)
 
-    request_channel = interaction.channel
-    if STAFF_REQUEST_CHANNEL_ID:
-        request_channel = interaction.guild.get_channel(1521760013557694624)
-        if not request_channel:
-            request_channel = interaction.channel
+@app.route('/')
+def home():
+    return "Bot is alive!", 200
 
-    embed = discord.Embed(
-        title="📩 בקשת Staff Friend",
-        description=f"{target.mention} ביקש/ה את הרול {role.name}",
-        color=0x00ff00,
-    )
-    embed.add_field(name="מבקש", value=interaction.user.mention, inline=True)
-    embed.add_field(name="מועמד", value=target.mention, inline=True)
-    embed.set_footer(text="לחץ על אשר או דחה")
 
-    await request_channel.send(embed=embed, view=StaffFriendApproveView(target, interaction.user, role))
-    await interaction.response.send_message("📨 הבקשה נשלחה לצוות לאישור.", ephemeral=True)
+def keep_alive():
+    port = int(os.getenv("PORT", "8080"))
+    thread = Thread(target=app.run, kwargs={"host": "0.0.0.0", "port": port}, daemon=True)
+    thread.start()
+
 
 @bot.event
 async def on_message(msg):
@@ -271,6 +252,74 @@ async def on_message(msg):
         return
 
     add_xp(msg.author.id, random.randint(15, 25))
-    await bot.process_commands(msg)
-bot.run(os.getenv("DISCORD_TOKEN"))
 
+    text = msg.content.strip()
+    lower_text = text.lower()
+
+    if lower_text == "!ping":
+        await msg.channel.send("🏓 Pong!")
+        return
+
+    if lower_text.startswith("!xp"):
+        target = msg.mentions[0] if msg.mentions else msg.author
+        await msg.channel.send(f"✨ יתרת ה-XP של {target.mention} היא: **{get_xp(target.id):,} XP**")
+        return
+
+    if lower_text == "!vt":
+        emb, days = build_veteran_embed(msg.author)
+        await msg.channel.send(embed=emb, view=VeteranView(days))
+        return
+
+    if lower_text.startswith("!sf"):
+        target = msg.mentions[0] if msg.mentions else msg.author
+        role = msg.guild.get_role(STAFF_FRIEND_ROLE_ID)
+        if not role:
+            await msg.channel.send("❌ לא נמצא רול Staff Friend בשרת.")
+            return
+
+        embed = discord.Embed(
+            title="📩 בקשת Staff Friend",
+            description=f"{target.mention} ביקש/ה את הרול {role.name}",
+            color=0x00ff00,
+        )
+        embed.add_field(name="מבקש", value=msg.author.mention, inline=True)
+        embed.add_field(name="מועמד", value=target.mention, inline=True)
+        embed.set_footer(text="לחץ על אשר או דחה")
+
+        await msg.channel.send(embed=embed, view=StaffFriendApproveView(target, msg.author, role))
+        await msg.channel.send("📨 הבקשה נשלחה לצוות לאישור.")
+        return
+
+    if lower_text == "!setup_verify":
+        await msg.delete()
+        await msg.channel.send("🔒 **Verification System** 🔒\n\nClick the button below to get verified:", view=VerifyView())
+        return
+
+    if lower_text == "!setup_tickets":
+        await msg.delete()
+        await msg.channel.send("📩 **Staff & Support Center** 📩\n\nבחר את סוג הפנייה שלך מתוך התפריט הנפתח למטה כדי לפתוח כרטיס אישי:", view=TicketView())
+        return
+
+    if lower_text == "!setup_shop":
+        await msg.delete()
+        await msg.channel.send("🛒 **XP Shop** 🛒\n\nפתח את התפריט למטה ובחר את הרול החדש שברצונך לרכוש באמצעות נקודות ה-XP שלך:", view=ShopView())
+        return
+
+    if lower_text.startswith("!h"):
+        reason = text[3:].strip()
+        if not reason:
+            await msg.channel.send("❌ נא לציין סיבה לפתיחת קריאת העזרה!", delete_after=5)
+            return
+        vt = msg.author.voice.channel.mention if msg.author.voice and msg.author.voice.channel else "מחוץ לווייס"
+        emb = discord.Embed(title="⚠️ בקשת עזרה ⚠️", description=f"📝 סיבה: {reason} | 🎧 ווייס: {vt}", color=0xff0000)
+        await msg.channel.send(content=f"<@&{STAFF_ROLE}>", embed=emb, view=HelpView(msg.author, reason, vt))
+        return
+
+    await bot.process_commands(msg)
+
+
+if __name__ == "__main__":
+    keep_alive()
+    if not TOKEN:
+        raise RuntimeError("TOKEN environment variable is not set. Set TOKEN in .env or in the host config.")
+    bot.run(TOKEN)
