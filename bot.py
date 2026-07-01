@@ -253,7 +253,7 @@ async def update_member_presence():
             member_count = guild.member_count
     if member_count == 0:
         member_count = sum(g.member_count for g in bot.guilds)
-    await bot.change_presence(status=discord.Status.dnd, activity=discord.Game(name=f"{member_count} חברים"))
+    await bot.change_presence(status=discord.Status.online, activity=discord.Game(name=f"{member_count} חברים"))
 
 def get_welcome_channel(guild: discord.Guild) -> discord.TextChannel | None:
     if WELCOME_CHANNEL_ID:
