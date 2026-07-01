@@ -28,13 +28,15 @@ ROLE_LEAK_TEAM = 1520870990505312430      # Leaks Team
 STAFF_FRIEND_ROLE_ID = 1520870990526021694  # Staff Friend
 STAFF_REQUEST_CHANNEL_ID = None  # אם תרצה, שנה ל-ID של חדר staff-request
 GUILD_ID = int(os.getenv("GUILD_ID", "0")) or None
-WELCOME_CHANNEL_ID = int(os.getenv("1521958502766084187", "0")) or None
+WELCOME_CHANNEL_ID = int(os.getenv("", "0")) or None
 CASINO_START_BALANCE = 10000
-CASINO_ROLE_SHOP = {1521955152234287309
+SPECIAL_CASINO_ROLE_ID = 1521955150246445179
+CASINO_ROLE_SHOP = {
     "mng_support": ("דילר/ית תמיכה", 25000, ROLE_MNG_SUPPORT),
     "evt_mng": ("מנהל/ת קופה", 20000, ROLE_EV_MNG),
     "sup_team": ("צוות VIP", 15000, ROLE_SUP_TEAM),
     "leak_team": ("צייד/ת בונוסים", 10000, ROLE_LEAK_TEAM),
+    "special": ("רול קזינו מיוחד", 18000, SPECIAL_CASINO_ROLE_ID),
 }
 TOKEN = os.getenv("TOKEN")
 
@@ -65,6 +67,8 @@ def ensure_casino_balance(uid):
 def find_role(guild, role_identifier):
     if isinstance(role_identifier, int):
         return guild.get_role(role_identifier)
+    if isinstance(role_identifier, str) and role_identifier.isdigit():
+        return guild.get_role(int(role_identifier))
     if isinstance(role_identifier, str):
         return discord.utils.get(guild.roles, name=role_identifier)
     return None
@@ -164,7 +168,7 @@ class CasinoButton(discord.ui.Button):
         if bal < price:
             await interaction.response.send_message(f"❌ אין לך מספיק XP כדי לקנות את {label}. יש לך {bal:,} XP.", ephemeral=True)
             return
-        role = interaction.guild.get_role(role_id)
+        role = find_role(interaction.guild, role_id)
         if not role:
             await interaction.response.send_message("❌ הרול לא קיים בשרת.", ephemeral=True)
             return
@@ -265,18 +269,7 @@ async def on_ready():
 async def on_member_join(member):
     await update_member_presence()
 
-    channel = get_welcome_channel(member.guild)
-    if channel:
-        emb = discord.Embed(
-            title="👋 ברוכים הבאים!",
-            description=f"שלום {member.mention}, ברוך/ה הבא לשרת **{member.guild.name}**!",
-            color=0x00ff00,
-        )
-        if member.guild.icon:
-            emb.set_thumbnail(url=member.guild.icon.url)
-        emb.add_field(name="מה עכשיו?", value="התחל להכיר את הקהילה, קרא את הכללים ופנה אלינו אם צריך עזרה.")
-        emb.add_field(name="📌 אימות", value="לחץ על הכפתור למטה כדי לאמת את עצמך ולקבל גישה מלאה.", inline=False)
-        await channel.send(embed=emb, view=VerifyView())
+    # אין הודעת ברוכים הבאים עם אמבד עבור משתמשים חדשים.
 
 @bot.event
 async def on_member_remove(member):
@@ -405,10 +398,10 @@ async def on_message(msg):
         description += f"יש לך {bal:,} XP.\n\n"
         description += "להימור: `!הימור <סכום>`\n"
         description += "למשחקים: `!קזינו משחקים`\n"
-        description += "לקנייה לחיצה על אחד מהכפתורים למטה.\n\n"
+        description += "לרכישה: לחץ על אחד הכפתורים למטה או השתמש ב-`!קזינו קנה <מזהה>`\n\n"
         description += "רולים זמינים:\n"
-        for _, (label, price, _) in CASINO_ROLE_SHOP.items():
-            description += f"• {label} — {price:,} XP\n"
+        for key, (label, price, _) in CASINO_ROLE_SHOP.items():
+            description += f"• `{key}` — {label} ב-{price:,} XP\n"
         emb = discord.Embed(title="🎰 קזינו XP", description=description, color=0xFFD700)
         await msg.channel.send(embed=emb, view=CasinoView())
         return
@@ -491,10 +484,10 @@ async def on_message(msg):
         description += f"יש לך {bal:,} XP.\n\n"
         description += "להימור: `!הימור <סכום>`\n"
         description += "למשחקים: `!קזינו משחקים`\n"
-        description += "לקנייה לחיצה על אחד מהכפתורים למטה.\n\n"
+        description += "לרכישה: לחץ על אחד הכפתורים למטה או השתמש ב-`!קזינו קנה <מזהה>`\n\n"
         description += "רולים זמינים:\n"
-        for _, (label, price, _) in CASINO_ROLE_SHOP.items():
-            description += f"• {label} — {price:,} XP\n"
+        for key, (label, price, _) in CASINO_ROLE_SHOP.items():
+            description += f"• `{key}` — {label} ב-{price:,} XP\n"
         emb = discord.Embed(title="🎰 קזינו XP", description=description, color=0xFFD700)
         await msg.channel.send(embed=emb, view=CasinoView())
         return
@@ -505,10 +498,13 @@ async def on_message(msg):
             await msg.channel.send("❌ השתמש: `!קזינו קנה <מזהה>`")
             return
         key = parts[2].lower()
-        if key not in CASINO_ROLE_SHOP:
-            await msg.channel.send("❌ רול לא חוקי. בחר את אחד המזהים הבאים: " + ", ".join(CASINO_ROLE_SHOP.keys()))
+        if key not in CASINO_ROLE_SHOP and not (key.isdigit() and int(key) == SPECIAL_CASINO_ROLE_ID):
+            await msg.channel.send("❌ רול לא חוקי. בחר את אחד המזהים הבאים: " + ", ".join(CASINO_ROLE_SHOP.keys()) + ", או את ה-ID המלא אם זה הרול המיוחד.")
             return
-        label, price, role_id = CASINO_ROLE_SHOP[key]
+        if key in CASINO_ROLE_SHOP:
+            label, price, role_id = CASINO_ROLE_SHOP[key]
+        else:
+            label, price, role_id = ("רול קזינו מיוחד", 18000, SPECIAL_CASINO_ROLE_ID)
         if get_xp(msg.author.id) < price:
             await msg.channel.send(f"❌ אין לך מספיק XP לקנות את {label}. צריך {price:,} XP.")
             return
