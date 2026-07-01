@@ -28,7 +28,14 @@ ROLE_LEAK_TEAM = 1520870990505312430      # Leaks Team
 STAFF_FRIEND_ROLE_ID = 1520870990526021694  # Staff Friend
 STAFF_REQUEST_CHANNEL_ID = None  # אם תרצה, שנה ל-ID של חדר staff-request
 GUILD_ID = int(os.getenv("GUILD_ID", "0")) or None
-WELCOME_CHANNEL_ID = int(os.getenv("1520870990588936448", "0")) or None
+WELCOME_CHANNEL_ID = int(os.getenv("1521958502766084187", "0")) or None
+CASINO_START_BALANCE = 10000
+CASINO_ROLE_SHOP = {1521955152234287309
+    "mng_support": ("דילר/ית תמיכה", 25000, ROLE_MNG_SUPPORT),
+    "evt_mng": ("מנהל/ת קופה", 20000, ROLE_EV_MNG),
+    "sup_team": ("צוות VIP", 15000, ROLE_SUP_TEAM),
+    "leak_team": ("צייד/ת בונוסים", 10000, ROLE_LEAK_TEAM),
+}
 TOKEN = os.getenv("TOKEN")
 
 # 🔄 חיבור לבסיס הנתונים הסופי והנקי:
@@ -47,6 +54,20 @@ def add_xp(uid, amt):
     cursor.execute("INSERT INTO users (user_id, xp) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET xp = ?", (uid, nxp, nxp))
     conn.commit()
     return nxp
+
+def ensure_casino_balance(uid):
+    xp = get_xp(uid)
+    if xp < CASINO_START_BALANCE:
+        add_xp(uid, CASINO_START_BALANCE - xp)
+        return CASINO_START_BALANCE
+    return xp
+
+def find_role(guild, role_identifier):
+    if isinstance(role_identifier, int):
+        return guild.get_role(role_identifier)
+    if isinstance(role_identifier, str):
+        return discord.utils.get(guild.roles, name=role_identifier)
+    return None
 
 class HelpView(discord.ui.View):
     def __init__(self, req, reason, vc): super().__init__(timeout=None); self.req = req; self.reason = reason; self.vc = vc
@@ -125,6 +146,35 @@ class ShopDropdown(discord.ui.Select):
 class ShopView(discord.ui.View):
     def __init__(self): super().__init__(timeout=None); self.add_item(ShopDropdown())
 
+class CasinoView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        for key, (label, price, _) in CASINO_ROLE_SHOP.items():
+            self.add_item(CasinoButton(key, label, price))
+
+class CasinoButton(discord.ui.Button):
+    def __init__(self, key, label, price):
+        super().__init__(style=discord.ButtonStyle.primary, label=f"{label} ({price:,} XP)", custom_id=f"casino_{key}")
+        self.key = key
+
+    async def callback(self, interaction: discord.Interaction):
+        user = interaction.user
+        bal = get_xp(user.id)
+        label, price, role_id = CASINO_ROLE_SHOP[self.key]
+        if bal < price:
+            await interaction.response.send_message(f"❌ אין לך מספיק XP כדי לקנות את {label}. יש לך {bal:,} XP.", ephemeral=True)
+            return
+        role = interaction.guild.get_role(role_id)
+        if not role:
+            await interaction.response.send_message("❌ הרול לא קיים בשרת.", ephemeral=True)
+            return
+        if role in user.roles:
+            await interaction.response.send_message(f"❌ כבר יש לך את {label}.", ephemeral=True)
+            return
+        add_xp(user.id, -price)
+        await user.add_roles(role)
+        await interaction.response.send_message(f"🎉 קנית את {label} ב-{price:,} XP! כעת יש לך {get_xp(user.id):,} XP.", ephemeral=True)
+
 class VeteranView(discord.ui.View):
     def __init__(self, days): super().__init__(timeout=None); self.days = days
     @discord.ui.button(label="🎖️ בקש לקבל רול ווטרן", style=discord.ButtonStyle.success, custom_id="claim_veteran")
@@ -185,9 +235,21 @@ async def update_member_presence():
         member_count = sum(g.member_count for g in bot.guilds)
     await bot.change_presence(status=discord.Status.dnd, activity=discord.Game(name=f"{member_count} חברים"))
 
+def get_welcome_channel(guild: discord.Guild) -> discord.TextChannel | None:
+    if WELCOME_CHANNEL_ID:
+        channel = guild.get_channel(WELCOME_CHANNEL_ID)
+        if channel and channel.permissions_for(guild.me).send_messages and channel.permissions_for(guild.me).view_channel:
+            return channel
+    if guild.system_channel and guild.system_channel.permissions_for(guild.me).send_messages and guild.system_channel.permissions_for(guild.me).view_channel:
+        return guild.system_channel
+    return next(
+        (c for c in guild.text_channels if c.permissions_for(guild.me).send_messages and c.permissions_for(guild.me).view_channel),
+        None,
+    )
+
 @bot.event
 async def on_ready():
-    bot.add_view(TicketView()); bot.add_view(VerifyView()); bot.add_view(ShopView())
+    bot.add_view(TicketView()); bot.add_view(VerifyView()); bot.add_view(ShopView()); bot.add_view(CasinoView())
     await update_member_presence()
     try:
         if GUILD_ID:
@@ -202,6 +264,19 @@ async def on_ready():
 @bot.event
 async def on_member_join(member):
     await update_member_presence()
+
+    channel = get_welcome_channel(member.guild)
+    if channel:
+        emb = discord.Embed(
+            title="👋 ברוכים הבאים!",
+            description=f"שלום {member.mention}, ברוך/ה הבא לשרת **{member.guild.name}**!",
+            color=0x00ff00,
+        )
+        if member.guild.icon:
+            emb.set_thumbnail(url=member.guild.icon.url)
+        emb.add_field(name="מה עכשיו?", value="התחל להכיר את הקהילה, קרא את הכללים ופנה אלינו אם צריך עזרה.")
+        emb.add_field(name="📌 אימות", value="לחץ על הכפתור למטה כדי לאמת את עצמך ולקבל גישה מלאה.", inline=False)
+        await channel.send(embed=emb, view=VerifyView())
 
 @bot.event
 async def on_member_remove(member):
@@ -235,7 +310,7 @@ async def sf_command(ctx, user: discord.Member = None):
 
     request_channel = ctx.channel
     if STAFF_REQUEST_CHANNEL_ID:
-        request_channel = ctx.guild.get_channel(STAFF_REQUEST_CHANNEL_ID)
+        request_channel = ctx.guild.get_channel(1521955150275809377)
         if not request_channel:
             request_channel = ctx.channel
 
@@ -321,6 +396,161 @@ async def on_message(msg):
     if lower_text == "!setup_shop":
         await msg.delete()
         await msg.channel.send("🛒 **XP Shop** 🛒\n\nפתח את התפריט למטה ובחר את הרול החדש שברצונך לרכוש באמצעות נקודות ה-XP שלך:", view=ShopView())
+        return
+
+    if lower_text == "!setup_casino":
+        await msg.delete()
+        bal = ensure_casino_balance(msg.author.id)
+        description = "🎰 ברוכים הבאים לקזינו!\n"
+        description += f"יש לך {bal:,} XP.\n\n"
+        description += "להימור: `!הימור <סכום>`\n"
+        description += "למשחקים: `!קזינו משחקים`\n"
+        description += "לקנייה לחיצה על אחד מהכפתורים למטה.\n\n"
+        description += "רולים זמינים:\n"
+        for _, (label, price, _) in CASINO_ROLE_SHOP.items():
+            description += f"• {label} — {price:,} XP\n"
+        emb = discord.Embed(title="🎰 קזינו XP", description=description, color=0xFFD700)
+        await msg.channel.send(embed=emb, view=CasinoView())
+        return
+
+    if lower_text in ("!קזינו משחקים", "!משחקים"):
+        await msg.channel.send(
+            "🎲 משחקי קזינו זמינים:\n"
+            "• `!קזינו משחק מטבע <סכום>` — משחק מטבע, זכייה x2\n"
+            "• `!קזינו משחק חריצים <סכום>` — חריצים, 3 סמלים זהים x4, 2 סמלים זהים x2\n"
+            "• `!קזינו משחק גלגל <סכום>` — גלגל מזל, זכייה x3 אם נוחת על 7\n"
+        )
+        return
+
+    if lower_text.startswith("!קזינו משחק"):
+        parts = text.split()
+        if len(parts) < 3:
+            await msg.channel.send("❌ השתמש: `!קזינו משחק <מטבע|חריצים|גלגל> <סכום>`")
+            return
+        game = parts[2]
+        if len(parts) < 4:
+            await msg.channel.send("❌ הכנס סכום לאחר סוג המשחק.")
+            return
+        try:
+            amount = int(parts[3].replace(',', ''))
+        except ValueError:
+            await msg.channel.send("❌ הכנס סכום תקין.")
+            return
+        xp = get_xp(msg.author.id)
+        if amount <= 0:
+            await msg.channel.send("❌ סכום צריך להיות גדול מ-0.")
+            return
+        if amount > xp:
+            await msg.channel.send(f"❌ אין לך מספיק XP. יש לך {xp:,} XP.")
+            return
+
+        if game == "מטבע":
+            win = random.choice([True, False])
+            if win:
+                add_xp(msg.author.id, amount)
+                await msg.channel.send(f"🪙 פגעת בהימור! קיבלת {amount:,} XP נוספים. יש לך כעת {get_xp(msg.author.id):,} XP.")
+            else:
+                add_xp(msg.author.id, -amount)
+                await msg.channel.send(f"🪙 הפסדת {amount:,} XP. נשאר לך {get_xp(msg.author.id):,} XP.")
+            return
+
+        if game == "חריצים":
+            symbols = ["🍒", "🍋", "🍉", "7️⃣", "⭐"]
+            spin = [random.choice(symbols) for _ in range(3)]
+            result = " ".join(spin)
+            if spin[0] == spin[1] == spin[2]:
+                win_amount = amount * 4
+                add_xp(msg.author.id, win_amount)
+                await msg.channel.send(f"🎰 {result}\nפגשת שלושה סמלים זהים! זכית {win_amount:,} XP.")
+            elif spin[0] == spin[1] or spin[1] == spin[2] or spin[0] == spin[2]:
+                win_amount = amount * 2
+                add_xp(msg.author.id, win_amount)
+                await msg.channel.send(f"🎰 {result}\nשני סמלים זהים! זכית {win_amount:,} XP.")
+            else:
+                add_xp(msg.author.id, -amount)
+                await msg.channel.send(f"🎰 {result}\nלא נצחת הפעם. הפסדת {amount:,} XP.")
+            return
+
+        if game == "גלגל":
+            number = random.randint(1, 10)
+            if number == 7:
+                win_amount = amount * 3
+                add_xp(msg.author.id, win_amount)
+                await msg.channel.send(f"🎡 מספר {number}! זכית {win_amount:,} XP. יש לך כעת {get_xp(msg.author.id):,} XP.")
+            else:
+                add_xp(msg.author.id, -amount)
+                await msg.channel.send(f"🎡 מספר {number}. הפסדת {amount:,} XP.")
+            return
+
+        await msg.channel.send("❌ סוג משחק לא מוכר. בחר: מטבע, חריצים או גלגל.")
+        return
+
+    if lower_text in ("!casino", "!קזינו"):
+        bal = ensure_casino_balance(msg.author.id)
+        description = "🎰 ברוכים הבאים לקזינו!\n"
+        description += f"יש לך {bal:,} XP.\n\n"
+        description += "להימור: `!הימור <סכום>`\n"
+        description += "למשחקים: `!קזינו משחקים`\n"
+        description += "לקנייה לחיצה על אחד מהכפתורים למטה.\n\n"
+        description += "רולים זמינים:\n"
+        for _, (label, price, _) in CASINO_ROLE_SHOP.items():
+            description += f"• {label} — {price:,} XP\n"
+        emb = discord.Embed(title="🎰 קזינו XP", description=description, color=0xFFD700)
+        await msg.channel.send(embed=emb, view=CasinoView())
+        return
+
+    if lower_text.startswith("!קזינו קנה"):
+        parts = text.split()
+        if len(parts) < 3:
+            await msg.channel.send("❌ השתמש: `!קזינו קנה <מזהה>`")
+            return
+        key = parts[2].lower()
+        if key not in CASINO_ROLE_SHOP:
+            await msg.channel.send("❌ רול לא חוקי. בחר את אחד המזהים הבאים: " + ", ".join(CASINO_ROLE_SHOP.keys()))
+            return
+        label, price, role_id = CASINO_ROLE_SHOP[key]
+        if get_xp(msg.author.id) < price:
+            await msg.channel.send(f"❌ אין לך מספיק XP לקנות את {label}. צריך {price:,} XP.")
+            return
+        role = find_role(msg.guild, role_id)
+        if not role:
+            await msg.channel.send("❌ הרול לא קיים בשרת.")
+            return
+        if role in msg.author.roles:
+            await msg.channel.send(f"❌ כבר יש לך את {label}.")
+            return
+        add_xp(msg.author.id, -price)
+        await msg.author.add_roles(role)
+        await msg.channel.send(f"🎉 קנית את {label} ב-{price:,} XP! מזל טוב.")
+        return
+
+    if lower_text.startswith("!הימור"):
+        parts = text.split()
+        if len(parts) < 2:
+            await msg.channel.send("❌ השתמש: `!הימור <סכום>`")
+            return
+        try:
+            amount = int(parts[1].replace(',', ''))
+        except ValueError:
+            await msg.channel.send("❌ הכנס סכום תקין.")
+            return
+        if amount <= 0:
+            await msg.channel.send("❌ סכום צריך להיות גדול מ-0.")
+            return
+        xp = get_xp(msg.author.id)
+        if amount > xp:
+            await msg.channel.send(f"❌ אין לך מספיק XP. יש לך {xp:,} XP.")
+            return
+        roll = random.randint(1, 100)
+        if roll <= 45:
+            add_xp(msg.author.id, -amount)
+            await msg.channel.send(f"🎲 הפסדת {amount:,} XP. נשאר לך {get_xp(msg.author.id):,} XP.")
+        elif roll <= 85:
+            add_xp(msg.author.id, amount)
+            await msg.channel.send(f"🎲 זכית! קיבלת {amount:,} XP. סך הכל יש לך {get_xp(msg.author.id):,} XP.")
+        else:
+            add_xp(msg.author.id, amount * 2)
+            await msg.channel.send(f"🎉 ג'קפוט! קיבלת {amount * 2:,} XP! סך הכל יש לך {get_xp(msg.author.id):,} XP.")
         return
 
     if lower_text.startswith("!h"):
