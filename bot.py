@@ -580,16 +580,13 @@ async def on_message(msg):
         staff_role = msg.guild.get_role(1521955150309359747)
         if staff_role and not any(sub in staff_role.name.lower() for sub in STAFF_ROLE_NAMES):
             staff_role = None
+                # בדיקה ישירה לפי ה-ID של רול הצוות
+        staff_role = msg.guild.get_role(STAFF_ROLE_ID)
+        
         if not staff_role:
-            staff_role = discord.utils.find(
-                lambda r: any(sub in r.name.lower() for sub in STAFF_ROLE_NAMES),
-                msg.guild.roles,
-            )
-        if not staff_role:
-            candidates = [r.name for r in msg.guild.roles if any(sub in r.name.lower() for sub in STAFF_ROLE_NAMES)]
-            await msg.channel.send(
-                f"❌ לא נמצא רול סטאף עם ה-ID {STAFF_ROLE_ID}. אפשרויות מתאימות: {', '.join(candidates) if candidates else 'אין תוצאות'}"
-            )
+            await msg.channel.send(f"❌ לא נמצא רול צוות עם ה-ID {STAFF_ROLE_ID} בשרת זה.")
+            return
+
             return
         mention = staff_role.mention
         allowed = discord.AllowedMentions(roles=True)
