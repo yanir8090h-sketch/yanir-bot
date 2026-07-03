@@ -120,9 +120,15 @@ class TicketDropdown(discord.ui.Select):
             emb = discord.Embed(title="🛠️ פנייה כללית לצוות העזרה - NextZone 🛠️", description=f"שלום {u.mention},\nפתחת פנייה כללית לצוות השרת.\nאנא רשום כאן בפירוט את סיבת הפנייה שלך, ואיש צוות יתפנה אליך בהקדם!", color=0x3498db)
             await ch.send(embed=emb, view=MngButtons())
 
+import discord
+from discord.ext import commands
+
+# הגדרת הבוט (וודא שזה מתאים למה שכתוב אצלך בתחילת הקובץ)
+bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
+
 @bot.command()
-async def xpshop(ctx): # הפונקציה חייבת להתחיל ב-async def
-    # 1. הגדרת התיבות
+async def xpshop(ctx):
+    # 1. הגדרת התיבה המעוצבת של החנות
     embed1 = discord.Embed(
         title="👑 XP Shop",
         description=(
@@ -135,14 +141,16 @@ async def xpshop(ctx): # הפונקציה חייבת להתחיל ב-async def
         ),
         color=discord.Color.blue()
     )
+    
+    # משיכת תמונת השרת באופן אוטומטי
     if ctx.guild.icon:
         embed1.set_thumbnail(url=ctx.guild.icon.url)
 
+    # 2. הגדרת התיבה השנייה של הכותרת התחתונה
     embed2 = discord.Embed(title="בחר רול לקנייה", color=discord.Color.blue())
 
-    # 2. שורת השליחה (חייבת להיות עם הזחה/Tab בתוך הפונקציה)
+    # 3. שליחת שתי התיבות יחד לערוץ
     await ctx.send(embeds=[embed1, embed2])
-
 
 class ShopView(discord.ui.View):
     def __init__(self): super().__init__(timeout=None); self.add_item(ShopDropdown())
