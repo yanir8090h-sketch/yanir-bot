@@ -621,6 +621,17 @@ async def help_staff_command(ctx, *, reason: str = None):
     
     # מחיקת הודעת ה-!h המקורית של המשתמש כדי לשמור על ערוץ נקי
     await ctx.message.delete()
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    # הקוד הקיים של מערכת ה-XP של השרת שלך
+    user_id = message.author.id
+    # (הבוט שלך מוסיף כאן נקודות ל-Database של ה-SQLite)
+
+    # 🛑 השורה הקריטית שמסירה את החסימה ומפעילה את כל הפקודות בשרת!
+    await bot.process_commands(message)
 
 if __name__ == "__main__":
     keep_alive()
