@@ -123,6 +123,54 @@ class TicketDropdown(discord.ui.Select):
 class TicketView(discord.ui.View):
     def __init__(self): super().__init__(timeout=None); self.add_item(TicketDropdown())
 
+class ShopDropdown(discord.ui.Select):
+    def __init__(self):
+        self.role_prices = {
+            1522553430034616351: 5000,
+            1522553732984733867: 10000,
+            1522553933833441330: 20000,
+            1522554104063201301: 35000,
+            1522554362965000283: 50000
+        }
+        options = [
+            discord.SelectOption(label="רול 1", value="1522553430034616351", description="מחיר: 5,000 XP", emoji="👑"),
+            discord.SelectOption(label="רול 2", value="1522553732984733867", description="מחיר: 10,000 XP", emoji="🌟"),
+            discord.SelectOption(label="רול 3", value="1522553933833441330", description="מחיר: 20,000 XP", emoji="💎"),
+            discord.SelectOption(label="רול 4", value="1522554104063201301", description="מחיר: 35,000 XP", emoji="🌀"),
+            discord.SelectOption(label="רול 5", value="1522554362965000283", description="מחיר: 50,000 XP", emoji="🟢")
+        ]
+        super().__init__(placeholder="בחר רול לקנייה...", min_values=1, max_values=1, options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        selected_role_id = int(self.values)
+        price = self.role_prices.get(selected_role_id)
+        user = interaction.user
+        
+        role = interaction.guild.get_role(selected_role_id)
+        if not role:
+            return await interaction.response.send_message("❌ שגיאה: הרול לא נמצא בשרת.", ephemeral=True)
+        if role in user.roles:
+            return await interaction.response.send_message("❌ כבר יש לך את הרול הזה!", ephemeral=True)
+
+        user_xp = get_xp(user.id)
+        if user_xp < price:
+            missing_xp = price - user_xp
+            return await interaction.response.send_message(f"❌ אין לך מספיק XP! יש לך {user_xp:,} וחסר לך עוד {missing_xp:,} XP.", ephemeral=True)
+
+        try:
+            add_xp(user.id, -price)
+            await user.add_roles(role)
+            await interaction.response.send_message(f"✅ קנית את הרול {role.mention} בהצלחה! הורדו מחשבונך {price:,} XP.", ephemeral=True)
+        except discord.Forbidden:
+            await interaction.response.send_message("❌ לבוט אין הרשאות מתאימות לתת את הרול.", ephemeral=True)
+
+
+class ShopView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(ShopDropdown())
+
+
 @bot.command(name="shop")
 async def shop_command(ctx):
     shop_text = (
@@ -133,55 +181,12 @@ async def shop_command(ctx):
         "5. 🟢 ➔ <@&1522554362965000283> ➔ 50,000 XP\n\n"
         "*Developed By: Main Bot -- Soon.*"
     )
-
     embed1 = discord.Embed(title="👑 NextZone XP Shop", description=shop_text, color=discord.Color.blue())
     if ctx.guild.icon: 
         embed1.set_thumbnail(url=ctx.guild.icon.url)
-        
     embed2 = discord.Embed(title="בחר רול לקנייה", color=discord.Color.blue())
     await ctx.send(embeds=[embed1, embed2], view=ShopView())
 
-        }
-        
-        role = inter.guild.get_role(role_map[item_id])
-        if not role:
-            return await inter.response.send_message("❌ שגיאה: הרול שנבחר לא הוגדר נכון בקוד על ידי המנהל!", ephemeral=True)
-            
-        await inter.user.add_roles(role)
-        new_bal = add_xp(inter.user.id, -price)
-        await inter.response.send_message(f"🎉 תתחדש! הרכישה בוצעה בהצלחה וקיבלת את הרול: {role.name}! 🌟\nיתרת ה-XP החדשה שלך היא: `{new_bal:,} XP`", ephemeral=True)
-
-class ShopView(discord.ui.View):
-    def __init__(self): super().__init__(timeout=None); self.add_item(ShopDropdown())
-
-class CasinoView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-        for key, (label, price, _) in CASINO_ROLE_SHOP.items():
-            self.add_item(CasinoButton(key, label, price))
-
-class CasinoButton(discord.ui.Button):
-    def __init__(self, key, label, price):
-        super().__init__(style=discord.ButtonStyle.primary, label=f"{ROLE_PREFIX}{label} ({price:,} XP)", custom_id=f"casino_{key}")
-        self.key = key
-
-    async def callback(self, interaction: discord.Interaction):
-        user = interaction.user
-        bal = get_xp(user.id)
-        label, price, role_id = CASINO_ROLE_SHOP[self.key]
-        if bal < price:
-            await interaction.response.send_message(f"❌ אין לך מספיק XP כדי לקנות את {label}. יש לך {bal:,} XP.", ephemeral=True)
-            return
-        role = find_role(interaction.guild, role_id)
-        if not role:
-            await interaction.response.send_message("❌ הרול לא קיים בשרת.", ephemeral=True)
-            return
-        if role in user.roles:
-            await interaction.response.send_message(f"❌ כבר יש לך את {label}.", ephemeral=True)
-            return
-        add_xp(user.id, -price)
-        await user.add_roles(role)
-        await interaction.response.send_message(f"🎉 קנית את {label} ב-{price:,} XP! כעת יש לך {get_xp(user.id):,} XP.", ephemeral=True)
 
 class VeteranView(discord.ui.View):
     def __init__(self, days): super().__init__(timeout=None); self.days = days
