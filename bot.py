@@ -120,9 +120,18 @@ class TicketDropdown(discord.ui.Select):
             emb = discord.Embed(title="🛠️ פנייה כללית לצוות העזרה - NextZone 🛠️", description=f"שלום {u.mention},\nפתחת פנייה כללית לצוות השרת.\nאנא רשום כאן בפירוט את סיבת הפנייה שלך, ואיש צוות יתפנה אליך בהקדם!", color=0x3498db)
             await ch.send(embed=emb, view=MngButtons())
 
+# 2. פקודת ה-!shop המתוקנת
 @bot.command()
 async def shop(ctx):
-    shop_text = "1. 👑 ➔ <@&ID_של_הרול_1> ➔ 5,000 XP\n2. 🌟 ➔ <@&ID_של_הרול_2> ➔ 10,000 XP\n3. 💎 ➔ <@&ID_של_הרול_3> ➔ 20,000 XP\n4. 🌀 ➔ <@&ID_של_הרול_4> ➔ 35,000 XP\n5. 🟢 ➔ <@&ID_של_הרול_5> ➔ 50,000 XP\n\n*Developed By: Main Bot -- Soon.*"
+    # החלף את המספרים הארוכים למטה ב-ID האמיתי של כל רול (למשל: 126245648011234567)
+    shop_text = (
+        "1. 👑 ➔ <@&123456789012345678> ➔ 5,000 XP\n"
+        "2. 🌟 ➔ <@&123456789012345678> ➔ 10,000 XP\n"
+        "3. 💎 ➔ <@&123456789012345678> ➔ 20,000 XP\n"
+        "4. 🌀 ➔ <@&123456789012345678> ➔ 35,000 XP\n"
+        "5. 🟢 ➔ <@&123456789012345678> ➔ 50,000 XP\n\n"
+        "*Developed By: Main Bot -- Soon.*"
+    )
 
     embed1 = discord.Embed(
         title="👑 XP Shop",
@@ -135,7 +144,8 @@ async def shop(ctx):
 
     embed2 = discord.Embed(title="בחר רול לקנייה", color=discord.Color.blue())
 
-    await ctx.send(embeds=[embed1, embed2])
+    # שליחת האמבדים יחד עם התפריט (view)
+    await ctx.send(embeds=[embed1, embed2], view=ShopView())
 
 
 class ShopView(discord.ui.View):
