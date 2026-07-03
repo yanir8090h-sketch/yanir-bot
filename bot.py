@@ -85,12 +85,10 @@ class HelpView(discord.ui.View):
     async def claim(self, inter, btn):
         btn.label = "בטיפול"; btn.disabled = True; await inter.response.edit_message(view=self)
         await inter.channel.send(f"🚀 {inter.user.mention} לקח את הטיפול בקריאה של {self.req.mention}!")
+# ==================================================================
+# מערכת טיקטים מעוצבת ותקינה לחלוטין
+# ==================================================================
 
-class MngButtons(discord.ui.View):
-    def __init__(self): super().__init__(timeout=None)
-    @discord.ui.button(label="טפל כאן", style=discord.ButtonStyle.success, custom_id="t_c", emoji="✋")
-
-# כפתורי הניהול בתוך הטיקט שנפתח - גרסה מתוקנת
 class TicketControls(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -112,7 +110,6 @@ class TicketControls(discord.ui.View):
         await interaction.followup.send(f"הצוות {interaction.user.mention} לקח את הטיקט לטיפולו! 👨‍💻", ephemeral=False)
 
 
-# כפתור פתיחת הטיקט הראשי - גרסה מתוקנת
 class CreateTicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -150,6 +147,25 @@ class CreateTicketView(discord.ui.View):
             ticket_embed.set_thumbnail(url=guild.icon.url)
         
         await channel.send(content=f"{user.mention} | @everyone", embed=ticket_embed, view=TicketControls())
+
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def setup_tickets(ctx):
+    embed = discord.Embed(
+        title="🎫 מערכת כרטיסי תמיכה - NextZone",
+        description=(
+            "צריך עזרה? נתקלת בבעיה או רוצה לדווח על משהו?\n"
+            "לחץ על הכפתור למטה כדי לפתוח כרטיס שיחה פרטי מול צוות הניהול."
+        ),
+        color=discord.Color.blue()
+    )
+    if ctx.guild.icon:
+        embed.set_thumbnail(url=ctx.guild.icon.url)
+        
+    await ctx.send(embed=embed, view=CreateTicketView())
+    await ctx.message.delete()
+
 
 
 
