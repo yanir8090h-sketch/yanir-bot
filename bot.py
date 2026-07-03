@@ -574,35 +574,57 @@ async def on_message(msg):
             await msg.channel.send(f"🎉 ג'קפוט! קיבלת {amount * 2:,} XP! סך הכל יש לך {get_xp(msg.author.id):,} XP.")
         return
 
-    if lower_text.startswith("!h"):
-        if msg.id in processed_message_ids:
-            return
-        processed_message_ids.add(msg.id)
-        reason = text[3:].strip()
-        if not reason:
-            await msg.channel.send("❌ נא לציין סיבה לפתיחת קריאת העזרה!", delete_after=5)
-            return
-        vt = msg.author.voice.channel.mention if msg.author.voice and msg.author.voice.channel else "מחוץ לווייס"
-        emb = discord.Embed(title="⚠️ בקשת עזרה ⚠️", description=f"📝 סיבה: {reason} | 🎧 ווייס: {vt}", color=0xff0000)
-        staff_role = msg.guild.get_role(1521955150309359747)
-        if staff_role and not any(sub in staff_role.name.lower() for sub in STAFF_ROLE_NAMES):
-            staff_role = None
-                # בדיקה ישירה לפי ה-ID של רול הצוות
-        staff_role = msg.guild.get_role(STAFF_ROLE_ID)
-        
-        if not staff_role:
-            await msg.channel.send(f"❌ לא נמצא רול צוות עם ה-ID {STAFF_ROLE_ID} בשרת זה.")
-            return
+   # ==================================================================
+# ⚠️ מערכת קריאות העזרה והצוות הרשמית והמעוצבת (!h)
+# ==================================================================
 
-            return
-        mention = staff_role.mention
-        allowed = discord.AllowedMentions(roles=True)
-        await msg.channel.send(content=mention, embed=emb, view=HelpView(msg.author, reason, vt), allowed_mentions=allowed)
-        return
+class HelpView(discord.ui.View):
+    def __init__(self, author, reason, vt_text):
+        super().__init__(timeout=None)
+        self.author = author
+        self.reason = reason
+        self.vt_text = vt_text
 
-    await bot.process_commands(msg)
+    @discord.ui.button(label="✅ טופל", style=discord.ButtonStyle.success, custom_id="help_solved")
+    async def solved_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        embed = interaction.message.embeds
+        embed.color = discord.Color.green()
+        embed.title = "✅ קריאת עזרה - טופלה בהצלחה"
+        for child in self.children:
+            child.disabled = True
+        await interaction.response.edit_message(content=f"הקריאה נסגרה על ידי: {interaction.user.mention}", embed=embed, view=self)
+
+    @discord.ui.button(label="❌ ביטול", style=discord.ButtonStyle.danger, custom_id="help_cancel")
+    async def cancel_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.message.delete()
+
+@bot.command(name="h")
+async def help_staff_command(ctx, *, reason: str = None):
+    if not reason:
+        return await ctx.send(f"{ctx.author.mention}, נא לציין סיבה לפתיחת העזרה! ❌", delete_after=5)
+
+    if ctx.author.voice and ctx.author.voice.channel:
+        vt_text = f"<#{ctx.author.voice.channel.id}>"
+    else:
+        vt_text = "`מחוץ לוויס`"
+
+    emb = discord.Embed(title="⚠️ בקשת עזרה ⚠️", description=f"📄 **סיבה:** {reason}\n🎧 **ערוץ קול:** {vt_text}", color=0xff0000)
+    if ctx.guild.icon:
+        emb.set_thumbnail(url=ctx.guild.icon.url)
+    emb.set_footer(text=f"נפתח על ידי: {ctx.author.display_name}")
+
+    STAFF_ROLE_ID = 1521955150309359747
+    staff_role = ctx.guild.get_role(STAFF_ROLE_ID)
+    if not staff_role:
+        return await ctx.send(f"❌ שגיאה: רול הצוות לא נמצא בשרת.")
+
+    allowed = discord.AllowedMentions(roles=True)
+    await ctx.send(content=staff_role.mention, embed=emb, view=HelpView(ctx.author, reason, vt_text), allowed_mentions=allowed)
 
 
+# ==================================================================
+# 🚀 בלוק ההרצה הראשי של הבוט
+# ==================================================================
 if __name__ == "__main__":
     keep_alive()
     if not TOKEN:
