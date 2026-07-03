@@ -123,28 +123,24 @@ class TicketDropdown(discord.ui.Select):
 class TicketView(discord.ui.View):
     def __init__(self): super().__init__(timeout=None); self.add_item(TicketDropdown())
 
-class ShopDropdown(discord.ui.Select):
-    def __init__(self):
-        options = [
-            discord.SelectOption(label=f"{ROLE_PREFIX}Manager Support (25,000 XP)", value="mng_sup:25000", emoji="👤", description="רכישת רול מנהל תמיכה בשרת"),
-            discord.SelectOption(label=f"{ROLE_PREFIX}Event Manager (20,000 XP)", value="evt_mng:20000", emoji="🎨", description="רכישת רול מנהל איוונטים בשרת"),
-            discord.SelectOption(label=f"{ROLE_PREFIX}Support Team (15,000 XP)", value="sup_team:15000", emoji="🛠️", description="רכישת רול צוות תמיכה בשרת"),
-            discord.SelectOption(label=f"{ROLE_PREFIX}Leaks Team (10,000 XP)", value="leak_team:10000", emoji="👁️", description="רכישת רול צוות הדלפות בשרת")
-        ]
-        super().__init__(placeholder="🛒 בחר את הרול שברצונך לקנות מתוך התפריט...", custom_id="shop_drop", options=options)
+@bot.command(name="shop")
+async def shop_command(ctx):
+    shop_text = (
+        "1. 👑 ➔ <@&1522553430034616351> ➔ 5,000 XP\n"
+        "2. 🌟 ➔ <@&1522553732984733867> ➔ 10,000 XP\n"
+        "3. 💎 ➔ <@&1522553933833441330> ➔ 20,000 XP\n"
+        "4. 🌀 ➔ <@&1522554104063201301> ➔ 35,000 XP\n"
+        "5. 🟢 ➔ <@&1522554362965000283> ➔ 50,000 XP\n\n"
+        "*Developed By: Main Bot -- Soon.*"
+    )
 
-    async def callback(self, inter):
-        item_id, price = self.values[0].split(":")
-        price = int(price)
+    embed1 = discord.Embed(title="👑 NextZone XP Shop", description=shop_text, color=discord.Color.blue())
+    if ctx.guild.icon: 
+        embed1.set_thumbnail(url=ctx.guild.icon.url)
         
-        if get_xp(inter.user.id) < price:
-            return await inter.response.send_message(f"❌ אין לך מספיק נקודות XP לרכישת רול זה!", ephemeral=True)
-        
-        role_map = {
-            "mng_sup": ROLE_MNG_SUPPORT,
-            "evt_mng": ROLE_EV_MNG,
-            "sup_team": ROLE_SUP_TEAM,
-            "leak_team": ROLE_LEAK_TEAM
+    embed2 = discord.Embed(title="בחר רול לקנייה", color=discord.Color.blue())
+    await ctx.send(embeds=[embed1, embed2], view=ShopView())
+
         }
         
         role = inter.guild.get_role(role_map[item_id])
