@@ -140,29 +140,37 @@ class ShopDropdown(discord.ui.Select):
             discord.SelectOption(label="רול 5", value="1522554362965000283", description="מחיר: 50,000 XP", emoji="🟢")
         ]
         super().__init__(placeholder="בחר רול לקנייה...", min_values=1, max_values=1, options=options)
-
     async def callback(self, interaction: discord.Interaction):
-        selected_role_id = int(self.values)
+        # 1. אומרים לדיסקורד לחכות (מונע את השגיאה interaction failed)
+        await interaction.response.defer(ephemeral=True)
+        
+        selected_role_id = int(self.values[0]) # תיקון קטן לשליפת ה-ID הנבחר
         price = self.role_prices.get(selected_role_id)
         user = interaction.user
+        guild = interaction.guild
         
-        role = interaction.guild.get_role(selected_role_id)
+        # 2. מציאת הרול בשרת
+        role = guild.get_role(selected_role_id)
         if not role:
-            return await interaction.response.send_message("❌ שגיאה: הרול לא נמצא בשרת.", ephemeral=True)
+            return await interaction.followup.send("❌ שגיאה: הרול המבוקש לא נמצא בשרת.", ephemeral=True)
+            
+        # 3. בדיקה אם כבר יש למשתמש את הרול
         if role in user.roles:
-            return await interaction.response.send_message("❌ כבר יש לך את הרול הזה!", ephemeral=True)
+            return await interaction.followup.send("❌ כבר יש לך את הרול הזה!", ephemeral=True)
 
+        # 4. בדיקת יתרת ה-XP מתוך ה-Database שלך
         user_xp = get_xp(user.id)
         if user_xp < price:
             missing_xp = price - user_xp
-            return await interaction.response.send_message(f"❌ אין לך מספיק XP! יש לך {user_xp:,} וחסר לך עוד {missing_xp:,} XP.", ephemeral=True)
+            return await interaction.followup.send(f"❌ אין לך מספיק XP לרול הזה! יש לך {user_xp:,} וחסר לך עוד {missing_xp:,} XP.", ephemeral=True)
 
+        # 5. ביצוע הקנייה
         try:
             add_xp(user.id, -price)
             await user.add_roles(role)
-            await interaction.response.send_message(f"✅ קנית את הרול {role.mention} בהצלחה! הורדו מחשבונך {price:,} XP.", ephemeral=True)
+            await interaction.followup.send(f"✅ קנית את הרול {role.mention} בהצלחה! הורדו מחשבונך {price:,} XP.", ephemeral=True)
         except discord.Forbidden:
-            await interaction.response.send_message("❌ לבוט אין הרשאות מתאימות לתת את הרול.", ephemeral=True)
+            await interaction.followup.send("❌ לבוט אין הרשאות מתאימות (Manage Roles) כדי לתת לך את הרול הזה.", ephemeral=True)
 
 
 class ShopView(discord.ui.View):
