@@ -576,26 +576,50 @@ async def on_message(msg):
             await msg.channel.send(f"🎉 ג'קפוט! קיבלת {amount * 2:,} XP! סך הכל יש לך {get_xp(msg.author.id):,} XP.")
         return
 
-    if lower_text.startswith("!h"):
-        if msg.id in processed_message_ids:
-            return
-        processed_message_ids.add(msg.id)
-        reason = text[3:].strip()
-        if not reason:
-            await msg.channel.send("❌ נא לציין סיבה לפתיחת קריאת העזרה!", delete_after=5)
-            return
-        vt = msg.author.voice.channel.mention if msg.author.voice and msg.author.voice.channel else "מחוץ לווייס"
-        emb = discord.Embed(title="⚠️ בקשת עזרה ⚠️", description=f"📝 סיבה: {reason} | 🎧 ווייס: {vt}", color=0xff0000)
-        staff_role = msg.guild.get_role(1521955150309359747)
-        if staff_role and not any(sub in staff_role.name.lower() for sub in STAFF_ROLE_NAMES):
-            staff_role = None
-                # בדיקה ישירה לפי ה-ID של רול הצוות
-        staff_role = msg.guild.get_role(STAFF_ROLE_ID)
-        
-        if not staff_role:
-            await msg.channel.send(f"❌ לא נמצא רול צוות עם ה-ID {STAFF_ROLE_ID} בשרת זה.")
-            return
+    # ------------------------------------------------------------------
+# פקודת העזרה והקריאה לצוות הרשמית והמתוקנת (!h)
+# ------------------------------------------------------------------
+@bot.command(name="h")
+async def help_staff_command(ctx, *, reason: str = None):
+    # 1. בדיקה אם המשתמש רשם סיבה לפתיחת הקריאה
+    if not reason:
+        return await ctx.send(f"{ctx.author.mention}, נא לציין סיבה לפתיחת העזרה! ❌", delete_after=5)
 
+    # 2. בדיקה אם המשתמש נמצא בערוץ קול (Voice Channel) וניסוח הטקסט בצורה שלא תקרוס
+    if ctx.author.voice and ctx.author.voice.channel:
+        vt_text = f"<#{ctx.author.voice.channel.id}>" # מציג את הערוץ כלחיץ ומסודר
+    else:
+        vt_text = "`מחוץ לוויס`"
+
+    # 3. יצירת ה-Embed המעוצב של בקשת העזרה
+    emb = discord.Embed(
+        title="⚠️ בקשת עזרה ⚠️", 
+        description=f"📄 **סיבה:** {reason} | 🎧 **וויס:** {vt_text}", 
+        color=0xff0000
+    )
+    emb.set_footer(text=f"נפתח על ידי: {ctx.author.display_name}")
+
+    # 4. מציאת רול הצוות בשרת לפי ה-ID שלך מהצילום מסך
+    STAFF_ROLE_ID = 1521955150309359747
+    staff_role = ctx.guild.get_role(STAFF_ROLE_ID)
+    
+    if not staff_role:
+        return await ctx.send(f"❌ שגיאה: רול הצוות עם ה-ID {STAFF_ROLE_ID} לא נמצא בשרת.")
+
+    # 5. שליחת הקריאה ותיוג רול הצוות
+    allowed = discord.AllowedMentions(roles=True)
+    
+    # שים לב: הקוד משתמש ב-HelpView שהיה לך בקוד קודם. וודא שמחלקת HelpView קיימת אצלך בקובץ!
+    await ctx.send(
+        content=staff_role.mention, 
+        embed=emb, 
+        view=HelpView(ctx.author, reason, vt_text), 
+        allowed_mentions=allowed
+    )
+    
+    # מחיקת הודעת ה-!h המקורית של המשתמש כדי לשמור על ערוץ נקי
+    await ctx.message.delete()
+    
             return
         mention = staff_role.mention
         allowed = discord.AllowedMentions(roles=True)
