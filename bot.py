@@ -13,7 +13,7 @@ intents.members = True
 intents.guilds = True
 intents.reactions = True
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
-    await bot.process_commands(message)
+await bot.process_commands(message)  # לִמְחוֹק אֶת הַשּׁוּרָה הַזּוֹ מִשּׁוּרָה 16!
 
 # 🆔 מזהי רולים כלליים של השרת שלך:
 STAFF_ROLE_ID = 1521955150334263437     
