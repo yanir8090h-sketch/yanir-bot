@@ -121,15 +121,8 @@ class TicketDropdown(discord.ui.Select):
             await ch.send(embed=emb, view=MngButtons())
 
 @bot.command()
-async def xpshop(ctx):
-    # שימוש בגרש משולש (""") פותר את בעיית הרווחים בירידת שורה
-    shop_text = """1. 👑 ➔ <@&ID_של_הרול_1> ➔ 5,000 XP
-2. 🌟 ➔ <@&ID_של_הרול_2> ➔ 10,000 XP
-3. 💎 ➔ <@&ID_של_הרול_3> ➔ 20,000 XP
-4. 🌀 ➔ <@&ID_של_הרול_4> ➔ 35,000 XP
-5. 🟢 ➔ <@&ID_של_הרול_5> ➔ 50,000 XP
-
-*Developed By: Main Bot -- Soon.*"""
+async def shop(ctx):
+    shop_text = "1. 👑 ➔ <@&ID_של_הרול_1> ➔ 5,000 XP\n2. 🌟 ➔ <@&ID_של_הרול_2> ➔ 10,000 XP\n3. 💎 ➔ <@&ID_של_הרול_3> ➔ 20,000 XP\n4. 🌀 ➔ <@&ID_של_הרול_4> ➔ 35,000 XP\n5. 🟢 ➔ <@&ID_של_הרול_5> ➔ 50,000 XP\n\n*Developed By: Main Bot -- Soon.*"
 
     embed1 = discord.Embed(
         title="👑 XP Shop",
@@ -143,6 +136,7 @@ async def xpshop(ctx):
     embed2 = discord.Embed(title="בחר רול לקנייה", color=discord.Color.blue())
 
     await ctx.send(embeds=[embed1, embed2])
+
 
 class ShopView(discord.ui.View):
     def __init__(self): super().__init__(timeout=None); self.add_item(ShopDropdown())
