@@ -585,9 +585,9 @@ async def help_staff_command(ctx, *, reason: str = None):
     if not reason:
         return await ctx.send(f"{ctx.author.mention}, נא לציין סיבה לפתיחת העזרה! ❌", delete_after=5)
 
-    # 2. בדיקה אם המשתמש נמצא בערוץ קול (Voice Channel)
+    # 2. בדיקה אם המשתמש נמצא בערוץ קול
     if ctx.author.voice and ctx.author.voice.channel:
-        vt_text = f"<#{ctx.author.voice.channel.id}>" # מציג את הערוץ כלחיץ ומסודר
+        vt_text = f"<#{ctx.author.voice.channel.id}>"
     else:
         vt_text = "`מחוץ לוויס`"
 
@@ -610,8 +610,6 @@ async def help_staff_command(ctx, *, reason: str = None):
 
     # 5. שליחת הקריאה לערוץ ותיוג רול הצוות
     allowed = discord.AllowedMentions(roles=True)
-    
-    # השתמשנו ב-ctx.author במקום במשתנה msg שהיה שבור קודם
     await ctx.send(
         content=staff_role.mention, 
         embed=emb, 
@@ -619,19 +617,8 @@ async def help_staff_command(ctx, *, reason: str = None):
         allowed_mentions=allowed
     )
     
-    # מחיקת הודעת ה-!h המקורית של המשתמש כדי לשמור על ערוץ נקי
-    await ctx.message.delete()
-@bot.event
-async def on_message(message):
-    if message.author.bot:
-        return
-
-    # הקוד הקיים של מערכת ה-XP של השרת שלך
-    user_id = message.author.id
-    # (הבוט שלך מוסיף כאן נקודות ל-Database של ה-SQLite)
-
-    # 🛑 השורה הקריטית שמסירה את החסימה ומפעילה את כל הפקודות בשרת!
-    await bot.process_commands(message)
+    # 🛑 שים לב: מחקתי את השורה שמוחקת את ההודעה המקורית שלך לבקשתך!
+    # ההודעה שכתבת בצ'אט (למשל !h עזרה) תישאר עכשיו גלויה ולא תימחק לעולם.
 
 if __name__ == "__main__":
     keep_alive()
