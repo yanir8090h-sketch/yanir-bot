@@ -152,22 +152,18 @@ class ShopDropdown(discord.ui.Select):
         user = interaction.user
         guild = interaction.guild
         
-        # 1. מציאת הרול בשרת
         role = guild.get_role(selected_role_id)
         if not role:
             return await interaction.followup.send("❌ שגיאה: הרול המבוקש לא נמצא בשרת.", ephemeral=True)
-            
-        # 2. בדיקה אם כבר יש למשתמש את הרול
         if role in user.roles:
             return await interaction.followup.send("❌ כבר יש לך את הרול הזה!", ephemeral=True)
 
-        # 3. בדיקת יתרת ה-XP מתוך פונקציית ה-get_xp המקורית של הבוט שלך
+        # בדיקת ה-XP מתוך ה-Database של ה-SQLite שלך
         user_xp = get_xp(user.id)
         if user_xp < price:
             missing_xp = price - user_xp
             return await interaction.followup.send(f"❌ אין לך מספיק XP לרול הזה! יש לך {user_xp:,} XP וחסר לך עוד {missing_xp:,} XP.", ephemeral=True)
 
-        # 4. ביצוע הקנייה והורדת ה-XP מהדאטהבייס שלך
         try:
             add_xp(user.id, -price)
             await user.add_roles(role)
