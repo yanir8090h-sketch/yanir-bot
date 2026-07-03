@@ -605,7 +605,7 @@ async def help_staff_command(ctx, *, reason: str = None):
     if not staff_role:
         return await ctx.send(f"❌ שגיאה: רול הצוות עם ה-ID {STAFF_ROLE_ID} לא נמצא בשרת.")
 
-       allowed = discord.AllowedMentions(roles=True)
+          allowed = discord.AllowedMentions(roles=True)
     await ctx.send(
         content=staff_role.mention, 
         embed=emb, 
@@ -619,4 +619,5 @@ if __name__ == "__main__":
     if not TOKEN:
         raise RuntimeError("TOKEN environment variable is not set. Set TOKEN in .env or in the host config.")
     bot.run(TOKEN)
+
 
