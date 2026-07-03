@@ -13,7 +13,7 @@ intents.members = True
 intents.guilds = True
 intents.reactions = True
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
-processed_message_ids = set()
+    await bot.process_commands(message)
 
 # 🆔 מזהי רולים כלליים של השרת שלך:
 STAFF_ROLE_ID = 1521955150334263437     
