@@ -97,28 +97,93 @@ class MngButtons(discord.ui.View):
         await inter.response.defer()
         await inter.channel.delete()
 
-class TicketDropdown(discord.ui.Select):
-    def __init__(self):
-        options = [
-            discord.SelectOption(label="👑 בחינה לקבלת צוות השרת", value="staff", emoji="👑", description="פתיחת טיקט מבחן קבלה לסטאף"),
-            discord.SelectOption(label="🛠️ פנייה כללית לצוות העזרה", value="general", emoji="🛠️", description="עזרה כללית, דיווחים או שאלות לצוות")
-        ]
-        super().__init__(placeholder="🎫 בחר את סיבת הפנייה שלך כאן...", custom_id="t_drop", options=options)
+import asyncio
 
-    async def callback(self, inter):
-        g = inter.guild; u = inter.user
-        choice = self.values[0]
-        
-        if choice == "staff":
-            ch = await g.create_text_channel(name=f"📝-בחינה-{u.name}", overwrites={g.default_role: discord.PermissionOverwrite(read_messages=False), u: discord.PermissionOverwrite(read_messages=True, send_messages=True)})
-            await inter.response.send_message(f"✅ חדר הבחינה שלך נפתח בהצלחה: {ch.mention}", ephemeral=True)
-            emb = discord.Embed(title="👑 שאלון מועמדות לצוות השרת - NextZone 👑", description=f"שלום {u.mention},\nאנא ענה על 14 השאלות הבאות כאן בצ'אט:\n\n1️⃣ שם מלא / כינוי:\n2️⃣ גיל:\n3️⃣ כמה זמן אתה בשרת?\n4️⃣ ניסיון קודם וסיבת עזיבה:\n5️⃣ איך אתה מגדיר צוות ותכונות טובות?\n6️⃣ מה תעשה בריב/מתחצף בויס? תן דוגמה:\n7️⃣ תגובה לתקיפה מצוות מתחתיך/מעליך:\n8️⃣ כמה זמן תוכל לתת בשבוע כל יום?\n9️⃣ שינוי מצב של חוסר פעילות? איך?:\n🔟 באיזה תחומים אתה רוצה לעזור?\n1️⃣1️⃣ תרומה לשרת ויעדי הגעה:\n1️⃣2️⃣ מאיפה הרצון להצטרף?:\n1️⃣3️⃣ למה אתה מתאים? רעיונות לשיפור?:\n1️⃣4️⃣ האם יש לך 2FA מופעל בחשבון?\n\n⚠️ **נא לענות ברצינות, בהצלחה!**", color=0x00ff00)
-            await ch.send(embed=emb, view=MngButtons())
+# ------------------------------------------------------------------
+# מערכת טיקטים מעוצבת עם כפתורי ניהול ותמונת שרת
+# ------------------------------------------------------------------
+
+# כפתורי הניהול שיופיעו בתוך ערוץ הטיקט שנפתח
+class TicketControls(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None) # משאיר את הכפתורים פעילים לתמיד
+
+    @discord.ui.button(label="🔒 סגור טיקט", style=discord.Style.danger, custom_id="close_ticket")
+    async def close_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if "ticket-" in interaction.channel.name:
+            await interaction.response.send_message("הטיקט ייסגר בעוד 5 שניות...", ephemeral=False)
+            await asyncio.sleep(5)
+            await interaction.channel.delete()
         else:
-            ch = await g.create_text_channel(name=f"🛠️-פנייה-{u.name}", overwrites={g.default_role: discord.PermissionOverwrite(read_messages=False), u: discord.PermissionOverwrite(read_messages=True, send_messages=True)})
-            await inter.response.send_message(f"✅ חדר הפנייה הכללית נפתח בהצלחה: {ch.mention}", ephemeral=True)
-            emb = discord.Embed(title="🛠️ פנייה כללית לצוות העזרה - NextZone 🛠️", description=f"שלום {u.mention},\nפתחת פנייה כללית לצוות השרת.\nאנא רשום כאן בפירוט את סיבת הפנייה שלך, ואיש צוות יתפנה אליך בהקדם!", color=0x3498db)
-            await ch.send(embed=emb, view=MngButtons())
+            await interaction.response.send_message("❌ ניתן להשתמש בכפתור זה רק בתוך ערוץ טיקט!", ephemeral=True)
+
+    @discord.ui.button(label="🛠️ טפל כאן", style=discord.Style.success, custom_id="claim_ticket")
+    async def claim_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        button.label = f"בטיפול של: {interaction.user.display_name}"
+        button.disabled = True # מנטרל את הכפתור כדי שאחרים לא ילחצו
+        
+        await interaction.response.edit_message(view=self)
+        await interaction.followup.send(f"הצוות {interaction.user.mention} לקח את הטיקט לטיפולו! 👨‍💻", ephemeral=False)
+
+
+# כפתור פתיחת הטיקט הראשי (נשלח בערוץ הציבורי)
+class CreateTicketView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="📩 פתח טיקט תמיכה", style=discord.Style.primary, custom_id="create_ticket")
+    async def create_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        guild = interaction.guild
+        user = interaction.user
+        
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            user: discord.PermissionOverwrite(read_messages=True, send_messages=True, embed_links=True, attach_files=True),
+            guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True)
+        }
+        
+        channel = await guild.create_text_channel(
+            name=f"ticket-{user.name}", 
+            overwrites=overwrites,
+            topic=f"טיקט תמיכה עבור {user.display_name}"
+        )
+        
+        await interaction.response.send_message(f"✅ הטיקט שלך נפתח בהצלחה! לחץ כאן: {channel.mention}", ephemeral=True)
+        
+        ticket_embed = discord.Embed(
+            title="🎯 פנייה חדשה למחלקת התמיכה",
+            description=(
+                f"שלום {user.mention},\n\n"
+                "צוות הניהול קיבל את פנייתך ויגיע לעזור בהקדם האפשרי.\n"
+                "בזמן הזה, נשמח אם תפרט כאן את סיבת הפנייה שלך.\n\n"
+                "**לשימוש הצוות:** לחץ על הכפתורים למטה כדי לנהל את הפנייה."
+            ),
+            color=discord.Color.orange()
+        )
+        if guild.icon:
+            ticket_embed.set_thumbnail(url=guild.icon.url)
+        
+        await channel.send(content=f"{user.mention} | @everyone", embed=ticket_embed, view=TicketControls())
+
+
+# פקודה למנהלים לשליחת הודעת הטיקטים המרכזית בערוץ
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def setup_tickets(ctx):
+    embed = discord.Embed(
+        title="🎫 מערכת כרטיסי תמיכה - NextZone",
+        description=(
+            "צריך עזרה? נתקלת בבעיה או רוצה לדווח על משהו?\n"
+            "לחץ על הכפתור למטה כדי לפתוח כרטיס שיחה פרטי מול צוות הניהול."
+        ),
+        color=discord.Color.blue()
+    )
+    if ctx.guild.icon:
+        embed.set_thumbnail(url=ctx.guild.icon.url)
+        
+    await ctx.send(embed=embed, view=CreateTicketView())
+    await ctx.message.delete()
+
 
 import discord
 from discord.ext import commands
