@@ -601,6 +601,28 @@ def run_flask():
 
 # הפעלת שרת ה-Flask בנפרד ברקע
 threading.Thread(target=run_flask, daemon=True).start()
+import asyncio
+
+@bot.event
+async def on_ready():
+    print(f'הבוט {bot.user.name} מחובר בהצלחה!')
+    
+    # לולאה שתעדכן את הסטטוס אוטומטית אם אנשים נכנסים או יוצאים
+    while True:
+        # ספירת כל המשתמשים בכל השרתים שהבוט נמצא בהם (ללא בוטים אחרים)
+        member_count = sum(guild.member_count for guild in bot.guilds)
+        
+        # הגדרת הטקסט שיופיע בסטטוס (לדוגמה: Watching X members)
+        activity = discord.Activity(
+            type=discord.ActivityType.watching, 
+            name=f"{member_count} members"
+        )
+        
+        # עדכון הסטטוס ומצב "נא לא להפריע" (dnd)
+        await bot.change_presence(status=discord.Status.dnd, activity=activity)
+        
+        # עדכון הסטטוס בכל 10 דקות (כדי לא להעמיס על דיסקורד)
+        await asyncio.sleep(600)
 
 
 
