@@ -120,12 +120,12 @@ class TicketDropdown(discord.ui.Select):
             emb = discord.Embed(title="🛠️ פנייה כללית לצוות העזרה - NextZone 🛠️", description=f"שלום {u.mention},\nפתחת פנייה כללית לצוות השרת.\nאנא רשום כאן בפירוט את סיבת הפנייה שלך, ואיש צוות יתפנה אליך בהקדם!", color=0x3498db)
             await ch.send(embed=emb, view=MngButtons())
 
-@bot.command()
-async def xpshop(ctx):
-    # 1. הגדרת התיבה המעוצבת של החנות
-    embed1 = discord.Embed(
-        title="👑 XP Shop",
-        description=(
+@bot.event
+async def on_message(message):
+    # אם יש לך קוד פה, השאר אותו כפי שהוא
+    
+    # השורה הזו חובה כדי שהפקודות (כמו xpshop) יעבדו!
+    await bot.process_commands(message)
             "1. 👑 ➔ <@&ID_של_הרול_1> ➔ 5,000 XP\n"
             "2. 🌟 ➔ <@&ID_של_הרול_2> ➔ 10,000 XP\n"
             "3. 💎 ➔ <@&ID_של_הרול_3> ➔ 20,000 XP\n"
