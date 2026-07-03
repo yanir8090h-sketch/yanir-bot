@@ -618,15 +618,14 @@ async def help_staff_command(ctx, *, reason: str = None):
     )
     
     # מחיקת הודעת ה-!h המקורית של המשתמש כדי לשמור על ערוץ נקי
-    await ctx.message.delete()
+    await msg.delete()
     
             return
         mention = staff_role.mention
         allowed = discord.AllowedMentions(roles=True)
         await msg.channel.send(content=mention, embed=emb, view=HelpView(msg.author, reason, vt), allowed_mentions=allowed)
         
-
-    await bot.process_commands(msg)
+await bot.process_commands(msg)
 
 
 if __name__ == "__main__":
