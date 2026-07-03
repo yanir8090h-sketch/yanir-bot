@@ -15,7 +15,6 @@ intents.reactions = True
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 processed_message_ids = set()
 
-
 # 🆔 מזהי רולים כלליים של השרת שלך:
 STAFF_ROLE_ID = 1521955150334263437     
 STAFF_ROLE_NAMES = (1521955150309359747)
@@ -86,265 +85,107 @@ class HelpView(discord.ui.View):
     async def claim(self, inter, btn):
         btn.label = "בטיפול"; btn.disabled = True; await inter.response.edit_message(view=self)
         await inter.channel.send(f"🚀 {inter.user.mention} לקח את הטיפול בקריאה של {self.req.mention}!")
-# ==================================================================
-# מערכת טיקטים מעוצבת ותקינה לחלוטין
-# ==================================================================
 
-class TicketControls(discord.ui.View):
+class MngButtons(discord.ui.View):
+    def __init__(self): super().__init__(timeout=None)
+    @discord.ui.button(label="טפל כאן", style=discord.ButtonStyle.success, custom_id="t_c", emoji="✋")
+    async def claim(self, inter, btn):
+        btn.label = "בטיפול"; btn.disabled = True; await inter.response.edit_message(view=self)
+        await inter.channel.send(embed=discord.Embed(title="⚡ הטיקט נלקח לטיפול ⚡", description=f"איש הצוות {inter.user.mention} לקח את הטיקט לטיפול!", color=0x00ff00))
+    @discord.ui.button(label="סגור כאן", style=discord.ButtonStyle.danger, custom_id="t_s", emoji="🔒")
+    async def close(self, inter, btn):
+        await inter.response.defer()
+        await inter.channel.delete()
+
+class TicketDropdown(discord.ui.Select):
     def __init__(self):
-        super().__init__(timeout=None)
+        options = [
+            discord.SelectOption(label="👑 בחינה לקבלת צוות השרת", value="staff", emoji="👑", description="פתיחת טיקט מבחן קבלה לסטאף"),
+            discord.SelectOption(label="🛠️ פנייה כללית לצוות העזרה", value="general", emoji="🛠️", description="עזרה כללית, דיווחים או שאלות לצוות")
+        ]
+        super().__init__(placeholder="🎫 בחר את סיבת הפנייה שלך כאן...", custom_id="t_drop", options=options)
 
-    @discord.ui.button(label="🔒 סגור טיקט", style=discord.ButtonStyle.danger, custom_id="close_ticket")
-    async def close_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if "ticket-" in interaction.channel.name:
-            await interaction.response.send_message("הטיקט ייסגר בעוד 5 שניות...", ephemeral=False)
-            await asyncio.sleep(5)
-            await interaction.channel.delete()
+    async def callback(self, inter):
+        g = inter.guild; u = inter.user
+        choice = self.values[0]
+        
+        if choice == "staff":
+            ch = await g.create_text_channel(name=f"📝-בחינה-{u.name}", overwrites={g.default_role: discord.PermissionOverwrite(read_messages=False), u: discord.PermissionOverwrite(read_messages=True, send_messages=True)})
+            await inter.response.send_message(f"✅ חדר הבחינה שלך נפתח בהצלחה: {ch.mention}", ephemeral=True)
+            emb = discord.Embed(title="👑 שאלון מועמדות לצוות השרת - NextZone 👑", description=f"שלום {u.mention},\nאנא ענה על 14 השאלות הבאות כאן בצ'אט:\n\n1️⃣ שם מלא / כינוי:\n2️⃣ גיל:\n3️⃣ כמה זמן אתה בשרת?\n4️⃣ ניסיון קודם וסיבת עזיבה:\n5️⃣ איך אתה מגדיר צוות ותכונות טובות?\n6️⃣ מה תעשה בריב/מתחצף בויס? תן דוגמה:\n7️⃣ תגובה לתקיפה מצוות מתחתיך/מעליך:\n8️⃣ כמה זמן תוכל לתת בשבוע כל יום?\n9️⃣ שינוי מצב של חוסר פעילות? איך?:\n🔟 באיזה תחומים אתה רוצה לעזור?\n1️⃣1️⃣ תרומה לשרת ויעדי הגעה:\n1️⃣2️⃣ מאיפה הרצון להצטרף?:\n1️⃣3️⃣ למה אתה מתאים? רעיונות לשיפור?:\n1️⃣4️⃣ האם יש לך 2FA מופעל בחשבון?\n\n⚠️ **נא לענות ברצינות, בהצלחה!**", color=0x00ff00)
+            await ch.send(embed=emb, view=MngButtons())
         else:
-            await interaction.response.send_message("❌ ניתן להשתמש בכפתור זה רק בתוך ערוץ טיקט!", ephemeral=True)
+            ch = await g.create_text_channel(name=f"🛠️-פנייה-{u.name}", overwrites={g.default_role: discord.PermissionOverwrite(read_messages=False), u: discord.PermissionOverwrite(read_messages=True, send_messages=True)})
+            await inter.response.send_message(f"✅ חדר הפנייה הכללית נפתח בהצלחה: {ch.mention}", ephemeral=True)
+            emb = discord.Embed(title="🛠️ פנייה כללית לצוות העזרה - NextZone 🛠️", description=f"שלום {u.mention},\nפתחת פנייה כללית לצוות השרת.\nאנא רשום כאן בפירוט את סיבת הפנייה שלך, ואיש צוות יתפנה אליך בהקדם!", color=0x3498db)
+            await ch.send(embed=emb, view=MngButtons())
 
-    @discord.ui.button(label="🛠️ טפל כאן", style=discord.ButtonStyle.success, custom_id="claim_ticket")
-    async def claim_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        button.label = f"בטיפול של: {interaction.user.display_name}"
-        button.disabled = True
-        await interaction.response.edit_message(view=self)
-        await interaction.followup.send(f"הצוות {interaction.user.mention} לקח את הטיקט לטיפולו! 👨‍💻", ephemeral=False)
-
-
-class CreateTicketView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @discord.ui.button(label="📩 פתח טיקט תמיכה", style=discord.ButtonStyle.primary, custom_id="create_ticket")
-    async def create_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        guild = interaction.guild
-        user = interaction.user
-        
-        overwrites = {
-            guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            user: discord.PermissionOverwrite(read_messages=True, send_messages=True, embed_links=True, attach_files=True),
-            guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True)
-        }
-        
-        channel = await guild.create_text_channel(
-            name=f"ticket-{user.name}", 
-            overwrites=overwrites,
-            topic=f"טיקט תמיכה עבור {user.display_name}"
-        )
-        
-        await interaction.response.send_message(f"✅ הטיקט שלך נפתח בהצלחה! לחץ כאן: {channel.mention}", ephemeral=True)
-        
-        ticket_embed = discord.Embed(
-            title="🎯 פנייה חדשה למחלקת התמיכה",
-            description=(
-                f"שלום {user.mention},\n\n"
-                "צוות הניהול קיבל את פנייתך ויגיע לעזור בהקדם האפשרי.\n"
-                "בזמן הזה, נשמח אם תפרט כאן את סיבת הפנייה שלך.\n\n"
-                "**לשימוש הצוות:** לחץ על הכפתורים למטה כדי לנהל את הפנייה."
-            ),
-            color=discord.Color.orange()
-        )
-        if guild.icon:
-            ticket_embed.set_thumbnail(url=guild.icon.url)
-        
-        await channel.send(content=f"{user.mention} | @everyone", embed=ticket_embed, view=TicketControls())
-
-
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def setup_tickets(ctx):
-    embed = discord.Embed(
-        title="🎫 מערכת כרטיסי תמיכה - NextZone",
-        description=(
-            "צריך עזרה? נתקלת בבעיה או רוצה לדווח על משהו?\n"
-            "לחץ על הכפתור למטה כדי לפתוח כרטיס שיחה פרטי מול צוות הניהול."
-        ),
-        color=discord.Color.blue()
-    )
-    if ctx.guild.icon:
-        embed.set_thumbnail(url=ctx.guild.icon.url)
-        
-    await ctx.send(embed=embed, view=CreateTicketView())
-    await ctx.message.delete()
-
-
-
-
-
-import discord
-from discord.ext import commands
-import json
-import os
-
-# הגדרת הבוט עם כל ההרשאות (Intents) הדרושות
-intents = discord.Intents.all()
-bot = commands.Bot(command_prefix="!", intents=intents)
-
-# יצירת קובץ ה-XP אוטומטית אם הוא לא קיים
-if not os.path.exists("levels.json"):
-    with open("levels.json", "w") as f:
-        json.dump({}, f)
-
-# פונקציות לקריאה וכתיבה של ה-XP מהקובץ
-def load_xp():
-    with open("levels.json", "r") as f:
-        return json.load(f)
-
-def save_xp(data):
-    with open("levels.json", "w") as f:
-        json.dump(data, f, indent=4)
-
-# ------------------------------------------------------------------
-# 1. מערכת עדכון הסטטוס (נא לא להפריע + ספירת ממברס בזמן אמת)
-# ------------------------------------------------------------------
-
-async def update_bot_status():
-    member_count = sum(guild.member_count for guild in bot.guilds)
-    activity = discord.Activity(
-        type=discord.ActivityType.watching, 
-        name=f"{member_count} members"
-    )
-    await bot.change_presence(status=discord.Status.dnd, activity=activity)
-
-@bot.event
-async def on_ready():
-    print(f'הבוט {bot.user.name} עלה לאוויר בהצלחה!')
-    await update_bot_status()
-
-@bot.event
-async def on_member_join(member):
-    await update_bot_status()
-
-@bot.event
-async def on_member_remove(member):
-    await update_bot_status()
-
-# ------------------------------------------------------------------
-# 2. מערכת הוספת XP אוטומטית על כל הודעה בצ'אט
-# ------------------------------------------------------------------
-
-@bot.event
-async def on_message(message):
-    if message.author.bot:
-        return
-
-    users_data = load_xp()
-    user_id = str(message.author.id)
-
-    if user_id not in users_data:
-        users_data[user_id] = 0
-
-    users_data[user_id] += 15
-    save_xp(users_data)
-
-    await bot.process_commands(message)
-
-# ------------------------------------------------------------------
-# 3. תפריט הבחירה והלוגיקה של חנות ה-XP
-# ------------------------------------------------------------------
+class TicketView(discord.ui.View):
+    def __init__(self): super().__init__(timeout=None); self.add_item(TicketDropdown())
 
 class ShopDropdown(discord.ui.Select):
     def __init__(self):
-        # הגדרת הרולים ומחיריהם מהשרת שלך
-        self.role_prices = {
-            1522553430034616351: 5000,   # רול 1
-            1522553732984733867: 10000,  # רול 2
-            1522553933833441330: 20000,  # רול 3
-            1522554104063201301: 35000,  # רול 4
-            1522554362965000283: 50000,  # רול 5
-        }
-
         options = [
-            discord.SelectOption(label="רול 1", value="1522553430034616351", description="מחיר: 5,000 XP", emoji="👑"),
-            discord.SelectOption(label="רול 2", value="1522553732984733867", description="מחיר: 10,000 XP", emoji="🌟"),
-            discord.SelectOption(label="רול 3", value="1522553933833441330", description="מחיר: 20,000 XP", emoji="💎"),
-            discord.SelectOption(label="רול 4", value="1522554104063201301", description="מחיר: 35,000 XP", emoji="🌀"),
-            discord.SelectOption(label="רול 5", value="1522554362965000283", description="מחיר: 50,000 XP", emoji="🟢"),
+            discord.SelectOption(label=f"{ROLE_PREFIX}Manager Support (25,000 XP)", value="mng_sup:25000", emoji="👤", description="רכישת רול מנהל תמיכה בשרת"),
+            discord.SelectOption(label=f"{ROLE_PREFIX}Event Manager (20,000 XP)", value="evt_mng:20000", emoji="🎨", description="רכישת רול מנהל איוונטים בשרת"),
+            discord.SelectOption(label=f"{ROLE_PREFIX}Support Team (15,000 XP)", value="sup_team:15000", emoji="🛠️", description="רכישת רול צוות תמיכה בשרת"),
+            discord.SelectOption(label=f"{ROLE_PREFIX}Leaks Team (10,000 XP)", value="leak_team:10000", emoji="👁️", description="רכישת רול צוות הדלפות בשרת")
         ]
-        super().__init__(placeholder="בחר רול לקנייה...", min_values=1, max_values=1, options=options)
+        super().__init__(placeholder="🛒 בחר את הרול שברצונך לקנות מתוך התפריט...", custom_id="shop_drop", options=options)
 
-    async def callback(self, interaction: discord.Interaction):
-        selected_role_id = int(self.values[0])
-        price = self.role_prices.get(selected_role_id)
-        user = interaction.user
-        guild = interaction.guild
+    async def callback(self, inter):
+        item_id, price = self.values[0].split(":")
+        price = int(price)
         
-        role = guild.get_role(selected_role_id)
+        if get_xp(inter.user.id) < price:
+            return await inter.response.send_message(f"❌ אין לך מספיק נקודות XP לרכישת רול זה!", ephemeral=True)
+        
+        role_map = {
+            "mng_sup": ROLE_MNG_SUPPORT,
+            "evt_mng": ROLE_EV_MNG,
+            "sup_team": ROLE_SUP_TEAM,
+            "leak_team": ROLE_LEAK_TEAM
+        }
+        
+        role = inter.guild.get_role(role_map[item_id])
         if not role:
-            return await interaction.response.send_message("❌ שגיאה: הרול המבוקש לא נמצא בשרת.", ephemeral=True)
+            return await inter.response.send_message("❌ שגיאה: הרול שנבחר לא הוגדר נכון בקוד על ידי המנהל!", ephemeral=True)
             
-        if role in user.roles:
-            return await interaction.response.send_message("❌ כבר יש לך את הרול הזה!", ephemeral=True)
-
-        users_data = load_xp()
-        user_id = str(user.id)
-        user_xp = users_data.get(user_id, 0)
-
-        if user_xp < price:
-            missing_xp = price - user_xp
-            return await interaction.response.send_message(f"❌ אין לך מספיק XP לרול הזה! יש לך {user_xp:,} XP וחסר לך עוד {missing_xp:,} XP.", ephemeral=True)
-
-        try:
-            users_data[user_id] -= price
-            save_xp(users_data)
-            await user.add_roles(role)
-            await interaction.response.send_message(f"✅ קנית את הרול {role.mention} בהצלחה! הורדו מחשבונך {price:,} XP וכעת נשארו לך {users_data[user_id]:,} XP.", ephemeral=True)
-        except discord.Forbidden:
-            await interaction.response.send_message("❌ לבוט אין הרשאות מתאימות (Manage Roles) כדי לתת לך את הרול הזה.", ephemeral=True)
+        await inter.user.add_roles(role)
+        new_bal = add_xp(inter.user.id, -price)
+        await inter.response.send_message(f"🎉 תתחדש! הרכישה בוצעה בהצלחה וקיבלת את הרול: {role.name}! 🌟\nיתרת ה-XP החדשה שלך היא: `{new_bal:,} XP`", ephemeral=True)
 
 class ShopView(discord.ui.View):
+    def __init__(self): super().__init__(timeout=None); self.add_item(ShopDropdown())
+
+class CasinoView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
-        self.add_item(ShopDropdown())
+        for key, (label, price, _) in CASINO_ROLE_SHOP.items():
+            self.add_item(CasinoButton(key, label, price))
 
-# ------------------------------------------------------------------
-# 4. פקודות הדיסקורד (!shop ו- !xp)
-# ------------------------------------------------------------------
+class CasinoButton(discord.ui.Button):
+    def __init__(self, key, label, price):
+        super().__init__(style=discord.ButtonStyle.primary, label=f"{ROLE_PREFIX}{label} ({price:,} XP)", custom_id=f"casino_{key}")
+        self.key = key
 
-@bot.command()
-async def shop(ctx):
-    shop_text = (
-        "👑 **רול 1** ➔ מחיר: 5,000 XP\n"
-        "🌟 **רול 2** ➔ מחיר: 10,000 XP\n"
-        "💎 **רול 3** ➔ מחיר: 20,000 XP\n"
-        "🌀 **רול 4** ➔ מחיר: 35,000 XP\n"
-        "🟢 **רול 5** ➔ מחיר: 50,000 XP\n\n"
-        "*Developed By: Main Bot -- Soon.*"
-    )
-
-    embed1 = discord.Embed(title="👑 NextZone XP Shop", description=shop_text, color=discord.Color.blue())
-    if ctx.guild.icon:
-        embed1.set_thumbnail(url=ctx.guild.icon.url)
-
-    embed2 = discord.Embed(title="בחר רול לקנייה", color=discord.Color.blue())
-    await ctx.send(embeds=[embed1, embed2], view=ShopView())
-
-@bot.command(aliases=["level"])
-async def xp(ctx, member: discord.Member = None):
-    member = member or ctx.author
-    users_data = load_xp()
-    user_id = str(member.id)
-    user_xp = users_data.get(user_id, 0)
-    
-    embed = discord.Embed(
-        title="📊 מצב ה-XP שלך",
-        description=f"היי {member.mention},\nכרגע יש לך בדיוק **{user_xp:,} XP** בחשבון!",
-        color=discord.Color.green()
-    )
-    embed.set_thumbnail(url=member.display_avatar.url)
-    await ctx.send(embed=embed)
-
-# ------------------------------------------------------------------
-# 5. הרצת הבוט (משיכת הטוקן מ-Railway)
-# ------------------------------------------------------------------
-# הרצה נקייה של הבוט ללא משתנה הסטטוס שגורם לקריסה
-TOKEN = os.getenv("TOKEN")
-bot.run(TOKEN)
-
-
-
-
-
+    async def callback(self, interaction: discord.Interaction):
+        user = interaction.user
+        bal = get_xp(user.id)
+        label, price, role_id = CASINO_ROLE_SHOP[self.key]
+        if bal < price:
+            await interaction.response.send_message(f"❌ אין לך מספיק XP כדי לקנות את {label}. יש לך {bal:,} XP.", ephemeral=True)
+            return
+        role = find_role(interaction.guild, role_id)
+        if not role:
+            await interaction.response.send_message("❌ הרול לא קיים בשרת.", ephemeral=True)
+            return
+        if role in user.roles:
+            await interaction.response.send_message(f"❌ כבר יש לך את {label}.", ephemeral=True)
+            return
+        add_xp(user.id, -price)
+        await user.add_roles(role)
+        await interaction.response.send_message(f"🎉 קנית את {label} ב-{price:,} XP! כעת יש לך {get_xp(user.id):,} XP.", ephemeral=True)
 
 class VeteranView(discord.ui.View):
     def __init__(self, days): super().__init__(timeout=None); self.days = days
@@ -568,268 +409,191 @@ async def on_message(msg):
         await msg.channel.send("🛒 **XP Shop** 🛒\n\nפתח את התפריט למטה ובחר את הרול החדש שברצונך לרכוש באמצעות נקודות ה-XP שלך:", view=ShopView())
         return
 
-# ------------------------------------------------------------------
-# פקודה למנהלים: שליחת תפריט המשחקים המרכזי עם תמונת השרת
-# ------------------------------------------------------------------
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def setup_casino(ctx):
-    embed = discord.Embed(
-        title="🎰 ברוכים הבאים לקזינו הרשמי - NextZone",
-        description=(
-            "כאן תוכלו להמר על ה-XP שלכם ולזכות בפרסים מטורפים לחנות הקזינו!\n\n"
-            "🎮 **המשחקים הזמינים בקזינו:**\n"
-            "• 🎰 **מכונת מזל:** `!slots [סכום]` או `!slots all`\n"
-            "• 🛞 **רולטה:** `!roulette [סכום] [red/black/even/odd/מספר]`\n"
-            "• 🃏 **בלאק ג'ק:** `!blackjack [סכום]` או `!bj [סכום]`\n\n"
-            "💰 *רוצים לבדוק כמה כסף יש לכם? הקלידו:* `!xp`"
-        ),
-        color=discord.Color.gold()
-    )
-    if ctx.guild.icon:
-        embed.set_thumbnail(url=ctx.guild.icon.url)
-        
-    await ctx.send(embed=embed)
-    await ctx.message.delete()
+    if lower_text == "!setup_casino":
+        await msg.delete()
+        bal = ensure_casino_balance(msg.author.id)
+        description = "🎰 ברוכים הבאים לקזינו!\n"
+        description += f"יש לך {bal:,} XP.\n\n"
+        description += "להימור: `!הימור <סכום>`\n"
+        description += "למשחקים: `!קזינו משחקים`\n"
+        description += "לרכישה: לחץ על אחד הכפתורים למטה או השתמש ב-`!קזינו קנה <מזהה>`\n\n"
+        description += "רולים זמינים:\n"
+        for key, (label, price, _) in CASINO_ROLE_SHOP.items():
+            description += f"• `{key}` — {label} ב-{price:,} XP\n"
+        emb = discord.Embed(title="🎰 קזינו XP", description=description, color=0xFFD700)
+        await msg.channel.send(embed=emb, view=CasinoView())
+        return
 
-# ------------------------------------------------------------------
-# משחק רולטה (!roulette) - גרסה מתוקנת ומלאה ללא שגיאות
-# ------------------------------------------------------------------
-@bot.command(aliases=["roulet"])
-async def roulette(ctx, bet_amount: str = None, bet_type: str = None):
-    if not bet_amount or not bet_type:
-        embed_err = discord.Embed(
-            title="🔴 🛞 קזינו NextZone - רולטה",
-            description=(
-                "❌ נא לציין סכום הימור וסוג הימור!\n\n"
-                "**איך מהמרים?**\n"
-                "• לפי צבע: `!roulette 500 red` או `black`\n"
-                "• לפי סוג מספר: `!roulette 500 even` או `odd`\n"
-                "• לפי מספר מדויק: `!roulette 500 14` (בין 0 ל-36)"
-            ),
-            color=discord.Color.red()
+    if lower_text in ("!קזינו משחקים", "!משחקים"):
+        await msg.channel.send(
+            "🎲 משחקי קזינו זמינים:\n"
+            "• `!קזינו משחק מטבע <סכום>` — משחק מטבע, זכייה x2\n"
+            "• `!קזינו משחק חריצים <סכום>` — חריצים, 3 סמלים זהים x4, 2 סמלים זהים x2\n"
+            "• `!קזינו משחק גלגל <סכום>` — גלגל מזל, זכייה x3 אם נוחת על 7\n"
         )
-        return await ctx.send(embed=embed_err)
+        return
 
-    users_data = load_xp()
-    user_id = str(ctx.author.id)
-    user_xp = users_data.get(user_id, 0)
-
-    if bet_amount.lower() == "all":
-        bet_amount = user_xp
-    else:
+    if lower_text.startswith("!קזינו משחק"):
+        parts = text.split()
+        if len(parts) < 3:
+            await msg.channel.send("❌ השתמש: `!קזינו משחק <מטבע|חריצים|גלגל> <סכום>`")
+            return
+        game = parts[2]
+        if len(parts) < 4:
+            await msg.channel.send("❌ הכנס סכום לאחר סוג המשחק.")
+            return
         try:
-            bet_amount = int(bet_amount)
+            amount = int(parts[3].replace(',', ''))
         except ValueError:
-            return await ctx.send("❌ סכום ההימור חייב להיות מספר שלם!")
+            await msg.channel.send("❌ הכנס סכום תקין.")
+            return
+        xp = get_xp(msg.author.id)
+        if amount <= 0:
+            await msg.channel.send("❌ סכום צריך להיות גדול מ-0.")
+            return
+        if amount > xp:
+            await msg.channel.send(f"❌ אין לך מספיק XP. יש לך {xp:,} XP.")
+            return
 
-    if bet_amount <= 0 or user_xp < bet_amount:
-        return await ctx.send(f"❌ הימור לא חוקי או שאין לך מספיק XP")
+        if game == "מטבע":
+            win = random.choice([True, False])
+            if win:
+                add_xp(msg.author.id, amount)
+                await msg.channel.send(f"🪙 פגעת בהימור! קיבלת {amount:,} XP נוספים. יש לך כעת {get_xp(msg.author.id):,} XP.")
+            else:
+                add_xp(msg.author.id, -amount)
+                await msg.channel.send(f"🪙 הפסדת {amount:,} XP. נשאר לך {get_xp(msg.author.id):,} XP.")
+            return
 
-    winning_number = random.randint(0, 36)
-    # כאן רשימת המספרים האדומים נסגרה בצורה מלאה ותקינה
-    red_numbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]
-    
-    winning_color = "green" if winning_number == 0 else "red" if winning_number in red_numbers else "black"
+        if game == "חריצים":
+            symbols = ["🍒", "🍋", "🍉", "7️⃣", "⭐"]
+            spin = [random.choice(symbols) for _ in range(3)]
+            result = " ".join(spin)
+            if spin[0] == spin[1] == spin[2]:
+                win_amount = amount * 4
+                add_xp(msg.author.id, win_amount)
+                await msg.channel.send(f"🎰 {result}\nפגשת שלושה סמלים זהים! זכית {win_amount:,} XP.")
+            elif spin[0] == spin[1] or spin[1] == spin[2] or spin[0] == spin[2]:
+                win_amount = amount * 2
+                add_xp(msg.author.id, win_amount)
+                await msg.channel.send(f"🎰 {result}\nשני סמלים זהים! זכית {win_amount:,} XP.")
+            else:
+                add_xp(msg.author.id, -amount)
+                await msg.channel.send(f"🎰 {result}\nלא נצחת הפעם. הפסדת {amount:,} XP.")
+            return
 
-    is_win = False
-    payout_multiplier = 2
-    bet_type = bet_type.lower()
+        if game == "גלגל":
+            number = random.randint(1, 10)
+            if number == 7:
+                win_amount = amount * 3
+                add_xp(msg.author.id, win_amount)
+                await msg.channel.send(f"🎡 מספר {number}! זכית {win_amount:,} XP. יש לך כעת {get_xp(msg.author.id):,} XP.")
+            else:
+                add_xp(msg.author.id, -amount)
+                await msg.channel.send(f"🎡 מספר {number}. הפסדת {amount:,} XP.")
+            return
 
-    if bet_type == "red" and winning_color == "red":
-        is_win = True
-    elif bet_type == "black" and winning_color == "black":
-        is_win = True
-    elif bet_type == "even" and winning_number != 0 and winning_number % 2 == 0:
-        is_win = True
-    elif bet_type == "odd" and winning_number % 2 != 0:
-        is_win = True
-    elif bet_type.isdigit() and int(bet_type) == winning_number:
-        is_win = True
-        payout_multiplier = 35
+        await msg.channel.send("❌ סוג משחק לא מוכר. בחר: מטבע, חריצים או גלגל.")
+        return
 
-    color_emoji = "🔴" if winning_color == "red" else "⚫" if winning_color == "black" else "🟢"
-    
-    if is_win:
-        win_xp = bet_amount * payout_multiplier
-        users_data[user_id] += (win_xp - bet_amount)
-        title = "🎉 ניצחון ברולטה! 🎉"
-        desc = f"הגלגל נעצר על: **{color_emoji} {winning_number}**\n\nהימרת נכון על `{bet_type}`!\n**הרווחת:** `{win_xp:,} XP`"
-        embed_color = discord.Color.green()
-    else:
-        users_data[user_id] -= bet_amount
-        title = "😢 הפסדת ברולטה..."
-        desc = f"הגלגל נעצר על: **{color_emoji} {winning_number}**\n\nההימור שלך על `{bet_type}` נכשל.\n**הפסדת:** `{bet_amount:,} XP`"
-        embed_color = discord.Color.red()
+    if lower_text in ("!casino", "!קזינו"):
+        bal = ensure_casino_balance(msg.author.id)
+        description = "🎰 ברוכים הבאים לקזינו!\n"
+        description += f"יש לך {bal:,} XP.\n\n"
+        description += "להימור: `!הימור <סכום>`\n"
+        description += "למשחקים: `!קזינו משחקים`\n"
+        description += "לרכישה: לחץ על אחד הכפתורים למטה או השתמש ב-`!קזינו קנה <מזהה>`\n\n"
+        description += "רולים זמינים:\n"
+        for key, (label, price, _) in CASINO_ROLE_SHOP.items():
+            description += f"• `{key}` — {label} ב-{price:,} XP\n"
+        emb = discord.Embed(title="🎰 קזינו XP", description=description, color=0xFFD700)
+        await msg.channel.send(embed=emb, view=CasinoView())
+        return
 
-    save_xp(users_data)
-    embed = discord.Embed(title=title, description=desc, color=embed_color)
-    embed.add_field(name="💳 יתרה חדשה", value=f"**{users_data[user_id]:,} XP**")
-    await ctx.send(embed=embed)
-
-
-# פונקציה שמפעילה את שרת ה-Flask
-def run_flask():
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port, use_reloader=False)
-
-# הפעלת שרת ה-Flask בנפרד ברקע
-threading.Thread(target=run_flask, daemon=True).start()
-import asyncio
-
-import discord
-from discord.ext import commands
-
-# 1. פונקציה מרכזית שמחשבת את הממברס ומעדכנת את הסטטוס
-async def update_bot_status():
-    # ספירת כל האנשים בכל השרתים שהבוט נמצא בהם
-    member_count = sum(guild.member_count for guild in bot.guilds)
-    
-    # הגדרת הטקסט והפעילות (Watching X members)
-    activity = discord.Activity(
-        type=discord.ActivityType.watching, 
-        name=f"{member_count} members"
-    )
-    
-    # עדכון הסטטוס ומצב "נא לא להפריע" (dnd)
-    await bot.change_presence(status=discord.Status.dnd, activity=activity)
-
-# 2. עדכון הסטטוס כשהבוט נדלק
-@bot.event
-async def on_ready():
-    print(f'הבוט {bot.user.name} מחובר בהצלחה!')
-    await update_bot_status()
-
-# 3. עדכון הסטטוס מיד כשמישהו נכנס לשרת
-@bot.event
-async def on_member_join(member):
-    await update_bot_status()
-
-# 4. עדכון הסטטוס מיד כשמישהו עוזב את השרת
-@bot.event
-async def on_member_remove(member):
-    await update_bot_status()
-# ==================================================================
-# 👑 מערכת חנויות וקזינו מחוברת ל-DATABASE (SQLite)
-# ==================================================================
-
-# --- 1. חנות ה-XP הרגילה (!shop) ---
-class ShopDropdown(discord.ui.Select):
-    def __init__(self):
-        self.role_prices = {
-            1522553430034616351: 5000,   # רול 1
-            1522553732984733867: 10000,  # רול 2
-            1522553933833441330: 20000,  # רול 3
-            1522554104063201301: 35000,  # רול 4
-            1522554362965000283: 50000,  # רול 5
-        }
-        options = [
-            discord.SelectOption(label="רול 1", value="1522553430034616351", description="מחיר: 5,000 XP", emoji="👑"),
-            discord.SelectOption(label="רול 2", value="1522553732984733867", description="מחיר: 10,000 XP", emoji="🌟"),
-            discord.SelectOption(label="רול 3", value="1522553933833441330", description="מחיר: 20,000 XP", emoji="💎"),
-            discord.SelectOption(label="רול 4", value="1522554104063201301", description="מחיר: 35,000 XP", emoji="🌀"),
-            discord.SelectOption(label="רול 5", value="1522554362965000283", description="מחיר: 50,000 XP", emoji="🟢"),
-        ]
-        super().__init__(placeholder="בחר רול לקנייה...", min_values=1, max_values=1, options=options)
-
-    async def callback(self, interaction: discord.Interaction):
-        selected_role_id = int(self.values)
-        price = self.role_prices.get(selected_role_id)
-        user = interaction.user
-        
-        role = interaction.guild.get_role(selected_role_id)
+    if lower_text.startswith("!קזינו קנה"):
+        parts = text.split()
+        if len(parts) < 3:
+            await msg.channel.send("❌ השתמש: `!קזינו קנה <מזהה>`")
+            return
+        key = parts[2].lower()
+        if key not in CASINO_ROLE_SHOP and not (key.isdigit() and int(key) == SPECIAL_CASINO_ROLE_ID):
+            await msg.channel.send("❌ רול לא חוקי. בחר את אחד המזהים הבאים: " + ", ".join(CASINO_ROLE_SHOP.keys()) + ", או את ה-ID המלא אם זה הרול המיוחד.")
+            return
+        if key in CASINO_ROLE_SHOP:
+            label, price, role_id = CASINO_ROLE_SHOP[key]
+        else:
+            label, price, role_id = ("רול קזינו מיוחד", 18000, SPECIAL_CASINO_ROLE_ID)
+        if get_xp(msg.author.id) < price:
+            await msg.channel.send(f"❌ אין לך מספיק XP לקנות את {label}. צריך {price:,} XP.")
+            return
+        role = find_role(msg.guild, role_id)
         if not role:
-            return await interaction.response.send_message("❌ שגיאה: הרול לא נמצא בשרת.", ephemeral=True)
-        if role in user.roles:
-            return await interaction.response.send_message("❌ כבר יש לך את הרול הזה!", ephemeral=True)
+            await msg.channel.send("❌ הרול לא קיים בשרת.")
+            return
+        if role in msg.author.roles:
+            await msg.channel.send(f"❌ כבר יש לך את {label}.")
+            return
+        add_xp(msg.author.id, -price)
+        await msg.author.add_roles(role)
+        await msg.channel.send(f"🎉 קנית את {label} ב-{price:,} XP! מזל טוב.")
+        return
 
-        # שימוש בפונקציה הקיימת שלך מה-Database בשורה 52
-        user_xp = get_xp(user.id)
-        if user_xp < price:
-            missing_xp = price - user_xp
-            return await interaction.response.send_message(f"❌ אין לך מספיק XP! יש לך {user_xp:,} וחסר לך עוד {missing_xp:,} XP.", ephemeral=True)
-
+    if lower_text.startswith("!הימור"):
+        parts = text.split()
+        if len(parts) < 2:
+            await msg.channel.send("❌ השתמש: `!הימור <סכום>`")
+            return
         try:
-            # שימוש בפונקציית הורדת ה-XP שלך (add_xp עם מינוס) בשורה 57
-            add_xp(user.id, -price)
-            await user.add_roles(role)
-            await interaction.response.send_message(f"✅ קנית את הרול {role.mention} בהצלחה! הורדו מחשבונך {price:,} XP.", ephemeral=True)
-        except discord.Forbidden:
-            await interaction.response.send_message("❌ לבוט אין הרשאות מתאימות לתת את הרול.", ephemeral=True)
+            amount = int(parts[1].replace(',', ''))
+        except ValueError:
+            await msg.channel.send("❌ הכנס סכום תקין.")
+            return
+        if amount <= 0:
+            await msg.channel.send("❌ סכום צריך להיות גדול מ-0.")
+            return
+        xp = get_xp(msg.author.id)
+        if amount > xp:
+            await msg.channel.send(f"❌ אין לך מספיק XP. יש לך {xp:,} XP.")
+            return
+        roll = random.randint(1, 100)
+        if roll <= 45:
+            add_xp(msg.author.id, -amount)
+            await msg.channel.send(f"🎲 הפסדת {amount:,} XP. נשאר לך {get_xp(msg.author.id):,} XP.")
+        elif roll <= 85:
+            add_xp(msg.author.id, amount)
+            await msg.channel.send(f"🎲 זכית! קיבלת {amount:,} XP. סך הכל יש לך {get_xp(msg.author.id):,} XP.")
+        else:
+            add_xp(msg.author.id, amount * 2)
+            await msg.channel.send(f"🎉 ג'קפוט! קיבלת {amount * 2:,} XP! סך הכל יש לך {get_xp(msg.author.id):,} XP.")
+        return
 
-class ShopView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-        self.add_item(ShopDropdown())
+    if lower_text.startswith("!h"):
+        if msg.id in processed_message_ids:
+            return
+        processed_message_ids.add(msg.id)
+        reason = text[3:].strip()
+        if not reason:
+            await msg.channel.send("❌ נא לציין סיבה לפתיחת קריאת העזרה!", delete_after=5)
+            return
+        vt = msg.author.voice.channel.mention if msg.author.voice and msg.author.voice.channel else "מחוץ לווייס"
+        emb = discord.Embed(title="⚠️ בקשת עזרה ⚠️", description=f"📝 סיבה: {reason} | 🎧 ווייס: {vt}", color=0xff0000)
+        staff_role = msg.guild.get_role(1521955150309359747)
+        if staff_role and not any(sub in staff_role.name.lower() for sub in STAFF_ROLE_NAMES):
+            staff_role = None
+                # בדיקה ישירה לפי ה-ID של רול הצוות
+        staff_role = msg.guild.get_role(STAFF_ROLE_ID)
+        
+        if not staff_role:
+            await msg.channel.send(f"❌ לא נמצא רול צוות עם ה-ID {STAFF_ROLE_ID} בשרת זה.")
+            return
 
-@bot.command()
-async def shop(ctx):
-    shop_text = "👑 **רול 1** ➔ 5,000 XP\n🌟 **רול 2** ➔ 10,000 XP\n💎 **רול 3** ➔ 20,000 XP\n🌀 **רול 4** ➔ 35,000 XP\n🟢 **רול 5** ➔ 50,000 XP"
-    embed1 = discord.Embed(title="👑 NextZone XP Shop", description=shop_text, color=discord.Color.blue())
-    if ctx.guild.icon: embed1.set_thumbnail(url=ctx.guild.icon.url)
-    embed2 = discord.Embed(title="בחר רול לקנייה", color=discord.Color.blue())
-    await ctx.send(embeds=[embed1, embed2], view=ShopView())
+            return
+        mention = staff_role.mention
+        allowed = discord.AllowedMentions(roles=True)
+        await msg.channel.send(content=mention, embed=emb, view=HelpView(msg.author, reason, vt), allowed_mentions=allowed)
+        return
 
-
-# --- 2. משחק מכונת מזל קזינו מחובר ל-DATABASE (!slots) ---
-@bot.command(aliases=["slot", "gamble"])
-async def slots(ctx, bet_amount: str = None):
-    if bet_amount is None:
-        return await ctx.send("❌ נא לציין סכום הימור! דוגמה: `!slots 500`")
-
-    user_id = ctx.author.id
-    user_xp = get_xp(user_id) # חיבור ל-Database שלך
-
-    if bet_amount.lower() == "all":
-        bet_amount = user_xp
-    else:
-        try: bet_amount = int(bet_amount)
-        except ValueError: return await ctx.send("❌ סכום ההימור חייב להיות מספר שלם!")
-
-    if bet_amount <= 0 or user_xp < bet_amount:
-        return await ctx.send(f"❌ הימור לא חוקי או שאין לך מספיק XP (ברשותך: **{user_xp:,} XP**)")
-
-    emojis = ["🍒", "🍇", "🍊", "💎", "👑", "🍀"]
-    s1, s2, s3 = random.choice(emojis), random.choice(emojis), random.choice(emojis)
-
-    if s1 == s2 == s3:
-        win_amount = bet_amount * 3
-        add_xp(user_id, win_amount) # הוספה לדאטהבייס שלך
-        title, color = "🎉 ג'קפוט מטורף! 🎉", discord.Color.gold()
-        desc = f"🎰 [ {s1} | {s2} | {s3} ] 🎰\n\nהרווחת: `{win_amount:,} XP`"
-    elif s1 == s2 or s1 == s3 or s2 == s3:
-        win_amount = int(bet_amount * 1.5)
-        add_xp(user_id, win_amount - bet_amount)
-        title, color = "💰 ניצחון חלקי! 💰", discord.Color.green()
-        desc = f"🎰 [ {s1} | {s2} | {s3} ] 🎰\n\nהרווחת: `{win_amount:,} XP`"
-    else:
-        add_xp(user_id, -bet_amount) # הורדה מהדאטהבייס שלך
-        title, color = "😢 הפסדת...", discord.Color.red()
-        desc = f"🎰 [ {s1} | {s2} | {s3} ] 🎰\n\nהפסדת: `{bet_amount:,} XP`"
-
-    embed = discord.Embed(title=title, description=desc, color=color)
-    embed.add_field(name="💳 יתרה חדשה", value=f"**{get_xp(user_id):,} XP**")
-    await ctx.send(embed=embed)
-
-
-# --- 3. פקודת ה-!setup_casino המעודכנת ---
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def setup_casino(ctx):
-    embed = discord.Embed(
-        title="🎰 ברוכים הבאים לקזינו הרשמי - NextZone",
-        description=(
-            "כאן תוכלו להמר על ה-XP שלכם ולזכות בפרסים מטורפים!\n\n"
-            "🎮 **המשחקים הזמינים בקזינו:**\n"
-            "• 🎰 **מכונת מזל:** `!slots [סכום]` או `!slots all`\n\n"
-            "💰 *רוצים לבדוק כמה כסף יש לכם? הקלידו:* `!xp`"
-        ),
-        color=discord.Color.gold()
-    )
-    if ctx.guild.icon: embed.set_thumbnail(url=ctx.guild.icon.url)
-    await ctx.send(embed=embed)
-    await ctx.message.delete()
-
+    await bot.process_commands(msg)
 
 
 if __name__ == "__main__":
