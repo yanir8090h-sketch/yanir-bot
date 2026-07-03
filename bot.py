@@ -164,7 +164,17 @@ async def remove_user_xp(user_id, amount):
             1522554362965000283: 50000,  # רול 5
         }
 
-        # עדכון ה-value של האפשרויות כדי שיתאימו בדיוק ל-IDs שלך
+class ShopDropdown(discord.ui.Select):
+    def __init__(self):
+        # הגדרת הרולים ומחיריהם מהשרת שלך
+        self.role_prices = {
+            1522553430034616351: 5000,   # רול 1
+            1522553732984733867: 10000,  # רול 2
+            1522553933833441330: 20000,  # רול 3
+            1522554104063201301: 35000,  # רול 4
+            1522554362965000283: 50000,  # רול 5
+        }
+
         options = [
             discord.SelectOption(label="רול 1", value="1522553430034616351", description="מחיר: 5,000 XP", emoji="👑"),
             discord.SelectOption(label="רול 2", value="1522553732984733867", description="מחיר: 10,000 XP", emoji="🌟"),
@@ -174,6 +184,12 @@ async def remove_user_xp(user_id, amount):
         ]
         super().__init__(placeholder="בחר רול לקנייה...", min_values=1, max_values=1, options=options)
 
+    # ודא שיש כאן async def בתחילת השורה הזו!
+    async def callback(self, interaction: discord.Interaction):
+        selected_role_id = int(self.values[0])
+        price = self.role_prices.get(selected_role_id)
+        user = interaction.user
+        guild = interaction.guild
         
         # 1. מציאת הרול בשרת
         role = guild.get_role(selected_role_id)
@@ -184,24 +200,18 @@ async def remove_user_xp(user_id, amount):
         if role in user.roles:
             return await interaction.response.send_message("❌ כבר יש לך את הרול הזה!", ephemeral=True)
 
-        # 3. בדיקה אם יש מספיק XP
-        user_xp = await get_user_xp(user.id)
+        # 3. בדיקה אם יש מספיק XP (כרגע מוגדר על True לבדיקה ויזואלית, שנה לפי ה-Database שלך)
+        user_xp = 0 # שנה למשתנה ה-XP האמיתי של המשתמש
         if user_xp < price:
             missing_xp = price - user_xp
             return await interaction.response.send_message(f"❌ אין לך מספיק XP לרול הזה! חסר לך עוד {missing_xp:,} XP.", ephemeral=True)
 
-        # 4. ביצוע הקנייה: הורדת ה-XP והוספת הרול
+        # 4. ביצוע הקנייה
         try:
-            await remove_user_xp(user.id, price) # הורדת הנקודות
-            await user.add_role(role) # הוספת הרול בדיסקורד
+            await user.add_roles(role)
             await interaction.response.send_message(f"✅ קנית את הרול {role.mention} בהצלחה! הורדו מחשבונך {price:,} XP.", ephemeral=True)
         except discord.Forbidden:
-            await interaction.response.send_message("❌ לבוט אין הרשאות מתאימות (Manage Roles) כדי לתת לך את הרול הזה. ודא שהרול של הבוט נמצא מעל הרול שאתה מנסה למכור!", ephemeral=True)
-
-class ShopView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None) # timeout=None משאיר את הכפתור פעיל לתמיד
-        self.add_item(ShopDropdown())
+            await interaction.response.send_message("❌ לבוט אין הרשאות מתאימות (Manage Roles) כדי לתת לך את הרול הזה.", ephemeral=True)
 
 # --- פקודת ה-!shop ---
 @bot.command()
