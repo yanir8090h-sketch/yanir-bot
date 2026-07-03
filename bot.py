@@ -605,8 +605,7 @@ async def help_staff_command(ctx, *, reason: str = None):
     if not staff_role:
         return await ctx.send(f"❌ שגיאה: רול הצוות עם ה-ID {STAFF_ROLE_ID} לא נמצא בשרת.")
 
-    # 5. שליחת הקריאה ותיוג רול הצוות
-    allowed = discord.AllowedMentions(roles=True)
+       allowed = discord.AllowedMentions(roles=True)
     await ctx.send(
         content=staff_role.mention, 
         embed=emb, 
@@ -614,9 +613,6 @@ async def help_staff_command(ctx, *, reason: str = None):
         allowed_mentions=allowed
     )
     await ctx.message.delete()
-
-# שורת אישור הפקודות המרכזית - צמודה לשמאל
-await bot.process_commands(msg)
 
 if __name__ == "__main__":
     keep_alive()
