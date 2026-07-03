@@ -139,16 +139,84 @@ class ShopView(discord.ui.View):
     def __init__(self):
         super().__init__()
         self.add_item(ShopDropdown())
-# פקודת ה-!shop המסודרת
+
+import discord
+from discord.ext import commands
+
+# --- פונקציות עזר למערכת ה-XP שלך (תחליף לקוד הקיים אצלך) ---
+async def get_user_xp(user_id):
+    # כאן אתה צריך להחזיר את כמות ה-XP שיש למשתמש מתוך ה-Database שלך
+    # כרגע החזרתי 0 כברירת מחדל
+    return 0 
+
+async def remove_user_xp(user_id, amount):
+    # כאן אתה צריך לכתוב קוד שמוריד למשתמש 'amount' של XP בתוך ה-Database שלך
+    pass
+# -------------------------------------------------------------
+
+class ShopDropdown(discord.ui.Select):
+    def __init__(self):
+        # הגדרת הרולים ומחיריהם (חובה להחליף את ה-ID למטה במספרים האמיתיים של הרולים שלך!)
+        self.role_prices = {
+            123456789012345671: 5000,   # רול 1
+            123456789012345672: 10000,  # רול 2
+            123456789012345673: 20000,  # רול 3
+            123456789012345674: 35000,  # רול 4
+            123456789012345675: 50000,  # רול 5
+        }
+
+        options = [
+            discord.SelectOption(label="רול 1", value="123456789012345671", description="מחיר: 5,000 XP", emoji="👑"),
+            discord.SelectOption(label="רול 2", value="123456789012345672", description="מחיר: 10,000 XP", emoji="🌟"),
+            discord.SelectOption(label="רול 3", value="123456789012345673", description="מחיר: 20,000 XP", emoji="💎"),
+            discord.SelectOption(label="רול 4", value="123456789012345674", description="מחיר: 35,000 XP", emoji="🌀"),
+            discord.SelectOption(label="רול 5", value="123456789012345675", description="מחיר: 50,000 XP", emoji="🟢"),
+        ]
+        super().__init__(placeholder="בחר רול לקנייה...", min_values=1, max_values=1, options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        selected_role_id = int(self.values[0])
+        price = self.role_prices.get(selected_role_id)
+        user = interaction.user
+        guild = interaction.guild
+        
+        # 1. מציאת הרול בשרת
+        role = guild.get_role(selected_role_id)
+        if not role:
+            return await interaction.response.send_message("❌ שגיאה: הרול המבוקש לא נמצא בשרת.", ephemeral=True)
+            
+        # 2. בדיקה אם כבר יש לו את הרול
+        if role in user.roles:
+            return await interaction.response.send_message("❌ כבר יש לך את הרול הזה!", ephemeral=True)
+
+        # 3. בדיקה אם יש מספיק XP
+        user_xp = await get_user_xp(user.id)
+        if user_xp < price:
+            missing_xp = price - user_xp
+            return await interaction.response.send_message(f"❌ אין לך מספיק XP לרול הזה! חסר לך עוד {missing_xp:,} XP.", ephemeral=True)
+
+        # 4. ביצוע הקנייה: הורדת ה-XP והוספת הרול
+        try:
+            await remove_user_xp(user.id, price) # הורדת הנקודות
+            await user.add_role(role) # הוספת הרול בדיסקורד
+            await interaction.response.send_message(f"✅ קנית את הרול {role.mention} בהצלחה! הורדו מחשבונך {price:,} XP.", ephemeral=True)
+        except discord.Forbidden:
+            await interaction.response.send_message("❌ לבוט אין הרשאות מתאימות (Manage Roles) כדי לתת לך את הרול הזה. ודא שהרול של הבוט נמצא מעל הרול שאתה מנסה למכור!", ephemeral=True)
+
+class ShopView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None) # timeout=None משאיר את הכפתור פעיל לתמיד
+        self.add_item(ShopDropdown())
+
+# --- פקודת ה-!shop ---
 @bot.command()
 async def shop(ctx):
-    # החלף רק את המספרים הארוכים ב-ID האמיתי של הרולים שלך בדיסקורד!
     shop_text = (
-        "👑 **רול 1** ➔ <@&123456789012345678> ➔ 5,000 XP\n"
-        "🌟 **רול 2** ➔ <@&123456789012345678> ➔ 10,000 XP\n"
-        "💎 **רול 3** ➔ <@&123456789012345678> ➔ 20,000 XP\n"
-        "🌀 **רול 4** ➔ <@&123456789012345678> ➔ 35,000 XP\n"
-        "🟢 **רול 5** ➔ <@&123456789012345678> ➔ 50,000 XP\n\n"
+        "👑 **רול 1** ➔ <@&123456789012345671> ➔ 5,000 XP\n"
+        "🌟 **רול 2** ➔ <@&123456789012345672> ➔ 10,000 XP\n"
+        "💎 **רול 3** ➔ <@&123456789012345673> ➔ 20,000 XP\n"
+        "🌀 **רול 4** ➔ <@&123456789012345674> ➔ 35,000 XP\n"
+        "🟢 **רול 5** ➔ <@&123456789012345675> ➔ 50,000 XP\n\n"
         "*Developed By: Main Bot -- Soon.*"
     )
 
@@ -157,13 +225,12 @@ async def shop(ctx):
         description=shop_text,
         color=discord.Color.blue()
     )
-    
     if ctx.guild.icon:
         embed1.set_thumbnail(url=ctx.guild.icon.url)
 
     embed2 = discord.Embed(title="בחר רול לקנייה", color=discord.Color.blue())
-
     await ctx.send(embeds=[embed1, embed2], view=ShopView())
+
 
 
 class ShopView(discord.ui.View):
