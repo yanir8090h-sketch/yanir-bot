@@ -120,40 +120,26 @@ class TicketDropdown(discord.ui.Select):
             emb = discord.Embed(title="🛠️ פנייה כללית לצוות העזרה - NextZone 🛠️", description=f"שלום {u.mention},\nפתחת פנייה כללית לצוות השרת.\nאנא רשום כאן בפירוט את סיבת הפנייה שלך, ואיש צוות יתפנה אליך בהקדם!", color=0x3498db)
             await ch.send(embed=emb, view=MngButtons())
 
-class TicketView(discord.ui.View):
-    def __init__(self): super().__init__(timeout=None); self.add_item(TicketDropdown())
+# הגדרת התיבות עם האמוג'ים המקוריים ותיוג רולים (Role ID)
+embed1 = discord.Embed(
+    title="👑 XP Shop",
+    description=(
+        "1. 👑 ➔ <@&ID_של_הרול_1> ➔ 5,000 XP\n"
+        "2. 🌟 ➔ <@&ID_של_הרול_2> ➔ 10,000 XP\n"
+        "3. 💎 ➔ <@&ID_של_הרול_3> ➔ 20,000 XP\n"
+        "4. 🌀 ➔ <@&ID_של_הרול_4> ➔ 35,000 XP\n"
+        "5. 🟢 ➔ <@&ID_של_הרול_5> ➔ 50,000 XP\n\n"
+        "*Developed By: Main Bot -- Soon.*"
+    ),
+    color=discord.Color.blue()
+)
+if ctx.guild.icon:
+    embed1.set_thumbnail(url=ctx.guild.icon.url)
 
-class ShopDropdown(discord.ui.Select):
-    def __init__(self):
-        options = [
-            discord.SelectOption(label=f"{ROLE_PREFIX}Manager Support (25,000 XP)", value="mng_sup:25000", emoji="👤", description="רכישת רול מנהל תמיכה בשרת"),
-            discord.SelectOption(label=f"{ROLE_PREFIX}Event Manager (20,000 XP)", value="evt_mng:20000", emoji="🎨", description="רכישת רול מנהל איוונטים בשרת"),
-            discord.SelectOption(label=f"{ROLE_PREFIX}Support Team (15,000 XP)", value="sup_team:15000", emoji="🛠️", description="רכישת רול צוות תמיכה בשרת"),
-            discord.SelectOption(label=f"{ROLE_PREFIX}Leaks Team (10,000 XP)", value="leak_team:10000", emoji="👁️", description="רכישת רול צוות הדלפות בשרת")
-        ]
-        super().__init__(placeholder="🛒 בחר את הרול שברצונך לקנות מתוך התפריט...", custom_id="shop_drop", options=options)
+embed2 = discord.Embed(title="בחר רול לקנייה", color=discord.Color.blue())
 
-    async def callback(self, inter):
-        item_id, price = self.values[0].split(":")
-        price = int(price)
-        
-        if get_xp(inter.user.id) < price:
-            return await inter.response.send_message(f"❌ אין לך מספיק נקודות XP לרכישת רול זה!", ephemeral=True)
-        
-        role_map = {
-            "mng_sup": ROLE_MNG_SUPPORT,
-            "evt_mng": ROLE_EV_MNG,
-            "sup_team": ROLE_SUP_TEAM,
-            "leak_team": ROLE_LEAK_TEAM
-        }
-        
-        role = inter.guild.get_role(role_map[item_id])
-        if not role:
-            return await inter.response.send_message("❌ שגיאה: הרול שנבחר לא הוגדר נכון בקוד על ידי המנהל!", ephemeral=True)
-            
-        await inter.user.add_roles(role)
-        new_bal = add_xp(inter.user.id, -price)
-        await inter.response.send_message(f"🎉 תתחדש! הרכישה בוצעה בהצלחה וקיבלת את הרול: {role.name}! 🌟\nיתרת ה-XP החדשה שלך היא: `{new_bal:,} XP`", ephemeral=True)
+# שורת השליחה בסוף הקוד שלך
+await ctx.send(embeds=[embed1, embed2])
 
 class ShopView(discord.ui.View):
     def __init__(self): super().__init__(timeout=None); self.add_item(ShopDropdown())
