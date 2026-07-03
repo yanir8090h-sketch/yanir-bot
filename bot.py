@@ -624,7 +624,7 @@ async def help_staff_command(ctx, *, reason: str = None):
         mention = staff_role.mention
         allowed = discord.AllowedMentions(roles=True)
         await msg.channel.send(content=mention, embed=emb, view=HelpView(msg.author, reason, vt), allowed_mentions=allowed)
-        return
+        
 
     await bot.process_commands(msg)
 
