@@ -120,49 +120,77 @@ class TicketDropdown(discord.ui.Select):
             emb = discord.Embed(title="🛠️ פנייה כללית לצוות העזרה - NextZone 🛠️", description=f"שלום {u.mention},\nפתחת פנייה כללית לצוות השרת.\nאנא רשום כאן בפירוט את סיבת הפנייה שלך, ואיש צוות יתפנה אליך בהקדם!", color=0x3498db)
             await ch.send(embed=emb, view=MngButtons())
 
-# 1. הגדרת התפריט (Dropdown) עם אמוג'ים מובנים
-class ShopDropdown(discord.ui.Select):
-    def __init__(self):
-        options = [
-            discord.SelectOption(label="רול 1", description="מחיר: 5,000 XP", emoji="👑"),
-            discord.SelectOption(label="רול 2", description="מחיר: 10,000 XP", emoji="🌟"),
-            discord.SelectOption(label="רול 3", description="מחיר: 20,000 XP", emoji="💎"),
-            discord.SelectOption(label="רול 4", description="מחיר: 35,000 XP", emoji="🌀"),
-            discord.SelectOption(label="רול 5", description="מחיר: 50,000 XP", emoji="🟢"),
-        ]
-        super().__init__(placeholder="בחר רול לקנייה", min_values=1, max_values=1, options=options)
-
-    async def callback(self, interaction: discord.Interaction):
-        await interaction.response.send_message(f"בחרת לקנות את: {self.values[0]}!", ephemeral=True)
-
-class ShopView(discord.ui.View):
-    def __init__(self):
-        super().__init__()
-        self.add_item(ShopDropdown())
-
 import discord
 from discord.ext import commands
+import json
+import os
 
-# --- פונקציות עזר למערכת ה-XP שלך (תחליף לקוד הקיים אצלך) ---
-async def get_user_xp(user_id):
-    # כאן אתה צריך להחזיר את כמות ה-XP שיש למשתמש מתוך ה-Database שלך
-    # כרגע החזרתי 0 כברירת מחדל
-    return 0 
+# הגדרת הבוט עם כל ההרשאות (Intents) הדרושות
+intents = discord.Intents.all()
+bot = commands.Bot(command_prefix="!", intents=intents)
 
-async def remove_user_xp(user_id, amount):
-    # כאן אתה צריך לכתוב קוד שמוריד למשתמש 'amount' של XP בתוך ה-Database שלך
-    pass
-# -------------------------------------------------------------
+# יצירת קובץ ה-XP אוטומטית אם הוא לא קיים
+if not os.path.exists("levels.json"):
+    with open("levels.json", "w") as f:
+        json.dump({}, f)
 
-    def __init__(self):
-        # הגדרת הרולים ומחיריהם מהצילום מסך שלך
-        self.role_prices = {
-            1522553430034616351: 5000,   # רול 1
-            1522553732984733867: 10000,  # רול 2
-            1522553933833441330: 20000,  # רול 3
-            1522554104063201301: 35000,  # רול 4
-            1522554362965000283: 50000,  # רול 5
-        }
+# פונקציות לקריאה וכתיבה של ה-XP מהקובץ
+def load_xp():
+    with open("levels.json", "r") as f:
+        return json.load(f)
+
+def save_xp(data):
+    with open("levels.json", "w") as f:
+        json.dump(data, f, indent=4)
+
+# ------------------------------------------------------------------
+# 1. מערכת עדכון הסטטוס (נא לא להפריע + ספירת ממברס בזמן אמת)
+# ------------------------------------------------------------------
+
+async def update_bot_status():
+    member_count = sum(guild.member_count for guild in bot.guilds)
+    activity = discord.Activity(
+        type=discord.ActivityType.watching, 
+        name=f"{member_count} members"
+    )
+    await bot.change_presence(status=discord.Status.dnd, activity=activity)
+
+@bot.event
+async def on_ready():
+    print(f'הבוט {bot.user.name} עלה לאוויר בהצלחה!')
+    await update_bot_status()
+
+@bot.event
+async def on_member_join(member):
+    await update_bot_status()
+
+@bot.event
+async def on_member_remove(member):
+    await update_bot_status()
+
+# ------------------------------------------------------------------
+# 2. מערכת הוספת XP אוטומטית על כל הודעה בצ'אט
+# ------------------------------------------------------------------
+
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    users_data = load_xp()
+    user_id = str(message.author.id)
+
+    if user_id not in users_data:
+        users_data[user_id] = 0
+
+    users_data[user_id] += 15
+    save_xp(users_data)
+
+    await bot.process_commands(message)
+
+# ------------------------------------------------------------------
+# 3. תפריט הבחירה והלוגיקה של חנות ה-XP
+# ------------------------------------------------------------------
 
 class ShopDropdown(discord.ui.Select):
     def __init__(self):
@@ -184,91 +212,86 @@ class ShopDropdown(discord.ui.Select):
         ]
         super().__init__(placeholder="בחר רול לקנייה...", min_values=1, max_values=1, options=options)
 
-    # ודא שיש כאן async def בתחילת השורה הזו!
     async def callback(self, interaction: discord.Interaction):
         selected_role_id = int(self.values[0])
         price = self.role_prices.get(selected_role_id)
         user = interaction.user
         guild = interaction.guild
         
-        # 1. מציאת הרול בשרת
         role = guild.get_role(selected_role_id)
         if not role:
             return await interaction.response.send_message("❌ שגיאה: הרול המבוקש לא נמצא בשרת.", ephemeral=True)
             
-        # 2. בדיקה אם כבר יש לו את הרול
         if role in user.roles:
             return await interaction.response.send_message("❌ כבר יש לך את הרול הזה!", ephemeral=True)
 
-        # 3. בדיקה אם יש מספיק XP (כרגע מוגדר על True לבדיקה ויזואלית, שנה לפי ה-Database שלך)
-        user_xp = 0 # שנה למשתנה ה-XP האמיתי של המשתמש
+        users_data = load_xp()
+        user_id = str(user.id)
+        user_xp = users_data.get(user_id, 0)
+
         if user_xp < price:
             missing_xp = price - user_xp
-            return await interaction.response.send_message(f"❌ אין לך מספיק XP לרול הזה! חסר לך עוד {missing_xp:,} XP.", ephemeral=True)
+            return await interaction.response.send_message(f"❌ אין לך מספיק XP לרול הזה! יש לך {user_xp:,} XP וחסר לך עוד {missing_xp:,} XP.", ephemeral=True)
 
-        # 4. ביצוע הקנייה
         try:
+            users_data[user_id] -= price
+            save_xp(users_data)
             await user.add_roles(role)
-            await interaction.response.send_message(f"✅ קנית את הרול {role.mention} בהצלחה! הורדו מחשבונך {price:,} XP.", ephemeral=True)
+            await interaction.response.send_message(f"✅ קנית את הרול {role.mention} בהצלחה! הורדו מחשבונך {price:,} XP וכעת נשארו לך {users_data[user_id]:,} XP.", ephemeral=True)
         except discord.Forbidden:
             await interaction.response.send_message("❌ לבוט אין הרשאות מתאימות (Manage Roles) כדי לתת לך את הרול הזה.", ephemeral=True)
 
-# --- פקודת ה-!shop ---
+class ShopView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(ShopDropdown())
+
+# ------------------------------------------------------------------
+# 4. פקודות הדיסקורד (!shop ו- !xp)
+# ------------------------------------------------------------------
+
 @bot.command()
 async def shop(ctx):
     shop_text = (
-        "👑 **רול 1** ➔ <@&123456789012345671> ➔ 5,000 XP\n"
-        "🌟 **רול 2** ➔ <@&123456789012345672> ➔ 10,000 XP\n"
-        "💎 **רול 3** ➔ <@&123456789012345673> ➔ 20,000 XP\n"
-        "🌀 **רול 4** ➔ <@&123456789012345674> ➔ 35,000 XP\n"
-        "🟢 **רול 5** ➔ <@&123456789012345675> ➔ 50,000 XP\n\n"
+        "👑 **רול 1** ➔ מחיר: 5,000 XP\n"
+        "🌟 **רול 2** ➔ מחיר: 10,000 XP\n"
+        "💎 **רול 3** ➔ מחיר: 20,000 XP\n"
+        "🌀 **רול 4** ➔ מחיר: 35,000 XP\n"
+        "🟢 **רול 5** ➔ מחיר: 50,000 XP\n\n"
         "*Developed By: Main Bot -- Soon.*"
     )
 
-    embed1 = discord.Embed(
-        title="👑 NextZone XP Shop",
-        description=shop_text,
-        color=discord.Color.blue()
-    )
+    embed1 = discord.Embed(title="👑 NextZone XP Shop", description=shop_text, color=discord.Color.blue())
     if ctx.guild.icon:
         embed1.set_thumbnail(url=ctx.guild.icon.url)
 
     embed2 = discord.Embed(title="בחר רול לקנייה", color=discord.Color.blue())
     await ctx.send(embeds=[embed1, embed2], view=ShopView())
 
+@bot.command(aliases=["level"])
+async def xp(ctx, member: discord.Member = None):
+    member = member or ctx.author
+    users_data = load_xp()
+    user_id = str(member.id)
+    user_xp = users_data.get(user_id, 0)
+    
+    embed = discord.Embed(
+        title="📊 מצב ה-XP שלך",
+        description=f"היי {member.mention},\nכרגע יש לך בדיוק **{user_xp:,} XP** בחשבון!",
+        color=discord.Color.green()
+    )
+    embed.set_thumbnail(url=member.display_avatar.url)
+    await ctx.send(embed=embed)
+
+# ------------------------------------------------------------------
+# 5. הרצת הבוט (משיכת הטוקן מ-Railway)
+# ------------------------------------------------------------------
+TOKEN = os.getenv("TOKEN")
+bot.run(TOKEN, status=discord.Status.dnd)
 
 
-class ShopView(discord.ui.View):
-    def __init__(self): super().__init__(timeout=None); self.add_item(ShopDropdown())
 
-class CasinoView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-        for key, (label, price, _) in CASINO_ROLE_SHOP.items():
-            self.add_item(CasinoButton(key, label, price))
 
-class CasinoButton(discord.ui.Button):
-    def __init__(self, key, label, price):
-        super().__init__(style=discord.ButtonStyle.primary, label=f"{ROLE_PREFIX}{label} ({price:,} XP)", custom_id=f"casino_{key}")
-        self.key = key
-
-    async def callback(self, interaction: discord.Interaction):
-        user = interaction.user
-        bal = get_xp(user.id)
-        label, price, role_id = CASINO_ROLE_SHOP[self.key]
-        if bal < price:
-            await interaction.response.send_message(f"❌ אין לך מספיק XP כדי לקנות את {label}. יש לך {bal:,} XP.", ephemeral=True)
-            return
-        role = find_role(interaction.guild, role_id)
-        if not role:
-            await interaction.response.send_message("❌ הרול לא קיים בשרת.", ephemeral=True)
-            return
-        if role in user.roles:
-            await interaction.response.send_message(f"❌ כבר יש לך את {label}.", ephemeral=True)
-            return
-        add_xp(user.id, -price)
-        await user.add_roles(role)
-        await interaction.response.send_message(f"🎉 קנית את {label} ב-{price:,} XP! כעת יש לך {get_xp(user.id):,} XP.", ephemeral=True)
 
 class VeteranView(discord.ui.View):
     def __init__(self, days): super().__init__(timeout=None); self.days = days
