@@ -551,193 +551,229 @@ async def on_message(msg):
         await msg.channel.send("🛒 **XP Shop** 🛒\n\nפתח את התפריט למטה ובחר את הרול החדש שברצונך לרכוש באמצעות נקודות ה-XP שלך:", view=ShopView())
         return
 
-    if lower_text == "!setup_casino":
-        await msg.delete()
-        bal = ensure_casino_balance(msg.author.id)
-        description = "🎰 ברוכים הבאים לקזינו!\n"
-        description += f"יש לך {bal:,} XP.\n\n"
-        description += "להימור: `!הימור <סכום>`\n"
-        description += "למשחקים: `!קזינו משחקים`\n"
-        description += "לרכישה: לחץ על אחד הכפתורים למטה או השתמש ב-`!קזינו קנה <מזהה>`\n\n"
-        description += "רולים זמינים:\n"
-        for key, (label, price, _) in CASINO_ROLE_SHOP.items():
-            description += f"• `{key}` — {label} ב-{price:,} XP\n"
-        emb = discord.Embed(title="🎰 קזינו XP", description=description, color=0xFFD700)
-        await msg.channel.send(embed=emb, view=CasinoView())
-        return
+   # ==================================================================
+# מערכת קזינו מלאה, מעוצבת ומעודכנת - NextZone Casino
+# ==================================================================
 
-    if lower_text in ("!קזינו משחקים", "!משחקים"):
-        await msg.channel.send(
-            "🎲 משחקי קזינו זמינים:\n"
-            "• `!קזינו משחק מטבע <סכום>` — משחק מטבע, זכייה x2\n"
-            "• `!קזינו משחק חריצים <סכום>` — חריצים, 3 סמלים זהים x4, 2 סמלים זהים x2\n"
-            "• `!קזינו משחק גלגל <סכום>` — גלגל מזל, זכייה x3 אם נוחת על 7\n"
-        )
-        return
-
-    if lower_text.startswith("!קזינו משחק"):
-        parts = text.split()
-        if len(parts) < 3:
-            await msg.channel.send("❌ השתמש: `!קזינו משחק <מטבע|חריצים|גלגל> <סכום>`")
-            return
-        game = parts[2]
-        if len(parts) < 4:
-            await msg.channel.send("❌ הכנס סכום לאחר סוג המשחק.")
-            return
-        try:
-            amount = int(parts[3].replace(',', ''))
-        except ValueError:
-            await msg.channel.send("❌ הכנס סכום תקין.")
-            return
-        xp = get_xp(msg.author.id)
-        if amount <= 0:
-            await msg.channel.send("❌ סכום צריך להיות גדול מ-0.")
-            return
-        if amount > xp:
-            await msg.channel.send(f"❌ אין לך מספיק XP. יש לך {xp:,} XP.")
-            return
-
-        if game == "מטבע":
-            win = random.choice([True, False])
-            if win:
-                add_xp(msg.author.id, amount)
-                await msg.channel.send(f"🪙 פגעת בהימור! קיבלת {amount:,} XP נוספים. יש לך כעת {get_xp(msg.author.id):,} XP.")
-            else:
-                add_xp(msg.author.id, -amount)
-                await msg.channel.send(f"🪙 הפסדת {amount:,} XP. נשאר לך {get_xp(msg.author.id):,} XP.")
-            return
-
-        if game == "חריצים":
-            symbols = ["🍒", "🍋", "🍉", "7️⃣", "⭐"]
-            spin = [random.choice(symbols) for _ in range(3)]
-            result = " ".join(spin)
-            if spin[0] == spin[1] == spin[2]:
-                win_amount = amount * 4
-                add_xp(msg.author.id, win_amount)
-                await msg.channel.send(f"🎰 {result}\nפגשת שלושה סמלים זהים! זכית {win_amount:,} XP.")
-            elif spin[0] == spin[1] or spin[1] == spin[2] or spin[0] == spin[2]:
-                win_amount = amount * 2
-                add_xp(msg.author.id, win_amount)
-                await msg.channel.send(f"🎰 {result}\nשני סמלים זהים! זכית {win_amount:,} XP.")
-            else:
-                add_xp(msg.author.id, -amount)
-                await msg.channel.send(f"🎰 {result}\nלא נצחת הפעם. הפסדת {amount:,} XP.")
-            return
-
-        if game == "גלגל":
-            number = random.randint(1, 10)
-            if number == 7:
-                win_amount = amount * 3
-                add_xp(msg.author.id, win_amount)
-                await msg.channel.send(f"🎡 מספר {number}! זכית {win_amount:,} XP. יש לך כעת {get_xp(msg.author.id):,} XP.")
-            else:
-                add_xp(msg.author.id, -amount)
-                await msg.channel.send(f"🎡 מספר {number}. הפסדת {amount:,} XP.")
-            return
-
-        await msg.channel.send("❌ סוג משחק לא מוכר. בחר: מטבע, חריצים או גלגל.")
-        return
-
-    if lower_text in ("!casino", "!קזינו"):
-        bal = ensure_casino_balance(msg.author.id)
-        description = "🎰 ברוכים הבאים לקזינו!\n"
-        description += f"יש לך {bal:,} XP.\n\n"
-        description += "להימור: `!הימור <סכום>`\n"
-        description += "למשחקים: `!קזינו משחקים`\n"
-        description += "לרכישה: לחץ על אחד הכפתורים למטה או השתמש ב-`!קזינו קנה <מזהה>`\n\n"
-        description += "רולים זמינים:\n"
-        for key, (label, price, _) in CASINO_ROLE_SHOP.items():
-            description += f"• `{key}` — {label} ב-{price:,} XP\n"
-        emb = discord.Embed(title="🎰 קזינו XP", description=description, color=0xFFD700)
-        await msg.channel.send(embed=emb, view=CasinoView())
-        return
-
-    if lower_text.startswith("!קזינו קנה"):
-        parts = text.split()
-        if len(parts) < 3:
-            await msg.channel.send("❌ השתמש: `!קזינו קנה <מזהה>`")
-            return
-        key = parts[2].lower()
-        if key not in CASINO_ROLE_SHOP and not (key.isdigit() and int(key) == SPECIAL_CASINO_ROLE_ID):
-            await msg.channel.send("❌ רול לא חוקי. בחר את אחד המזהים הבאים: " + ", ".join(CASINO_ROLE_SHOP.keys()) + ", או את ה-ID המלא אם זה הרול המיוחד.")
-            return
-        if key in CASINO_ROLE_SHOP:
-            label, price, role_id = CASINO_ROLE_SHOP[key]
-        else:
-            label, price, role_id = ("רול קזינו מיוחד", 18000, SPECIAL_CASINO_ROLE_ID)
-        if get_xp(msg.author.id) < price:
-            await msg.channel.send(f"❌ אין לך מספיק XP לקנות את {label}. צריך {price:,} XP.")
-            return
-        role = find_role(msg.guild, role_id)
-        if not role:
-            await msg.channel.send("❌ הרול לא קיים בשרת.")
-            return
-        if role in msg.author.roles:
-            await msg.channel.send(f"❌ כבר יש לך את {label}.")
-            return
-        add_xp(msg.author.id, -price)
-        await msg.author.add_roles(role)
-        await msg.channel.send(f"🎉 קנית את {label} ב-{price:,} XP! מזל טוב.")
-        return
-
-    if lower_text.startswith("!הימור"):
-        parts = text.split()
-        if len(parts) < 2:
-            await msg.channel.send("❌ השתמש: `!הימור <סכום>`")
-            return
-        try:
-            amount = int(parts[1].replace(',', ''))
-        except ValueError:
-            await msg.channel.send("❌ הכנס סכום תקין.")
-            return
-        if amount <= 0:
-            await msg.channel.send("❌ סכום צריך להיות גדול מ-0.")
-            return
-        xp = get_xp(msg.author.id)
-        if amount > xp:
-            await msg.channel.send(f"❌ אין לך מספיק XP. יש לך {xp:,} XP.")
-            return
-        roll = random.randint(1, 100)
-        if roll <= 45:
-            add_xp(msg.author.id, -amount)
-            await msg.channel.send(f"🎲 הפסדת {amount:,} XP. נשאר לך {get_xp(msg.author.id):,} XP.")
-        elif roll <= 85:
-            add_xp(msg.author.id, amount)
-            await msg.channel.send(f"🎲 זכית! קיבלת {amount:,} XP. סך הכל יש לך {get_xp(msg.author.id):,} XP.")
-        else:
-            add_xp(msg.author.id, amount * 2)
-            await msg.channel.send(f"🎉 ג'קפוט! קיבלת {amount * 2:,} XP! סך הכל יש לך {get_xp(msg.author.id):,} XP.")
-        return
-
-    if lower_text.startswith("!h"):
-        if msg.id in processed_message_ids:
-            return
-        processed_message_ids.add(msg.id)
-        reason = text[3:].strip()
-        if not reason:
-            await msg.channel.send("❌ נא לציין סיבה לפתיחת קריאת העזרה!", delete_after=5)
-            return
-        vt = msg.author.voice.channel.mention if msg.author.voice and msg.author.voice.channel else "מחוץ לווייס"
-        emb = discord.Embed(title="⚠️ בקשת עזרה ⚠️", description=f"📝 סיבה: {reason} | 🎧 ווייס: {vt}", color=0xff0000)
-        staff_role = msg.guild.get_role(1521955150309359747)
-        if staff_role and staff_role.id != STAFF_ROLE_NAMES:
-            staff_role = None
-                # בדיקה ישירה לפי ה-ID של רול הצוות
-        staff_role = msg.guild.get_role(1521955150309359747)
+# ------------------------------------------------------------------
+# פקודה למנהלים: שליחת תפריט המשחקים המרכזי עם תמונת השרת
+# ------------------------------------------------------------------
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def setup_casino(ctx):
+    embed = discord.Embed(
+        title="🎰 ברוכים הבאים לקזינו הרשמי - NextZone",
+        description=(
+            "כאן תוכלו להמר על ה-XP שלכם ולזכות בפרסים מטורפים לחנות הקזינו!\n\n"
+            "🎮 **המשחקים הזמינים בקזינו:**\n"
+            "• 🎰 **מכונת מזל:** `!slots [סכום]` או `!slots all`\n"
+            "• 🛞 **רולטה:** `!roulette [סכום] [red/black/even/odd/מספר]`\n"
+            "• 🃏 **בלאק ג'ק:** `!blackjack [סכום]` או `!bj [סכום]`\n\n"
+            "💰 *רוצים לבדוק כמה כסף יש לכם? הקלידו:* `!xp`"
+        ),
+        color=discord.Color.gold()
+    )
+    if ctx.guild.icon:
+        embed.set_thumbnail(url=ctx.guild.icon.url)
         
-        if not staff_role:
-            await msg.channel.send(f"❌ לא נמצא רול צוות עם ה-ID {STAFF_ROLE_ID} בשרת זה.")
-            return
+    await ctx.send(embed=embed)
+    await ctx.message.delete() # מוחק את ה-!setup_casino של המנהל
 
-            return
-        mention = staff_role.mention
-        allowed = discord.AllowedMentions(roles=True)
-        await msg.channel.send(content=mention, embed=emb, view=HelpView(msg.author, reason, vt), allowed_mentions=allowed)
-        return
+# ------------------------------------------------------------------
+# 1. משחק מכונת מזל (!slots)
+# ------------------------------------------------------------------
+@bot.command(aliases=["slot", "gamble"])
+async def slots(ctx, bet_amount: str = None):
+    if bet_amount is None:
+        embed_error = discord.Embed(
+            title="🎰 קזינו NextZone - שגיאה",
+            description="❌ נא לציין סכום הימור!\nדוגמה: `!slots 500`",
+            color=discord.Color.red()
+        )
+        return await ctx.send(embed=embed_error)
 
-    await bot.process_commands(msg)
+    users_data = load_xp()
+    user_id = str(ctx.author.id)
+    user_xp = users_data.get(user_id, 0)
 
-import threading
+    if bet_amount.lower() == "all":
+        bet_amount = user_xp
+    else:
+        try:
+            bet_amount = int(bet_amount)
+        except ValueError:
+            return await ctx.send("❌ סכום ההימור חייב להיות מספר שלם או `all`!")
+
+    if bet_amount <= 0 or user_xp < bet_amount:
+        return await ctx.send(f"❌ הימור לא חוקי או שאין לך מספיק XP (ברשותך: **{user_xp:,} XP**)")
+
+    emojis = ["🍒", "🍇", "🍊", "💎", "👑", "🍀"]
+    slot1, slot2, slot3 = random.choice(emojis), random.choice(emojis), random.choice(emojis)
+
+    if slot1 == slot2 == slot3:
+        win_amount = bet_amount * 3
+        users_data[user_id] += win_amount
+        title = "🎉 ג'קפוט מטורף! ניצחת! 🎉"
+        description = f"🎰 |  [ {slot1} | {slot2} | {slot3} ]  | 🎰\n\nכל הכבוד! 3 סמלים זהים!\n**הרווחת:** `{win_amount:,} XP`"
+        color = discord.Color.gold()
+    elif slot1 == slot2 or slot1 == slot3 or slot2 == slot3:
+        win_amount = int(bet_amount * 1.5)
+        users_data[user_id] += (win_amount - bet_amount)
+        title = "💰 ניצחון חלקי! הרווחת! 💰"
+        description = f"🎰 |  [ {slot1} | {slot2} | {slot3} ]  | 🎰\n\nהשגת 2 סמלים זהים!\n**הרווחת:** `{win_amount:,} XP`"
+        color = discord.Color.green()
+    else:
+        users_data[user_id] -= bet_amount
+        title = "😢 הפסדת, אולי פעם הבאה..."
+        description = f"🎰 |  [ {slot1} | {slot2} | {slot3} ]  | 🎰\n\nאף סמל לא התאים.\n**הפסדת:** `{bet_amount:,} XP`"
+        color = discord.Color.red()
+
+    save_xp(users_data)
+    embed_result = discord.Embed(title=title, description=description, color=color)
+    embed_result.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar.url)
+    embed_result.add_field(name="💳 יתרה חדשה בחשבון", value=f"**{users_data[user_id]:,} XP**", inline=False)
+    await ctx.send(embed=embed_result)
+
+# ------------------------------------------------------------------
+# 2. משחק רולטה (!roulette)
+# ------------------------------------------------------------------
+@bot.command(aliases=["roulet"])
+async def roulette(ctx, bet_amount: str = None, bet_type: str = None):
+    if not bet_amount or not bet_type:
+        embed_err = discord.Embed(
+            title="🔴 🛞 קזינו NextZone - רולטה",
+            description=(
+                "❌ נא לציין סכום הימור וסוג הימור!\n\n"
+                "**איך מהמרים?**\n"
+                "• לפי צבע: `!roulette 500 red` או `black`\n"
+                "• לפי סוג מספר: `!roulette 500 even` או `odd`\n"
+                "• לפי מספר מדויק: `!roulette 500 14` (בין 0 ל-36)"
+            ),
+            color=discord.Color.red()
+        )
+        return await ctx.send(embed=embed_err)
+
+    users_data = load_xp()
+    user_id = str(ctx.author.id)
+    user_xp = users_data.get(user_id, 0)
+
+    if bet_amount.lower() == "all":
+        bet_amount = user_xp
+    else:
+        try:
+            bet_amount = int(bet_amount)
+        except ValueError:
+            return await ctx.send("❌ סכום ההימור חייב להיות מספר שלם!")
+
+    if bet_amount <= 0 or user_xp < bet_amount:
+        return await ctx.send(f"❌ הימור לא חוקי או שאין לך מספיק XP")
+
+    winning_number = random.randint(0, 36)
+    red_numbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]
+    winning_color = "green" if winning_number == 0 else "red" if winning_number in red_numbers else "black"
+
+    is_win = False
+    payout_multiplier = 2
+    bet_type = bet_type.lower()
+
+    if bet_type == "red" and winning_color == "red":
+        is_win = True
+    elif bet_type == "black" and winning_color == "black":
+        is_win = True
+    elif bet_type == "even" and winning_number != 0 and winning_number % 2 == 0:
+        is_win = True
+    elif bet_type == "odd" and winning_number % 2 != 0:
+        is_win = True
+    elif bet_type.isdigit() and int(bet_type) == winning_number:
+        is_win = True
+        payout_multiplier = 35
+
+    color_emoji = "🔴" if winning_color == "red" else "⚫" if winning_color == "black" else "🟢"
+    
+    if is_win:
+        win_xp = bet_amount * payout_multiplier
+        users_data[user_id] += (win_xp - bet_amount)
+        title = "🎉 ניצחון ברולטה! 🎉"
+        desc = f"הגלגל נעצר על: **{color_emoji} {winning_number}**\n\nהימרת נכון על `{bet_type}`!\n**הרווחת:** `{win_xp:,} XP`"
+        embed_color = discord.Color.green()
+    else:
+        users_data[user_id] -= bet_amount
+        title = "😢 הפסדת ברולטה..."
+        desc = f"הגלגל נעצר על: **{color_emoji} {winning_number}**\n\nההימור שלך על `{bet_type}` נכשל.\n**הפסדת:** `{bet_amount:,} XP`"
+        embed_color = discord.Color.red()
+
+    save_xp(users_data)
+    embed = discord.Embed(title=title, description=desc, color=embed_color)
+    embed.add_field(name="💳 יתרה חדשה", value=f"**{users_data[user_id]:,} XP**")
+    await ctx.send(embed=embed)
+
+# ------------------------------------------------------------------
+# 3. משחק בלאק ג'ק אינטראקטיבי (!blackjack)
+# ------------------------------------------------------------------
+class BlackjackGame(discord.ui.View):
+    def __init__(self, ctx, bet_amount, user_xp):
+        super().__init__(timeout=60.0)
+        self.ctx = ctx
+        self.bet_amount = bet_amount
+        self.user_xp = user_xp
+        suits = ["♠️", "♥️", "♦️", "♣️"]
+        ranks = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
+        self.deck = [{"rank": r, "suit": s, "value": 11 if r == "A" else 10 if r in ["J", "Q", "K"] else int(r)} for r in ranks for s in suits]
+        random.shuffle(self.deck)
+        self.player_hand = [self.deck.pop(), self.deck.pop()]
+        self.dealer_hand = [self.deck.pop(), self.deck.pop()]
+
+    def calculate_score(self, hand):
+        score = sum(card["value"] for card in hand)
+        aces = sum(1 for card in hand if card["rank"] == "A")
+        while score > 21 and aces:
+            score -= 10
+            aces -= 1
+        return score
+
+    def make_embed(self, finished=False, status_text="המשחק בעיצומו..."):
+        p_score = self.calculate_score(self.player_hand)
+        d_score = self.calculate_score(self.dealer_hand)
+        p_cards = " ".join(f"`{c['rank']}{c['suit']}`" for c in self.player_hand)
+        if finished:
+            d_cards = " ".join(f"`{c['rank']}{c['suit']}`" for c in self.dealer_hand)
+            d_text = f"**יד הדילר ({d_score}):**\n{d_cards}"
+        else:
+            d_text = f"**יד הדילר (?):**\n`{self.dealer_hand[0]['rank']}{self.dealer_hand[0]['suit']}` `❓`"
+            
+        embed = discord.Embed(title="🃏 שולחן בלאק ג'ק - NextZone", description=status_text, color=discord.Color.blue())
+        embed.add_field(name=f"**היד שלך ({p_score}):**", value=p_cards, inline=False)
+        embed.add_field(name=d_text, value="\u200b", inline=False)
+        embed.add_field(name="💰 סכום ההימור:", value=f"`{self.bet_amount:,} XP`", inline=True)
+        return embed
+
+    async def end_game(self, interaction, result):
+        users_data = load_xp()
+        user_id = str(self.ctx.author.id)
+        if result == "win":
+            users_data[user_id] += self.bet_amount
+            status = "🎉 ניצחת! הרווחת את סכום ההימור! 🎉"
+        elif result == "push":
+            status = "🤝 תיקו (Push)! ה-XP חזר לחשבונך."
+        else:
+            users_data[user_id] -= self.bet_amount
+            status = "😢 הפסדת, הדילר לקח את הקופה."
+            
+        save_xp(users_data)
+        for child in self.children:
+            child.disabled = True
+        embed = self.make_embed(finished=True, status_text=status)
+        embed.add_field(name="💳 יתרה חדשה", value=f"**{users_data[user_id]:,} XP**", inline=False)
+        await interaction.response.edit_message(embed=embed, view=self)
+        self.stop()
+
+    @discord.ui.button(label="🃏 Hit (קלף)", style=discord.ButtonStyle.primary)
+    async def hit(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user != self.ctx.author:
+            return await interaction.response.send_message("❌ זה לא השולחן שלך!", ephemeral=True)
+        self.player_hand.append(self.deck.pop())
+        if self.calculate_score(self.player_hand) > 21:
+
 
 # פונקציה שמפעילה את שרת ה-Flask
 def run_flask():
