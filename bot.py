@@ -579,6 +579,38 @@ async def on_message(msg):
             await msg.channel.send(f"🎉 ג'קפוט! קיבלת {amount * 2:,} XP! סך הכל יש לך {get_xp(msg.author.id):,} XP.")
         return
 
+# ------------------------------------------------------------------
+# 1. הגדרת כפתורי הניהול עבור קריאת העזרה של הצוות (HelpView)
+# ------------------------------------------------------------------
+class HelpView(discord.ui.View):
+    def __init__(self, author, reason, vt_text):
+        super().__init__(timeout=None) # משאיר את הכפתורים פעילים לתמיד
+        self.author = author
+        self.reason = reason
+        self.vt_text = vt_text
+
+    @discord.ui.button(label="✅ טופל", style=discord.ButtonStyle.success, custom_id="help_solved")
+    async def solved_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # עדכון התיבה לצבע ירוק המראה שהקריאה נסגרה וטופלה
+        embed = interaction.message.embeds[0]
+        embed.color = discord.Color.green()
+        embed.title = "✅ קריאת עזרה - טופלה בהצלחה"
+        
+        # השבתת הכפתורים כדי שלא ילחצו עליהם שוב
+        for child in self.children:
+            child.disabled = True
+            
+        await interaction.response.edit_message(content=f"הקריאה נסגרה על ידי: {interaction.user.mention}", embed=embed, view=self)
+
+    @discord.ui.button(label="❌ ביטול", style=discord.ButtonStyle.danger, custom_id="help_cancel")
+    async def cancel_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # מחיקת הודעת הקריאה מהערוץ במידה והיא בוטלה
+        await interaction.message.delete()
+
+
+# ------------------------------------------------------------------
+# 2. פקודת העזרה הרשמית והמתוקנת (!h) - צמודה לחלוטין לשמאל
+# ------------------------------------------------------------------
 @bot.command(name="h")
 async def help_staff_command(ctx, *, reason: str = None):
     # 1. בדיקה אם המשתמש רשם סיבה לפתיחת הקריאה
@@ -616,15 +648,12 @@ async def help_staff_command(ctx, *, reason: str = None):
         view=HelpView(ctx.author, reason, vt_text), 
         allowed_mentions=allowed
     )
-    
-    # 🛑 שים לב: מחקתי את השורה שמוחקת את ההודעה המקורית שלך לבקשתך!
-    # ההודעה שכתבת בצ'אט (למשל !h עזרה) תישאר עכשיו גלויה ולא תימחק לעולם.
 
+# ------------------------------------------------------------------
+# 3. בלוק ההרצה הראשי של הבוט
+# ------------------------------------------------------------------
 if __name__ == "__main__":
     keep_alive()
     if not TOKEN:
         raise RuntimeError("TOKEN environment variable is not set. Set TOKEN in .env or in the host config.")
     bot.run(TOKEN)
-
-
-
