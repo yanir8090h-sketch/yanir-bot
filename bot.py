@@ -89,26 +89,13 @@ class HelpView(discord.ui.View):
 class MngButtons(discord.ui.View):
     def __init__(self): super().__init__(timeout=None)
     @discord.ui.button(label="טפל כאן", style=discord.ButtonStyle.success, custom_id="t_c", emoji="✋")
-    async def claim(self, inter, btn):
-        btn.label = "בטיפול"; btn.disabled = True; await inter.response.edit_message(view=self)
-        await inter.channel.send(embed=discord.Embed(title="⚡ הטיקט נלקח לטיפול ⚡", description=f"איש הצוות {inter.user.mention} לקח את הטיקט לטיפול!", color=0x00ff00))
-    @discord.ui.button(label="סגור כאן", style=discord.ButtonStyle.danger, custom_id="t_s", emoji="🔒")
-    async def close(self, inter, btn):
-        await inter.response.defer()
-        await inter.channel.delete()
 
-import asyncio
-
-# ------------------------------------------------------------------
-# מערכת טיקטים מעוצבת עם כפתורי ניהול ותמונת שרת
-# ------------------------------------------------------------------
-
-# כפתורי הניהול שיופיעו בתוך ערוץ הטיקט שנפתח
+# כפתורי הניהול בתוך הטיקט שנפתח - גרסה מתוקנת
 class TicketControls(discord.ui.View):
     def __init__(self):
-        super().__init__(timeout=None) # משאיר את הכפתורים פעילים לתמיד
+        super().__init__(timeout=None)
 
-    @discord.ui.button(label="🔒 סגור טיקט", style=discord.Style.danger, custom_id="close_ticket")
+    @discord.ui.button(label="🔒 סגור טיקט", style=discord.ButtonStyle.danger, custom_id="close_ticket")
     async def close_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if "ticket-" in interaction.channel.name:
             await interaction.response.send_message("הטיקט ייסגר בעוד 5 שניות...", ephemeral=False)
@@ -117,21 +104,20 @@ class TicketControls(discord.ui.View):
         else:
             await interaction.response.send_message("❌ ניתן להשתמש בכפתור זה רק בתוך ערוץ טיקט!", ephemeral=True)
 
-    @discord.ui.button(label="🛠️ טפל כאן", style=discord.Style.success, custom_id="claim_ticket")
+    @discord.ui.button(label="🛠️ טפל כאן", style=discord.ButtonStyle.success, custom_id="claim_ticket")
     async def claim_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         button.label = f"בטיפול של: {interaction.user.display_name}"
-        button.disabled = True # מנטרל את הכפתור כדי שאחרים לא ילחצו
-        
+        button.disabled = True
         await interaction.response.edit_message(view=self)
         await interaction.followup.send(f"הצוות {interaction.user.mention} לקח את הטיקט לטיפולו! 👨‍💻", ephemeral=False)
 
 
-# כפתור פתיחת הטיקט הראשי (נשלח בערוץ הציבורי)
+# כפתור פתיחת הטיקט הראשי - גרסה מתוקנת
 class CreateTicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="📩 פתח טיקט תמיכה", style=discord.Style.primary, custom_id="create_ticket")
+    @discord.ui.button(label="📩 פתח טיקט תמיכה", style=discord.ButtonStyle.primary, custom_id="create_ticket")
     async def create_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         guild = interaction.guild
         user = interaction.user
@@ -166,23 +152,6 @@ class CreateTicketView(discord.ui.View):
         await channel.send(content=f"{user.mention} | @everyone", embed=ticket_embed, view=TicketControls())
 
 
-# פקודה למנהלים לשליחת הודעת הטיקטים המרכזית בערוץ
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def setup_tickets(ctx):
-    embed = discord.Embed(
-        title="🎫 מערכת כרטיסי תמיכה - NextZone",
-        description=(
-            "צריך עזרה? נתקלת בבעיה או רוצה לדווח על משהו?\n"
-            "לחץ על הכפתור למטה כדי לפתוח כרטיס שיחה פרטי מול צוות הניהול."
-        ),
-        color=discord.Color.blue()
-    )
-    if ctx.guild.icon:
-        embed.set_thumbnail(url=ctx.guild.icon.url)
-        
-    await ctx.send(embed=embed, view=CreateTicketView())
-    await ctx.message.delete()
 
 
 import discord
