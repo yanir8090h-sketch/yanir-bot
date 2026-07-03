@@ -598,7 +598,6 @@ async def help_staff_command(ctx, *, reason: str = None):
         color=0xff0000
     )
     emb.set_footer(text=f"נפתח על ידי: {ctx.author.display_name}")
-
     # 4. מציאת רול הצוות בשרת לפי ה-ID שלך מהצילום מסך
     STAFF_ROLE_ID = 1521955150309359747
     staff_role = ctx.guild.get_role(STAFF_ROLE_ID)
@@ -608,28 +607,20 @@ async def help_staff_command(ctx, *, reason: str = None):
 
     # 5. שליחת הקריאה ותיוג רול הצוות
     allowed = discord.AllowedMentions(roles=True)
-    
-    # שים לב: הקוד משתמש ב-HelpView שהיה לך בקוד קודם. וודא שמחלקת HelpView קיימת אצלך בקובץ!
     await ctx.send(
         content=staff_role.mention, 
         embed=emb, 
         view=HelpView(ctx.author, reason, vt_text), 
         allowed_mentions=allowed
     )
-    
-    # מחיקת הודעת ה-!h המקורית של המשתמש כדי לשמור על ערוץ נקי
-    await msg.delete()
-    
-            return
-        mention = staff_role.mention
-        allowed = discord.AllowedMentions(roles=True)
-        await msg.channel.send(content=mention, embed=emb, view=HelpView(msg.author, reason, vt), allowed_mentions=allowed)
-        
-await bot.process_commands(msg)
+    await ctx.message.delete()
 
+# שורת אישור הפקודות המרכזית - צמודה לשמאל
+await bot.process_commands(msg)
 
 if __name__ == "__main__":
     keep_alive()
     if not TOKEN:
         raise RuntimeError("TOKEN environment variable is not set. Set TOKEN in .env or in the host config.")
     bot.run(TOKEN)
+
