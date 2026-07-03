@@ -120,30 +120,28 @@ class TicketDropdown(discord.ui.Select):
             emb = discord.Embed(title="🛠️ פנייה כללית לצוות העזרה - NextZone 🛠️", description=f"שלום {u.mention},\nפתחת פנייה כללית לצוות השרת.\nאנא רשום כאן בפירוט את סיבת הפנייה שלך, ואיש צוות יתפנה אליך בהקדם!", color=0x3498db)
             await ch.send(embed=emb, view=MngButtons())
 
-@bot.event
-async def on_message(message):
-    # אם יש לך קוד פה, השאר אותו כפי שהוא
-    
-    # השורה הזו חובה כדי שהפקודות (כמו xpshop) יעבדו!
-    await bot.process_commands(message)
-            "1. 👑 ➔ <@&ID_של_הרול_1> ➔ 5,000 XP\n"
-            "2. 🌟 ➔ <@&ID_של_הרול_2> ➔ 10,000 XP\n"
-            "3. 💎 ➔ <@&ID_של_הרול_3> ➔ 20,000 XP\n"
-            "4. 🌀 ➔ <@&ID_של_הרול_4> ➔ 35,000 XP\n"
-            "5. 🟢 ➔ <@&ID_של_הרול_5> ➔ 50,000 XP\n\n"
-            "*Developed By: Main Bot -- Soon.*"
-        ),
+@bot.command()
+async def xpshop(ctx):
+    # שימוש בגרש משולש (""") פותר את בעיית הרווחים בירידת שורה
+    shop_text = """1. 👑 ➔ <@&ID_של_הרול_1> ➔ 5,000 XP
+2. 🌟 ➔ <@&ID_של_הרול_2> ➔ 10,000 XP
+3. 💎 ➔ <@&ID_של_הרול_3> ➔ 20,000 XP
+4. 🌀 ➔ <@&ID_של_הרול_4> ➔ 35,000 XP
+5. 🟢 ➔ <@&ID_של_הרול_5> ➔ 50,000 XP
+
+*Developed By: Main Bot -- Soon.*"""
+
+    embed1 = discord.Embed(
+        title="👑 XP Shop",
+        description=shop_text,
         color=discord.Color.blue()
     )
     
-    # משיכת תמונת השרת באופן אוטומטי
     if ctx.guild.icon:
         embed1.set_thumbnail(url=ctx.guild.icon.url)
 
-    # 2. הגדרת התיבה השנייה של הכותרת התחתונה
     embed2 = discord.Embed(title="בחר רול לקנייה", color=discord.Color.blue())
 
-    # 3. שליחת שתי התיבות יחד לערוץ בדיסקורד
     await ctx.send(embeds=[embed1, embed2])
 
 class ShopView(discord.ui.View):
