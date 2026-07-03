@@ -154,31 +154,26 @@ async def remove_user_xp(user_id, amount):
     pass
 # -------------------------------------------------------------
 
-class ShopDropdown(discord.ui.Select):
     def __init__(self):
-        # הגדרת הרולים ומחיריהם (חובה להחליף את ה-ID למטה במספרים האמיתיים של הרולים שלך!)
+        # הגדרת הרולים ומחיריהם מהצילום מסך שלך
         self.role_prices = {
-           1522553430034616351: 5000,   # רול 1
+            1522553430034616351: 5000,   # רול 1
             1522553732984733867: 10000,  # רול 2
             1522553933833441330: 20000,  # רול 3
             1522554104063201301: 35000,  # רול 4
             1522554362965000283: 50000,  # רול 5
         }
 
+        # עדכון ה-value של האפשרויות כדי שיתאימו בדיוק ל-IDs שלך
         options = [
-            discord.SelectOption(label="רול 1", value="123456789012345671", description="מחיר: 5,000 XP", emoji="👑"),
-            discord.SelectOption(label="רול 2", value="123456789012345672", description="מחיר: 10,000 XP", emoji="🌟"),
-            discord.SelectOption(label="רול 3", value="123456789012345673", description="מחיר: 20,000 XP", emoji="💎"),
-            discord.SelectOption(label="רול 4", value="123456789012345674", description="מחיר: 35,000 XP", emoji="🌀"),
-            discord.SelectOption(label="רול 5", value="123456789012345675", description="מחיר: 50,000 XP", emoji="🟢"),
+            discord.SelectOption(label="רול 1", value="1522553430034616351", description="מחיר: 5,000 XP", emoji="👑"),
+            discord.SelectOption(label="רול 2", value="1522553732984733867", description="מחיר: 10,000 XP", emoji="🌟"),
+            discord.SelectOption(label="רול 3", value="1522553933833441330", description="מחיר: 20,000 XP", emoji="💎"),
+            discord.SelectOption(label="רול 4", value="1522554104063201301", description="מחיר: 35,000 XP", emoji="🌀"),
+            discord.SelectOption(label="רול 5", value="1522554362965000283", description="מחיר: 50,000 XP", emoji="🟢"),
         ]
         super().__init__(placeholder="בחר רול לקנייה...", min_values=1, max_values=1, options=options)
 
-    async def callback(self, interaction: discord.Interaction):
-        selected_role_id = int(self.values[0])
-        price = self.role_prices.get(selected_role_id)
-        user = interaction.user
-        guild = interaction.guild
         
         # 1. מציאת הרול בשרת
         role = guild.get_role(selected_role_id)
