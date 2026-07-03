@@ -120,26 +120,29 @@ class TicketDropdown(discord.ui.Select):
             emb = discord.Embed(title="🛠️ פנייה כללית לצוות העזרה - NextZone 🛠️", description=f"שלום {u.mention},\nפתחת פנייה כללית לצוות השרת.\nאנא רשום כאן בפירוט את סיבת הפנייה שלך, ואיש צוות יתפנה אליך בהקדם!", color=0x3498db)
             await ch.send(embed=emb, view=MngButtons())
 
-# הגדרת התיבות עם האמוג'ים המקוריים ותיוג רולים (Role ID)
-embed1 = discord.Embed(
-    title="👑 XP Shop",
-    description=(
-        "1. 👑 ➔ <@&ID_של_הרול_1> ➔ 5,000 XP\n"
-        "2. 🌟 ➔ <@&ID_של_הרול_2> ➔ 10,000 XP\n"
-        "3. 💎 ➔ <@&ID_של_הרול_3> ➔ 20,000 XP\n"
-        "4. 🌀 ➔ <@&ID_של_הרול_4> ➔ 35,000 XP\n"
-        "5. 🟢 ➔ <@&ID_של_הרול_5> ➔ 50,000 XP\n\n"
-        "*Developed By: Main Bot -- Soon.*"
-    ),
-    color=discord.Color.blue()
-)
-if ctx.guild.icon:
-    embed1.set_thumbnail(url=ctx.guild.icon.url)
+@bot.command()
+async def xpshop(ctx): # הפונקציה חייבת להתחיל ב-async def
+    # 1. הגדרת התיבות
+    embed1 = discord.Embed(
+        title="👑 XP Shop",
+        description=(
+            "1. 👑 ➔ <@&ID_של_הרול_1> ➔ 5,000 XP\n"
+            "2. 🌟 ➔ <@&ID_של_הרול_2> ➔ 10,000 XP\n"
+            "3. 💎 ➔ <@&ID_של_הרול_3> ➔ 20,000 XP\n"
+            "4. 🌀 ➔ <@&ID_של_הרול_4> ➔ 35,000 XP\n"
+            "5. 🟢 ➔ <@&ID_של_הרול_5> ➔ 50,000 XP\n\n"
+            "*Developed By: Main Bot -- Soon.*"
+        ),
+        color=discord.Color.blue()
+    )
+    if ctx.guild.icon:
+        embed1.set_thumbnail(url=ctx.guild.icon.url)
 
-embed2 = discord.Embed(title="בחר רול לקנייה", color=discord.Color.blue())
+    embed2 = discord.Embed(title="בחר רול לקנייה", color=discord.Color.blue())
 
-# שורת השליחה בסוף הקוד שלך
-await ctx.send(embeds=[embed1, embed2])
+    # 2. שורת השליחה (חייבת להיות עם הזחה/Tab בתוך הפונקציה)
+    await ctx.send(embeds=[embed1, embed2])
+
 
 class ShopView(discord.ui.View):
     def __init__(self): super().__init__(timeout=None); self.add_item(ShopDropdown())
