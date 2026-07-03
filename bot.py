@@ -280,7 +280,9 @@ def get_welcome_channel(guild: discord.Guild) -> discord.TextChannel | None:
 
 @bot.event
 async def on_ready():
-        bot.add_view(TicketView()); bot.add_view(VerifyView()); bot.add_view(MngButtons())
+    bot.add_view(TicketView())
+    bot.add_view(VerifyView())
+    bot.add_view(MngButtons())
     await update_member_presence()
     try:
         if GUILD_ID:
@@ -291,6 +293,7 @@ async def on_ready():
     except Exception as e:
         print(f"Slash command sync failed: {e}")
     print("Your Bot is officially live, logging and ready! 🚀")
+
 
 @bot.event
 async def on_member_join(member):
