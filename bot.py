@@ -594,6 +594,11 @@ async def on_message(msg):
         return
 
     await bot.process_commands(msg)
+import os
+
+# שנה את שורת ה-app.run שלך שתקרא את הפורט של Render באופן אוטומטי
+port = int(os.environ.get("PORT", 10000))
+app.run(host="0.0.0.0", port=port)
 
 
 if __name__ == "__main__":
