@@ -1,8 +1,4 @@
-import os
-import discord
-import asyncio
-import random
-import sqlite3
+import os, discord, asyncio, random, sqlite3
 from threading import Thread
 from flask import Flask
 from dotenv import load_dotenv
@@ -13,30 +9,38 @@ load_dotenv()
 
 intents = discord.Intents.default()
 intents.message_content = True
-
+intents.members = True
+intents.guilds = True
+intents.reactions = True
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 processed_message_ids = set()
 
-# מזהי רולים כלליים של השרת
-STAFF_ROLE_ID = 1521955150334263437
-STAFF_ROLE_NAMES = ["manager", "support", "staff", "admin"]
-MNG_ROLE = 1521955150309359747
-MEMBER_ROLE = 1521955150246445184
-VETERAN_ROLE_ID = 1521955150246445184
+# 🆔 מזהי רולים כלליים של השרת שלך:
+STAFF_ROLE_ID = 1521955150334263437     
+STAFF_ROLE_NAMES = (1521955150309359747)
+MNG_ROLE =   1521955150309359747
+MEMBER_ROLE = 1521955150246445184       
+VETERAN_ROLE_ID = 1521955150246445184  
 
-# מזהי הרולים החדשים של החנות
-ROLE_MNG_SUPPORT = 1520802461306271825
-ROLE_EV_MNG = 1520807998505312431
-ROLE_SUP_TEAM = 1520870990535312431
-ROLE_LEAK_TEAM = 1520870990505312430
-STAFF_FRIEND_ROLE_ID = 1521955150275809377
-STAFF_REQUEST_CHANNEL_ID = 1522010120089895032
-GUILD_ID = int(os.getenv("GUID_ID", "0"))
+# 🆔 מזהי ארבעת הרולים החדשים של החנות:
+ROLE_MNG_SUPPORT = 1520802461306271825    # Manager Support
+ROLE_EV_MNG = 1520807998505312431         # Event Manager
+ROLE_SUP_TEAM = 1520870990535312431       # Support Team
+ROLE_LEAK_TEAM = 1520870990505312430      # Leaks Team
+STAFF_FRIEND_ROLE_ID = 1521955150275809377  # Staff Friend
+STAFF_REQUEST_CHANNEL_ID = 1522010120089895032  # אם תרצה, שנה ל-ID של חדר staff-request
+GUILD_ID = int(os.getenv("GUILD_ID", "0")) or None
 WELCOME_CHANNEL_ID = int(os.getenv("WELCOME_CHANNEL_ID", "0")) or None
-ROLE_PREFIX = "קודש - "
+ROLE_PREFIX = "קזינו - "
 CASINO_START_BALANCE = 10000
-
-
+SPECIAL_CASINO_ROLE_ID = 1521955150246445179
+CASINO_ROLE_SHOP = {
+    "mng_support": ("דילר/ית תמיכה", 25000, ROLE_MNG_SUPPORT),
+    "evt_mng": ("מנהל/ת קופה", 20000, ROLE_EV_MNG),
+    "sup_team": ("צוות VIP", 15000, ROLE_SUP_TEAM),
+    "leak_team": ("צייד/ת בונוסים", 10000, ROLE_LEAK_TEAM),
+    "special": ("רול קזינו מיוחד", 18000, SPECIAL_CASINO_ROLE_ID),
+}
 TOKEN = os.getenv("TOKEN")
 
 # 🔄 חיבור לבסיס הנתונים הסופי והנקי:
@@ -122,10 +126,10 @@ class TicketView(discord.ui.View):
 class ShopDropdown(discord.ui.Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label=f"{ROLE_PREFIX}👑 (25,000 XP)", value="mng_sup:25000", emoji="👑", description="רול 1"),
-            discord.SelectOption(label=f"{ROLE_PREFIX}🌟 (20,000 XP)", value="evt_mng:20000", emoji="🌟", description="רול 2"),
-            discord.SelectOption(label=f"{ROLE_PREFIX}💎(15,000 XP)", value="sup_team:15000", emoji="💎", description="רול 3"),
-            discord.SelectOption(label=f"{ROLE_PREFIX}🌀(10,000 XP)", value="leak_team:10000", emoji="🌀", description="רול 4"),
+            discord.SelectOption(label=f"{ROLE_PREFIX}Manager Support (25,000 XP)", value="mng_sup:25000", emoji="👤", description="רכישת רול מנהל תמיכה בשרת"),
+            discord.SelectOption(label=f"{ROLE_PREFIX}Event Manager (20,000 XP)", value="evt_mng:20000", emoji="🎨", description="רכישת רול מנהל איוונטים בשרת"),
+            discord.SelectOption(label=f"{ROLE_PREFIX}Support Team (15,000 XP)", value="sup_team:15000", emoji="🛠️", description="רכישת רול צוות תמיכה בשרת"),
+            discord.SelectOption(label=f"{ROLE_PREFIX}Leaks Team (10,000 XP)", value="leak_team:10000", emoji="👁️", description="רכישת רול צוות הדלפות בשרת")
         ]
         super().__init__(placeholder="🛒 בחר את הרול שברצונך לקנות מתוך התפריט...", custom_id="shop_drop", options=options)
 
@@ -136,23 +140,52 @@ class ShopDropdown(discord.ui.Select):
         if get_xp(inter.user.id) < price:
             return await inter.response.send_message(f"❌ אין לך מספיק נקודות XP לרכישת רול זה!", ephemeral=True)
         
-         CASINO_ROLE_SHOP = {
-    "mng_sup": 1522553438034616351,
-    "evt_mng": 1522553717484711867,
-    "sup_team": 1522554035833444438,
-    "leak_team": 1522554104863201301
-}
+        role_map = {
+            "mng_sup": ROLE_MNG_SUPPORT,
+            "evt_mng": ROLE_EV_MNG,
+            "sup_team": ROLE_SUP_TEAM,
+            "leak_team": ROLE_LEAK_TEAM
+        }
+        
+        role = inter.guild.get_role(role_map[item_id])
+        if not role:
+            return await inter.response.send_message("❌ שגיאה: הרול שנבחר לא הוגדר נכון בקוד על ידי המנהל!", ephemeral=True)
+            
+        await inter.user.add_roles(role)
+        new_bal = add_xp(inter.user.id, -price)
+        await inter.response.send_message(f"🎉 תתחדש! הרכישה בוצעה בהצלחה וקיבלת את הרול: {role.name}! 🌟\nיתרת ה-XP החדשה שלך היא: `{new_bal:,} XP`", ephemeral=True)
 
+class ShopView(discord.ui.View):
+    def __init__(self): super().__init__(timeout=None); self.add_item(ShopDropdown())
 
-      role = inter.guild.get_role(CASINO_ROLE_SHOP.get(item_id))
-    if not role:
-        return await inter.response.send_message("❌ לא נמצא הרול המבוקש בשרת.", ephemeral=True)
+class CasinoView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        for key, (label, price, _) in CASINO_ROLE_SHOP.items():
+            self.add_item(CasinoButton(key, label, price))
 
-    await inter.user.add_roles(role)
-    new_bal = add_xp(inter.user.id, price)
-    await inter.response.send_message(f"✅ קנית בהצלחה את הרול {role.name}! ירד לך XP וכעת יש לך: {new_bal} XP.", ephemeral=True)
+class CasinoButton(discord.ui.Button):
+    def __init__(self, key, label, price):
+        super().__init__(style=discord.ButtonStyle.primary, label=f"{ROLE_PREFIX}{label} ({price:,} XP)", custom_id=f"casino_{key}")
+        self.key = key
 
-
+    async def callback(self, interaction: discord.Interaction):
+        user = interaction.user
+        bal = get_xp(user.id)
+        label, price, role_id = CASINO_ROLE_SHOP[self.key]
+        if bal < price:
+            await interaction.response.send_message(f"❌ אין לך מספיק XP כדי לקנות את {label}. יש לך {bal:,} XP.", ephemeral=True)
+            return
+        role = find_role(interaction.guild, role_id)
+        if not role:
+            await interaction.response.send_message("❌ הרול לא קיים בשרת.", ephemeral=True)
+            return
+        if role in user.roles:
+            await interaction.response.send_message(f"❌ כבר יש לך את {label}.", ephemeral=True)
+            return
+        add_xp(user.id, -price)
+        await user.add_roles(role)
+        await interaction.response.send_message(f"🎉 קנית את {label} ב-{price:,} XP! כעת יש לך {get_xp(user.id):,} XP.", ephemeral=True)
 
 class VeteranView(discord.ui.View):
     def __init__(self, days): super().__init__(timeout=None); self.days = days
@@ -477,7 +510,33 @@ async def on_message(msg):
         await msg.channel.send(embed=emb, view=CasinoView())
         return
 
-    
+    if lower_text.startswith("!קזינו קנה"):
+        parts = text.split()
+        if len(parts) < 3:
+            await msg.channel.send("❌ השתמש: `!קזינו קנה <מזהה>`")
+            return
+        key = parts[2].lower()
+        if key not in CASINO_ROLE_SHOP and not (key.isdigit() and int(key) == SPECIAL_CASINO_ROLE_ID):
+            await msg.channel.send("❌ רול לא חוקי. בחר את אחד המזהים הבאים: " + ", ".join(CASINO_ROLE_SHOP.keys()) + ", או את ה-ID המלא אם זה הרול המיוחד.")
+            return
+        if key in CASINO_ROLE_SHOP:
+            label, price, role_id = CASINO_ROLE_SHOP[key]
+        else:
+            label, price, role_id = ("רול קזינו מיוחד", 18000, SPECIAL_CASINO_ROLE_ID)
+        if get_xp(msg.author.id) < price:
+            await msg.channel.send(f"❌ אין לך מספיק XP לקנות את {label}. צריך {price:,} XP.")
+            return
+        role = find_role(msg.guild, role_id)
+        if not role:
+            await msg.channel.send("❌ הרול לא קיים בשרת.")
+            return
+        if role in msg.author.roles:
+            await msg.channel.send(f"❌ כבר יש לך את {label}.")
+            return
+        add_xp(msg.author.id, -price)
+        await msg.author.add_roles(role)
+        await msg.channel.send(f"🎉 קנית את {label} ב-{price:,} XP! מזל טוב.")
+        return
 
     if lower_text.startswith("!הימור"):
         parts = text.split()
@@ -507,47 +566,34 @@ async def on_message(msg):
             add_xp(msg.author.id, amount * 2)
             await msg.channel.send(f"🎉 ג'קפוט! קיבלת {amount * 2:,} XP! סך הכל יש לך {get_xp(msg.author.id):,} XP.")
         return
-@bot.command(name="h")
-async def h(ctx, *, reason: str = None):
-    # 1. בדיקה אם המשתמש רשם סיבה לפקודה
-    if not reason:
-        await ctx.send("❌, נא לציין סיבה לפתיחת העזרה", delete_after=5)
-        return
 
-    # 2. בדיקה בטוחה של ערוץ קולי באמצעות ctx
-    if ctx.author.voice and ctx.author.voice.channel:
-        vt = ctx.author.voice.channel.mention
-    else:
-        vt = "מחוץ לוויס"
-
-    # 3. יצירת ה-Embed של בקשת העזרה
-    emb = discord.Embed(
-        title="⚠️ בקשת עזרה ⚠️", 
-        description=f"🚨 חיים 🔴 | סיבה: {reason} | {vt}", 
-        color=0xff0000
-    )
-
-    # 4. בחירת רול הצוות המתאים באמצעות ctx
-    staff_role = ctx.guild.get_role(STAFF_ROLE_ID)
-    
-    if staff_role and STAFF_ROLE_NAMES:
-        if not any(sub in staff_role.name.lower() for sub in STAFF_ROLE_NAMES):
+    if lower_text.startswith("!h"):
+        if msg.id in processed_message_ids:
+            return
+        processed_message_ids.add(msg.id)
+        reason = text[3:].strip()
+        if not reason:
+            await msg.channel.send("❌ נא לציין סיבה לפתיחת קריאת העזרה!", delete_after=5)
+            return
+        vt = msg.author.voice.channel.mention if msg.author.voice and msg.author.voice.channel else "מחוץ לווייס"
+        emb = discord.Embed(title="⚠️ בקשת עזרה ⚠️", description=f"📝 סיבה: {reason} | 🎧 ווייס: {vt}", color=0xff0000)
+        staff_role = msg.guild.get_role(1521955150309359747)
+        if staff_role and not any(sub in staff_role.name.lower() for sub in STAFF_ROLE_NAMES):
             staff_role = None
+                # בדיקה ישירה לפי ה-ID של רול הצוות
+        staff_role = msg.guild.get_role(STAFF_ROLE_ID)
+        
+        if not staff_role:
+            await msg.channel.send(f"❌ לא נמצא רול צוות עם ה-ID {STAFF_ROLE_ID} בשרת זה.")
+            return
 
-    if not staff_role:
-        staff_role = ctx.guild.get_role(MNG_ROLE)
-
-    if not staff_role:
-        await ctx.send("❌ לא נמצא רול צוות מתאים בשרת.")
+            return
+        mention = staff_role.mention
+        allowed = discord.AllowedMentions(roles=True)
+        await msg.channel.send(content=mention, embed=emb, view=HelpView(msg.author, reason, vt), allowed_mentions=allowed)
         return
 
-    mention = staff_role.mention
-    allowed = discord.AllowedMentions(roles=True)
-    
-    # 5. שליחת ההודעה הסופית לערוץ בדיסקורד
-    await ctx.send(content=mention, embed=emb, allowed_mentions=allowed)
-
-
+    await bot.process_commands(msg)
 
 
 if __name__ == "__main__":
