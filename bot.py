@@ -86,38 +86,115 @@ class HelpView(discord.ui.View):
         await inter.channel.send(f"🚀 {inter.user.mention} לקח את הטיפול בקריאה של {self.req.mention}!")
 
 class MngButtons(discord.ui.View):
-    def __init__(self): super().__init__(timeout=None)
-    @discord.ui.button(label="טפל כאן", style=discord.ButtonStyle.success, custom_id="t_c", emoji="✋")
-    async def claim(self, inter, btn):
-        btn.label = "בטיפול"; btn.disabled = True; await inter.response.edit_message(view=self)
-        await inter.channel.send(embed=discord.Embed(title="⚡ הטיקט נלקח לטיפול ⚡", description=f"איש הצוות {inter.user.mention} לקח את הטיקט לטיפול!", color=0x00ff00))
-    @discord.ui.button(label="סגור כאן", style=discord.ButtonStyle.danger, custom_id="t_s", emoji="🔒")
-    async def close(self, inter, btn):
-        await inter.response.defer()
+    def __init__(self):
+        super().__init__(timeout=None) # הכפתורים יישארו פעילים לתמיד ולא יינעלו
+
+    @discord.ui.button(label="✋ טפל בטיקט", style=discord.ButtonStyle.success, custom_id="ticket_claim")
+    async def claim(self, inter: discord.Interaction, btn: discord.ui.Button):
+        # בדיקה אם הלוחץ הוא איש צוות (סטאף או היי סטאף)
+        is_staff = any(r.id in [STAFF_ROLE_ID, MNG_ROLE] for r in inter.user.roles)
+        if not is_staff and not inter.user.guild_permissions.administrator:
+            return await inter.response.send_message("❌ רק חברי צוות יכולים לטפל בטיקטים!", ephemeral=True)
+
+        # נעילת הכפתור ושינוי הטקסט שלו
+        btn.disabled = True
+        btn.label = "🔒 בטיפול"
+        await inter.response.edit_message(view=self)
+
+        # שינוי שם הערוץ לסטטוס בטיפול כדי ששאר הצוות ידע
+        current_name = inter.channel.name.replace("🎫-", "").replace("📝-", "").replace("🛠️-", "")
+        try:
+            await inter.channel.edit(name=f"⚙️-בטיפול-{current_name}")
+        except:
+            pass # מונע קריסה של הבוט במקרה של מגבלת קצב של דיסקורד
+
+        await inter.channel.send(f"🔒 הטיקט ננעל לטיפול על ידי {inter.user.mention}.")
+
+    @discord.ui.button(label="🔒 סגור טיקט", style=discord.ButtonStyle.danger, custom_id="ticket_close")
+    async def close(self, inter: discord.Interaction, btn: discord.ui.Button):
+        # בדיקה אם הלוחץ מורשה לסגור את החדר
+        is_staff = any(r.id in [STAFF_ROLE_ID, MNG_ROLE] for r in inter.user.roles)
+        if not is_staff and not inter.user.guild_permissions.administrator:
+            return await inter.response.send_message("❌ רק חברי צוות יכולים לסגור טיקטים!", ephemeral=True)
+
+        await inter.response.send_message("⚠️ הטיקט ייסגר ויימחק סופית בעוד 5 שניות...")
+        await asyncio.sleep(5)
         await inter.channel.delete()
 
 class TicketDropdown(discord.ui.Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label="👑 בחינה לקבלת צוות השרת", value="staff", emoji="👑", description="פתיחת טיקט מבחן קבלה לסטאף"),
-            discord.SelectOption(label="🛠️ פנייה כללית לצוות העזרה", value="general", emoji="🛠️", description="עזרה כללית, דיווחים או שאלות לצוות")
+            discord.SelectOption(label="בחינה לצוות", value="staff", emoji="📝", description="פתיחת טיקט להגשת מועמדות לצוות השרת"),
+            discord.SelectOption(label="עזרה כללית", value="general", emoji="🛠️", description="פתיחת טיקט לקבלת עזרה כללית מחברי הצוות")
         ]
-        super().__init__(placeholder="🎫 בחר את סיבת הפנייה שלך כאן...", custom_id="t_drop", options=options)
+        super().__init__(placeholder="🎫 נא לבחור את סוג הפנייה שלך...", custom_id="t_drop", options=options)
 
-    async def callback(self, inter):
-        g = inter.guild; u = inter.user
-        choice = self.values[0]
-        
+    async def callback(self, inter: discord.Interaction):
+        g = inter.guild
+        u = inter.user
+        choice = self.values[0] if self.values else ""
+
         if choice == "staff":
-            ch = await g.create_text_channel(name=f"📝-בחינה-{u.name}", overwrites={g.default_role: discord.PermissionOverwrite(read_messages=False), u: discord.PermissionOverwrite(read_messages=True, send_messages=True)})
-            await inter.response.send_message(f"✅ חדר הבחינה שלך נפתח בהצלחה: {ch.mention}", ephemeral=True)
-            emb = discord.Embed(title="👑 שאלון מועמדות לצוות השרת - NextZone 👑", description=f"שלום {u.mention},\nאנא ענה על 14 השאלות הבאות כאן בצ'אט:\n\n1️⃣ שם מלא / כינוי:\n2️⃣ גיל:\n3️⃣ כמה זמן אתה בשרת?\n4️⃣ ניסיון קודם וסיבת עזיבה:\n5️⃣ איך אתה מגדיר צוות ותכונות טובות?\n6️⃣ מה תעשה בריב/מתחצף בויס? תן דוגמה:\n7️⃣ תגובה לתקיפה מצוות מתחתיך/מעליך:\n8️⃣ כמה זמן תוכל לתת בשבוע כל יום?\n9️⃣ שינוי מצב של חוסר פעילות? איך?:\n🔟 באיזה תחומים אתה רוצה לעזור?\n1️⃣1️⃣ תרומה לשרת ויעדי הגעה:\n1️⃣2️⃣ מאיפה הרצון להצטרף?:\n1️⃣3️⃣ למה אתה מתאים? רעיונות לשיפור?:\n1️⃣4️⃣ האם יש לך 2FA מופעל בחשבון?\n\n⚠️ **נא לענות ברצינות, בהצלחה!**", color=0x00ff00)
+            # 🎯 בחינה לצוות: רול היי סטאף (MNG_ROLE) מקבל גישה בלבד
+            high_staff = g.get_role(1520870990543065117)
+            overwrites = {
+                g.default_role: discord.PermissionOverwrite(read_messages=False),
+                u: discord.PermissionOverwrite(read_messages=True, send_messages=True)
+            }
+            if high_staff:
+                overwrites[high_staff] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
+
+            ch = await g.create_text_channel(name=f"📝-בחינה-{u.name}", overwrites=overwrites)
+            await inter.response.send_message(f"✅ טיקט בחינה נפתח בהצלחה: {ch.mention}", ephemeral=True)
+            
+            # יצירת ה-Embed עם 14 השאלות המלאות
+            emb = discord.Embed(
+                title="📝 טופס הגשת מועמדות לצוות השרת 📝", 
+                description=f"👋 שלום {u.mention},\nפתחת פנייה עבור **בחינה לצוות השרת**.\nאנא העתק את השאלות הבאות וענה עליהן בפירוט מלא.\n\n"
+                            "1️⃣ **שם מלא / כינוי:**\n\n"
+                            "2️⃣ **גיל:**\n\n"
+                            "3️⃣ **כמה זמן אתה בשרת?**\n\n"
+                            "4️⃣ **ניסיון קודם וסיבת עזיבה:**\n\n"
+                            "5️⃣ **איך אתה מגדיר צוות ותכונות טובות?**\n\n"
+                            "6️⃣ **מה תעשה בריב/מתחצף בויס? תן דוגמה:**\n\n"
+                            "7️⃣ **תגובה לתקיפה מצוות מתחתיך/מעליך:**\n\n"
+                            "8️⃣ **כמה זמן תוכל לתת בשבוע כל יום?**\n\n"
+                            "9️⃣ **שינוי מצב של חוסר פעילות? איך?:**\n\n"
+                            "🔟 **באיזה תחומים אתה רוצה לעזור?**\n\n"
+                            "1️⃣1️⃣ **תרומה לשרת ויעדי הגעה:**\n\n"
+                            "1️⃣2️⃣ **מאיפה הרצון להצטרף?:**\n\n"
+                            "1️⃣3️⃣ **למה אתה מתאים? רעיונות לשיפור?:**\n\n"
+                            "1️⃣4️⃣ **האם יש לך 2FA מופעל בחשבון?**", 
+                color=0x3498db
+            )
+            emb.set_footer(text="בהצלחה! צוות היי-סטאף יבחן את טופס המועמדות שלך.")
             await ch.send(embed=emb, view=MngButtons())
+            
         else:
-            ch = await g.create_text_channel(name=f"🛠️-פנייה-{u.name}", overwrites={g.default_role: discord.PermissionOverwrite(read_messages=False), u: discord.PermissionOverwrite(read_messages=True, send_messages=True)})
-            await inter.response.send_message(f"✅ חדר הפנייה הכללית נפתח בהצלחה: {ch.mention}", ephemeral=True)
-            emb = discord.Embed(title="🛠️ פנייה כללית לצוות העזרה - NextZone 🛠️", description=f"שלום {u.mention},\nפתחת פנייה כללית לצוות השרת.\nאנא רשום כאן בפירוט את סיבת הפנייה שלך, ואיש צוות יתפנה אליך בהקדם!", color=0x3498db)
+            # 🎯 עזרה כללית: רול סטאף רגיל ומעלה (STAFF_ROLE_ID) מקבל גישה
+            general_staff = g.get_role(1520870990543065111)
+            overwrites = {
+                g.default_role: discord.PermissionOverwrite(read_messages=False),
+                u: discord.PermissionOverwrite(read_messages=True, send_messages=True)
+            }
+            if general_staff:
+                overwrites[general_staff] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
+
+            ch = await g.create_text_channel(name=f"🛠️-עזרה-{u.name}", overwrites=overwrites)
+            await inter.response.send_message(f"✅ טיקט עזרה נפתח בהצלחה: {ch.mention}", ephemeral=True)
+            
+            emb = discord.Embed(
+                title="🔔 פנייה חדשה - עזרה כללית 🔔", 
+                description=f"👋 שלום {u.mention},\nפתחת פנייה לעזרה כללית מצוות השרת (**סטאף**).\nאנא רשום כאן בפירוט את שאלתך, ואחד מחברי הצוות יעזור לך בהקדם.", 
+                color=0x2ecc71
+            )
+            emb.set_footer(text="צוות השרת יענה לך בהקדם.")
             await ch.send(embed=emb, view=MngButtons())
+
+class TicketView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(TicketDropdown())
 
 class TicketView(discord.ui.View):
     def __init__(self): super().__init__(timeout=None); self.add_item(TicketDropdown())
