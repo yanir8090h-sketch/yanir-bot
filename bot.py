@@ -141,10 +141,10 @@ class ShopDropdown(discord.ui.Select):
             return await inter.response.send_message(f"❌ אין לך מספיק נקודות XP לרכישת רול זה!", ephemeral=True)
         
         role_map = {
-            "mng_sup": ROLE_MNG_SUPPORT,
-            "evt_mng": ROLE_EV_MNG,
-            "sup_team": ROLE_SUP_TEAM,
-            "leak_team": ROLE_LEAK_TEAM
+            "mng_sup": 1522553430034616351,
+            "evt_mng":1522553732984733867,
+            "sup_team": 1522553933833441330,
+            "leak_team": 1522554104063201301,
         }
         
         role = inter.guild.get_role(role_map[item_id])
