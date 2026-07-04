@@ -568,8 +568,6 @@ async def on_message(msg):
         return
         
 @bot.command(name="h")
-       
-            return
         processed_message_ids.add(msg.id)
         reason = text[3:].strip()
         if not reason:
