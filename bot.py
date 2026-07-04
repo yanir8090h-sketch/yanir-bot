@@ -581,7 +581,7 @@ async def on_message(msg):
         if staff_role and staff_role.id != STAFF_ROLE_NAMES:
             staff_role = None
                 # בדיקה ישירה לפי ה-ID של רול הצוות
-        staff_role = msg.guild.get_role(1521955150309359747)
+        staff_role = msg.guild.get_role(1520870990543065111)
         
         if not staff_role:
             await msg.channel.send(f"❌ לא נמצא רול צוות עם ה-ID {STAFF_ROLE_ID} בשרת זה.")
