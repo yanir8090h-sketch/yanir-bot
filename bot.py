@@ -566,8 +566,13 @@ async def on_message(msg):
             add_xp(msg.author.id, amount * 2)
             await msg.channel.send(f"🎉 ג'קפוט! קיבלת {amount * 2:,} XP! סך הכל יש לך {get_xp(msg.author.id):,} XP.")
         return
-        
-@bot.command(name="h")
+
+    if lower_text.startswith("!h"):
+        if msg.id in processed_message_ids:
+            return
+        processed_message_ids.add(msg.id)
+        reason = text[3:].strip()
+        if not reason:
             await msg.channel.send("❌ נא לציין סיבה לפתיחת קריאת העזרה!", delete_after=5)
             return
         vt = msg.author.voice.channel.mention if msg.author.voice and msg.author.voice.channel else "מחוץ לווייס"
@@ -589,9 +594,6 @@ async def on_message(msg):
         return
 
     await bot.process_commands(msg)
-@bot.event
-async def on_command_error(ctx, error):
-    await ctx.send(f"❌ קפצה שגיאה בהרצת הפקודה: {error}")
 
 
 if __name__ == "__main__":
