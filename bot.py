@@ -44,7 +44,7 @@ CASINO_ROLE_SHOP = {
     "special": ("רול קזינו מיוחד", 18000, SPECIAL_CASINO_ROLE_ID),
 }
 TOKEN = os.getenv("TOKEN")
-ShopView = CasinoView
+
 
 # 🔄 חיבור לבסיס הנתונים הסופי והנקי:
 conn = sqlite3.connect("xp_server_final.db")
