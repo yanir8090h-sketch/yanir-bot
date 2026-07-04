@@ -568,8 +568,6 @@ async def on_message(msg):
         return
         
 @bot.command(name="h")
-        
-        if not reason:
             await msg.channel.send("❌ נא לציין סיבה לפתיחת קריאת העזרה!", delete_after=5)
             return
         vt = msg.author.voice.channel.mention if msg.author.voice and msg.author.voice.channel else "מחוץ לווייס"
