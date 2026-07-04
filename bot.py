@@ -189,15 +189,15 @@ class XPShopView(discord.ui.View):
         super().__init__(timeout=None)
         self.add_item(XPShopSelect())
 
-@bot.command(name="xpshop")
-async def xpshop(ctx):
+@bot.tree.command(name="xpshop", description="פתיחת חנות הרולים הרשמית ב-XP")
+async def xpshop_slash(inter: discord.Interaction):
     emb = discord.Embed(
         title="🛒 חנות הרולים הרשמית ב-XP 🛒",
         description="ברוכים הבאים לחנות ה-XP! \nפתחו את התפריט הנפתח למטה ובחרו את הרול שברצונכם לרכוש.",
         color=0x00ff00
     )
     emb.set_footer(text="הרכישה תוריד XP באופן מיידי מחשבונכם")
-    await ctx.send(embed=emb, view=XPShopView())
+    await inter.response.send_message(embed=emb, view=XPShopView())
 
 
 class VeteranView(discord.ui.View):
