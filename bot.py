@@ -123,13 +123,13 @@ class TicketDropdown(discord.ui.Select):
 class TicketView(discord.ui.View):
     def __init__(self): super().__init__(timeout=None); self.add_item(TicketDropdown())
 
-# 1. מילון הגדרות החנות - מקשר בין המפתח ל-ID האמיתי של הרול בשרת שלך ולמחיר שלו
 XP_ROLE_SHOP = {
-    "mng_sup": {"id": 1523075596622495926, "price": 50000},   
-    "evt_mng": {"id": 1523075526040752219, "price": 35000},   
-    "sup_team": {"id": 1523075431564185761, "price": 20000},  
-    "leak_team": {"id": 1523075271933165700, "price": 10000} 
+    "mng_sup": {"id": 1520802461306271825, "price": 50000},   # Manager Support
+    "evt_mng": {"id": 1520807998505312431, "price": 35000},   # Event Manager
+    "sup_team": {"id": 1520870990535312431, "price": 20000},  # Support Team
+    "leak_team": {"id": 1520870990505312430, "price": 10000}  # Leaks Team
 }
+
 
 class XPShopSelect(discord.ui.Select):
     def __init__(self):
