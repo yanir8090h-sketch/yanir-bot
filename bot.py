@@ -589,6 +589,9 @@ async def on_message(msg):
         return
 
     await bot.process_commands(msg)
+@bot.event
+async def on_command_error(ctx, error):
+    await ctx.send(f"❌ קפצה שגיאה בהרצת הפקודה: {error}")
 
 
 if __name__ == "__main__":
