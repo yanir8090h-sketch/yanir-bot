@@ -372,17 +372,30 @@ def get_welcome_channel(guild: discord.Guild) -> discord.TextChannel | None:
 
 @bot.event
 async def on_ready():
-    bot.add_view(TicketView()); bot.add_view(VerifyView()); bot.add_view(ShopView()); bot.add_view(CasinoView()); bot.add_view(MngButtons())
-    await update_member_presence()
+    print(f"Logged in as {bot.user.name}")
+    print("Bot is ready and active!")
+    
+    # טעינת ה-Views הקיימים והתקינים שלך כדי שימשיכו לעבוד לתמיד
+    try:
+        bot.add_view(TicketView())
+        bot.add_view(VerifyView())
+        bot.add_view(CasinoView())
+        bot.add_view(MngButtons())
+    except Exception as e:
+        print(f"Error adding persistent views: {e}")
+        
+    # סנכרון אוטומטי של פקודות הסלאש
     try:
         if GUILD_ID:
-            synced = await bot.tree.sync(guild=discord.Object(id=GUILD_ID))
+            await bot.tree.sync(guild=discord.Object(id=GUILD_ID))
         else:
-            synced = await bot.tree.sync()
-        print(f"Synced {len(synced)} slash commands")
+            await bot.tree.sync()
+        print("Slash commands synced successfully!")
     except Exception as e:
         print(f"Slash command sync failed: {e}")
+        
     print("Your Bot is officially live, logging and ready! 🚀")
+
 
 @bot.event
 async def on_member_join(member):
