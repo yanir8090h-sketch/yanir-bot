@@ -9,18 +9,14 @@ load_dotenv()
 
 intents = discord.Intents.default()
 intents.message_content = True
-# 1. מביאים את הרול הכללי של הצוות לפי המשתנה שהגדרת למעלה
+# תמחק את כל הגוש הזה שנמצא כרגע בין שורה 12 לשורה 24:
 staff_role = msg.guild.get_role(STAFF_ROLE_ID)
-
-# 2. בדיקה אופציונלית: אם רצית לוודא שהשם שלו מכיל מילים מסוימות מתוך הרשימה
 if staff_role and STAFF_ROLE_NAMES:
-    # בודק אם אף אחת מהמילים ב-STAFF_ROLE_NAMES לא נמצאת בשם הרול
     if not any(sub in staff_role.name.lower() for sub in STAFF_ROLE_NAMES):
         staff_role = None
-
-# 3. הגנה: אם הרול לא נמצא בשרת, ננסה להביא את רול המנהל (MNG_ROLE) כגיבוי
 if not staff_role:
     staff_role = msg.guild.get_role(MNG_ROLE)
+
     
 # 🆔 מזהי רולים כלליים של השרת שלך:
 STAFF_ROLE_ID = 1521955150334263437
