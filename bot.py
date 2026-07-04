@@ -130,22 +130,16 @@ XP_ROLE_SHOP = {
     "leak_team": {"id": 1520870990505312430, "price": 10000}  # Leaks Team
 }
 
-
 class XPShopSelect(discord.ui.Select):
     def __init__(self):
-        # הגדרת האפשרויות שיופיעו למשתמשים בתוך התפריט הנפתח בדיסקורד
         options = [
-            discord.SelectOption(label=, value="mng_sup", description="אחראי: [✨] | מחיר: 50,000 XP", emoji="✨"),
-            discord.SelectOption(label=, value="evt_mng", description="אחראי: [🎉] | מחיר: 35,000 XP", emoji="🎉"),
-            discord.SelectOption(label=, value="sup_team", description="אחראי: [🛠️] | מחיר: 20,000 XP", emoji="🛠️"),
-            discord.SelectOption(label=, value="leak_team", description="אחראי: [📡] | מחיר: 10,000 XP", emoji="📡")
+            discord.SelectOption(label="Manager Support", value="mng_sup", description="Price: 50,000 XP", emoji="✨"),
+            discord.SelectOption(label="Event Manager", value="evt_mng", description="Price: 35,000 XP", emoji="🎉"),
+            discord.SelectOption(label="Support Team", value="sup_team", description="Price: 20,000 XP", emoji="🛠️"),
+            discord.SelectOption(label="Leaks Team", value="leak_team", description="Price: 10,000 XP", emoji="📡")
         ]
-        super().__init__(placeholder="🛒 בחר רול מהרשימה לקנייה ב-XP...", min_values=1, max_values=1, options=options)
+        super().__init__(placeholder="🛒 Select a role to buy...", min_values=1, max_values=1, options=options)
 
-    async def callback(self, inter: discord.Interaction):
-        # לקיחת הערך הנבחר מתוך התפריט (למשל: "mng_sup")
-        item_id = self.values[0] 
-        role_data = XP_ROLE_SHOP.get(item_id)
         
         if not role_data:
             return await inter.response.send_message("❌ שגיאה: הפריט לא נמצא בהגדרות החנות.", ephemeral=True)
