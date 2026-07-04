@@ -697,7 +697,7 @@ async def on_message(msg):
 
 # פונקציית עזר פנימית לשליפת ערוץ הלוגים
 def get_log_channel(guild):
-    log_id = os.getenv("LOG_CHANNEL_ID")
+    log_id = os.getenv("1523091026720591973")
     if log_id:
         return guild.get_channel(int(log_id))
     return None
