@@ -566,8 +566,7 @@ async def on_message(msg):
             add_xp(msg.author.id, amount * 2)
             await msg.channel.send(f"🎉 ג'קפוט! קיבלת {amount * 2:,} XP! סך הכל יש לך {get_xp(msg.author.id):,} XP.")
         return
-
-            if lower_text.startswith("!h"):
+    if lower_text.startswith("!h"):
         if msg.id in processed_message_ids:
             return
         processed_message_ids.add(msg.id)
@@ -603,6 +602,7 @@ async def on_message(msg):
         return
 
     await bot.process_commands(msg)
+
 
 
 if __name__ == "__main__":
