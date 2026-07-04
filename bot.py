@@ -561,7 +561,7 @@ async def on_message(msg):
             await msg.channel.send(f"❌ לא נמצא רול צוות עם ה-ID {STAFF_ROLE_ID} בשרת זה.")
             return
 
-            return
+        
         mention = staff_role.mention
         allowed = discord.AllowedMentions(roles=True)
         await msg.channel.send(content=mention, embed=emb, view=HelpView(msg.author, reason, vt), allowed_mentions=allowed)
