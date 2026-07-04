@@ -123,69 +123,91 @@ class TicketDropdown(discord.ui.Select):
 class TicketView(discord.ui.View):
     def __init__(self): super().__init__(timeout=None); self.add_item(TicketDropdown())
 
-class ShopDropdown(discord.ui.Select):
+# 1. מילון הגדרות החנות - מקשר בין המפתח ל-ID האמיתי של הרול בשרת שלך ולמחיר שלו
+XP_ROLE_SHOP = {
+    "mng_sup": {"id": 1520802461306271825, "price": 50000},   # Manager Support
+    "evt_mng": {"id": 1520807998505312431, "price": 35000},   # Event Manager
+    "sup_team": {"id": 1520870990535312431, "price": 20000},  # Support Team
+    "leak_team": {"id": 1520870990505312430, "price": 10000}  # Leaks Team
+}
+
+class XPShopSelect(discord.ui.Select):
     def __init__(self):
+        # הגדרת האפשרויות שיופיעו למשתמשים בתוך התפריט הנפתח בדיסקורד
         options = [
-            discord.SelectOption(label=f"{ROLE_PREFIX}Manager Support (25,000 XP)", value="mng_sup:25000", emoji="👤", description="רכישת רול מנהל תמיכה בשרת"),
-            discord.SelectOption(label=f"{ROLE_PREFIX}Event Manager (20,000 XP)", value="evt_mng:20000", emoji="🎨", description="רכישת רול מנהל איוונטים בשרת"),
-            discord.SelectOption(label=f"{ROLE_PREFIX}Support Team (15,000 XP)", value="sup_team:15000", emoji="🛠️", description="רכישת רול צוות תמיכה בשרת"),
-            discord.SelectOption(label=f"{ROLE_PREFIX}Leaks Team (10,000 XP)", value="leak_team:10000", emoji="👁️", description="רכישת רול צוות הדלפות בשרת")
+            discord.SelectOption(label=, value="mng_sup", description="אחראי: [✨] | מחיר: 50,000 XP", emoji="✨"),
+            discord.SelectOption(label=, value="evt_mng", description="אחראי: [🎉] | מחיר: 35,000 XP", emoji="🎉"),
+            discord.SelectOption(label=, value="sup_team", description="אחראי: [🛠️] | מחיר: 20,000 XP", emoji="🛠️"),
+            discord.SelectOption(label=, value="leak_team", description="אחראי: [📡] | מחיר: 10,000 XP", emoji="📡")
         ]
-        super().__init__(placeholder="🛒 בחר את הרול שברצונך לקנות מתוך התפריט...", custom_id="shop_drop", options=options)
+        super().__init__(placeholder="🛒 בחר רול מהרשימה לקנייה ב-XP...", min_values=1, max_values=1, options=options)
 
-    async def callback(self, inter):
-        item_id, price = self.values[0].split(":")
-        price = int(price)
+    async def callback(self, inter: discord.Interaction):
+        # לקיחת הערך הנבחר מתוך התפריט (למשל: "mng_sup")
+        item_id = self.values[0] 
+        role_data = XP_ROLE_SHOP.get(item_id)
         
-        if get_xp(inter.user.id) < price:
-            return await inter.response.send_message(f"❌ אין לך מספיק נקודות XP לרכישת רול זה!", ephemeral=True)
-        
-        role_map = {
-            "mng_sup": ROLE_MNG_SUPPORT,
-            "evt_mng": ROLE_EV_MNG,
-            "sup_team": ROLE_SUP_TEAM,
-            "leak_team": ROLE_LEAK_TEAM
-        }
-        
-        role = inter.guild.get_role(role_map[item_id])
+        if not role_data:
+            return await inter.response.send_message("❌ שגיאה: הפריט לא נמצא בהגדרות החנות.", ephemeral=True)
+
+        price = role_data["price"]
+        role_id = role_data["id"]
+
+        # בדיקת יתרת ה-XP של המשתמש
+        current_xp = add_xp(inter.user.id, 0)
+        if current_xp < price:
+            return await inter.response.send_message(f"❌ אין לך מספיק XP! חסרים לך {price - current_xp:,} XP לרול זה.", ephemeral=True)
+
+        # הבאת הרול מתוך השרת באמצעות ה-ID שלו
+        role = inter.guild.get_role(role_id)
         if not role:
-            return await inter.response.send_message("❌ שגיאה: הרול שנבחר לא הוגדר נכון בקוד על ידי המנהל!", ephemeral=True)
-            
+            return await inter.response.send_message("❌ שגיאה: הרול המבוקש לא נמצא בשרת זה.", ephemeral=True)
+
+        # בדיקה אם המשתמש כבר מחזיק ברול המבוקש
+        if role in inter.user.roles:
+            return await inter.response.send_message("❌ כבר יש לך את הרול הזה!", ephemeral=True)
+
+        # ביצוע הרכישה: החסרת ה-XP והענקת הרול
+        add_xp(inter.user.id, -price)
         await inter.user.add_roles(role)
-        new_bal = add_xp(inter.user.id, -price)
-        await inter.response.send_message(f"🎉 תתחדש! הרכישה בוצעה בהצלחה וקיבלת את הרול: {role.name}! 🌟\nיתרת ה-XP החדשה שלך היא: `{new_bal:,} XP`", ephemeral=True)
+        
+        # שליחת הודעת הצלחה פרטית (רק המשתמש רואה אותה)
+        new_xp = add_xp(inter.user.id, 0)
+        await inter.response.send_message(f"✅ קנית בהצלחה את הרול **{role.name}**! ירד לך {price:,} XP. יתרה נוכחית: {new_xp:,} XP.", ephemeral=True)
 
-class ShopView(discord.ui.View):
-    def __init__(self): super().__init__(timeout=None); self.add_item(ShopDropdown())
+class XPShopView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None) # התפריט לא יינעל וימשיך לעבוד לתמיד
+        self.add_item(XPShopSelect())
 
-class CasinoView(discord.ui.View):
+@bot.command(name="xpshop")
+async def xpshop(ctx):
+    # יצירת הודעת ה-Embed המעוצבת של החנות
+    emb = discord.Embed(
+        title="🛒 חנות הרולים הרשמית ב-XP 🛒",
+        description="ברוכים הבאים לחנות ה-XP! \nפתח את תפריט הבחירה למטה ובחר את הרול שברצונך לרכוש.",
+        color=0x00ff00
+    )
+    emb.set_footer(text="הרכישה תוריד XP באופן מיידי מחשבונכם")
+    
+    # שליחת ההודעה יחד עם התפריט הנפתח לתוך הערוץ
+    await ctx.send(embed=emb, view=XPShopView())
+
+class XPShopView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
-        for key, (label, price, _) in CASINO_ROLE_SHOP.items():
-            self.add_item(CasinoButton(key, label, price))
+        self.add_item(XPShopSelect())
 
-class CasinoButton(discord.ui.Button):
-    def __init__(self, key, label, price):
-        super().__init__(style=discord.ButtonStyle.primary, label=f"{ROLE_PREFIX}{label} ({price:,} XP)", custom_id=f"casino_{key}")
-        self.key = key
+@bot.command(name="xpshop")
+async def xpshop(ctx):
+    emb = discord.Embed(
+        title="🛒 חנות הרולים הרשמית 🛒",
+        description="ברוכים הבאים לחנות! \nפתח את תפריט הבחירה למטה ובחר את הרול שברצונך לרכוש.",
+        color=0x00ff00
+    )
+    emb.set_footer(text="הרכישה תוריד XP באופן מיידי מחשבונכם")
+    await ctx.send(embed=emb, view=XPShopView())
 
-    async def callback(self, interaction: discord.Interaction):
-        user = interaction.user
-        bal = get_xp(user.id)
-        label, price, role_id = CASINO_ROLE_SHOP[self.key]
-        if bal < price:
-            await interaction.response.send_message(f"❌ אין לך מספיק XP כדי לקנות את {label}. יש לך {bal:,} XP.", ephemeral=True)
-            return
-        role = find_role(interaction.guild, role_id)
-        if not role:
-            await interaction.response.send_message("❌ הרול לא קיים בשרת.", ephemeral=True)
-            return
-        if role in user.roles:
-            await interaction.response.send_message(f"❌ כבר יש לך את {label}.", ephemeral=True)
-            return
-        add_xp(user.id, -price)
-        await user.add_roles(role)
-        await interaction.response.send_message(f"🎉 קנית את {label} ב-{price:,} XP! כעת יש לך {get_xp(user.id):,} XP.", ephemeral=True)
 
 class VeteranView(discord.ui.View):
     def __init__(self, days): super().__init__(timeout=None); self.days = days
