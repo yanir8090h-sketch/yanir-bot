@@ -120,79 +120,72 @@ class TicketDropdown(discord.ui.Select):
             emb = discord.Embed(title="🛠️ פנייה כללית לצוות העזרה - NextZone 🛠️", description=f"שלום {u.mention},\nפתחת פנייה כללית לצוות השרת.\nאנא רשום כאן בפירוט את סיבת הפנייה שלך, ואיש צוות יתפנה אליך בהקדם!", color=0x3498db)
             await ch.send(embed=emb, view=MngButtons())
 
-# ==================================================================
-# 👑 חנות ה-XP הרשמית (Shop System) מחוברת ל-DATABASE האמיתי
-# ==================================================================
+class TicketView(discord.ui.View):
+    def __init__(self): super().__init__(timeout=None); self.add_item(TicketDropdown())
 
 class ShopDropdown(discord.ui.Select):
     def __init__(self):
-        # הגדרת הרולים ומחיריהם בדיוק לפי ה-IDs של השרת שלך
-        self.role_prices = {
-            1522553430034616351: 5000,   # רול 1
-            1522553732984733867: 10000,  # רול 2
-            1522553933833441330: 20000,  # רול 3
-            1522554104063201301: 35000,  # רול 4
-            1522554362965000283: 50000,  # רול 5
-        }
         options = [
-            discord.SelectOption(label="רול 1", value="1522553430034616351", description="מחיר: 5,000 XP", emoji="👑"),
-            discord.SelectOption(label="רול 2", value="1522553732984733867", description="מחיר: 10,000 XP", emoji="🌟"),
-            discord.SelectOption(label="רול 3", value="1522553933833441330", description="מחיר: 20,000 XP", emoji="💎"),
-            discord.SelectOption(label="רול 4", value="1522554104063201301", description="מחיר: 35,000 XP", emoji="🌀"),
-            discord.SelectOption(label="רול 5", value="1522554362965000283", description="מחיר: 50,000 XP", emoji="🟢"),
+            discord.SelectOption(label=f"{ROLE_PREFIX}Manager Support (25,000 XP)", value="mng_sup:25000", emoji="👤", description="רכישת רול מנהל תמיכה בשרת"),
+            discord.SelectOption(label=f"{ROLE_PREFIX}Event Manager (20,000 XP)", value="evt_mng:20000", emoji="🎨", description="רכישת רול מנהל איוונטים בשרת"),
+            discord.SelectOption(label=f"{ROLE_PREFIX}Support Team (15,000 XP)", value="sup_team:15000", emoji="🛠️", description="רכישת רול צוות תמיכה בשרת"),
+            discord.SelectOption(label=f"{ROLE_PREFIX}Leaks Team (10,000 XP)", value="leak_team:10000", emoji="👁️", description="רכישת רול צוות הדלפות בשרת")
         ]
-        super().__init__(placeholder="בחר רול לקנייה...", min_values=1, max_values=1, options=options)
+        super().__init__(placeholder="🛒 בחר את הרול שברצונך לקנות מתוך התפריט...", custom_id="shop_drop", options=options)
 
-    async def callback(self, interaction: discord.Interaction):
-        # מונע את השגיאה This interaction failed
-        await interaction.response.defer(ephemeral=True)
+    async def callback(self, inter):
+        item_id, price = self.values[0].split(":")
+        price = int(price)
         
-        selected_role_id = int(self.values)
-        price = self.role_prices.get(selected_role_id)
-        user = interaction.user
-        guild = interaction.guild
+        if get_xp(inter.user.id) < price:
+            return await inter.response.send_message(f"❌ אין לך מספיק נקודות XP לרכישת רול זה!", ephemeral=True)
         
-        role = guild.get_role(selected_role_id)
+        role_map = {
+            "mng_sup": ROLE_MNG_SUPPORT,
+            "evt_mng": ROLE_EV_MNG,
+            "sup_team": ROLE_SUP_TEAM,
+            "leak_team": ROLE_LEAK_TEAM
+        }
+        
+        role = inter.guild.get_role(role_map[item_id])
         if not role:
-            return await interaction.followup.send("❌ שגיאה: הרול המבוקש לא נמצא בשרת.", ephemeral=True)
-        if role in user.roles:
-            return await interaction.followup.send("❌ כבר יש לך את הרול הזה!", ephemeral=True)
-
-        # בדיקת ה-XP מתוך ה-Database של ה-SQLite שלך
-        user_xp = get_xp(user.id)
-        if user_xp < price:
-            missing_xp = price - user_xp
-            return await interaction.followup.send(f"❌ אין לך מספיק XP לרול הזה! יש לך {user_xp:,} XP וחסר לך עוד {missing_xp:,} XP.", ephemeral=True)
-
-        try:
-            add_xp(user.id, -price)
-            await user.add_roles(role)
-            await interaction.followup.send(f"✅ קנית את הרול {role.mention} בהצלחה! הורדו מחשבונך {price:,} XP.", ephemeral=True)
-        except discord.Forbidden:
-            await interaction.followup.send("❌ לבוט אין הרשאות מתאימות (Manage Roles) כדי לתת לך את הרול הזה.", ephemeral=True)
+            return await inter.response.send_message("❌ שגיאה: הרול שנבחר לא הוגדר נכון בקוד על ידי המנהל!", ephemeral=True)
+            
+        await inter.user.add_roles(role)
+        new_bal = add_xp(inter.user.id, -price)
+        await inter.response.send_message(f"🎉 תתחדש! הרכישה בוצעה בהצלחה וקיבלת את הרול: {role.name}! 🌟\nיתרת ה-XP החדשה שלך היא: `{new_bal:,} XP`", ephemeral=True)
 
 class ShopView(discord.ui.View):
+    def __init__(self): super().__init__(timeout=None); self.add_item(ShopDropdown())
+
+class CasinoView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
-        self.add_item(ShopDropdown())
+        for key, (label, price, _) in CASINO_ROLE_SHOP.items():
+            self.add_item(CasinoButton(key, label, price))
 
-@bot.command(name="shop")
-async def shop_command(ctx):
-    shop_text = (
-        "1. 👑 ➔ <@&1522553430034616351> ➔ 5,000 XP\n"
-        "2. 🌟 ➔ <@&1522553732984733867> ➔ 10,000 XP\n"
-        "3. 💎 ➔ <@&1522553933833441330> ➔ 20,000 XP\n"
-        "4. 🌀 ➔ <@&1522554104063201301> ➔ 35,000 XP\n"
-        "5. 🟢 ➔ <@&1522554362965000283> ➔ 50,000 XP\n\n"
-        "*Developed By: Main Bot -- Soon.*"
-    )
-    embed1 = discord.Embed(title="👑 NextZone XP Shop", description=shop_text, color=discord.Color.blue())
-    if ctx.guild.icon: 
-        embed1.set_thumbnail(url=ctx.guild.icon.url)
-    embed2 = discord.Embed(title="בחר רול לקנייה", color=discord.Color.blue())
-    await ctx.send(embeds=[embed1, embed2], view=ShopView())
+class CasinoButton(discord.ui.Button):
+    def __init__(self, key, label, price):
+        super().__init__(style=discord.ButtonStyle.primary, label=f"{ROLE_PREFIX}{label} ({price:,} XP)", custom_id=f"casino_{key}")
+        self.key = key
 
-
+    async def callback(self, interaction: discord.Interaction):
+        user = interaction.user
+        bal = get_xp(user.id)
+        label, price, role_id = CASINO_ROLE_SHOP[self.key]
+        if bal < price:
+            await interaction.response.send_message(f"❌ אין לך מספיק XP כדי לקנות את {label}. יש לך {bal:,} XP.", ephemeral=True)
+            return
+        role = find_role(interaction.guild, role_id)
+        if not role:
+            await interaction.response.send_message("❌ הרול לא קיים בשרת.", ephemeral=True)
+            return
+        if role in user.roles:
+            await interaction.response.send_message(f"❌ כבר יש לך את {label}.", ephemeral=True)
+            return
+        add_xp(user.id, -price)
+        await user.add_roles(role)
+        await interaction.response.send_message(f"🎉 קנית את {label} ב-{price:,} XP! כעת יש לך {get_xp(user.id):,} XP.", ephemeral=True)
 
 class VeteranView(discord.ui.View):
     def __init__(self, days): super().__init__(timeout=None); self.days = days
@@ -574,57 +567,35 @@ async def on_message(msg):
             await msg.channel.send(f"🎉 ג'קפוט! קיבלת {amount * 2:,} XP! סך הכל יש לך {get_xp(msg.author.id):,} XP.")
         return
 
-   # ==================================================================
-# ⚠️ מערכת קריאות העזרה והצוות הרשמית והמעוצבת (!h)
-# ==================================================================
+    if lower_text.startswith("!h"):
+        if msg.id in processed_message_ids:
+            return
+        processed_message_ids.add(msg.id)
+        reason = text[3:].strip()
+        if not reason:
+            await msg.channel.send("❌ נא לציין סיבה לפתיחת קריאת העזרה!", delete_after=5)
+            return
+        vt = msg.author.voice.channel.mention if msg.author.voice and msg.author.voice.channel else "מחוץ לווייס"
+        emb = discord.Embed(title="⚠️ בקשת עזרה ⚠️", description=f"📝 סיבה: {reason} | 🎧 ווייס: {vt}", color=0xff0000)
+        staff_role = msg.guild.get_role(1521955150309359747)
+        if staff_role and not any(sub in staff_role.name.lower() for sub in STAFF_ROLE_NAMES):
+            staff_role = None
+                # בדיקה ישירה לפי ה-ID של רול הצוות
+        staff_role = msg.guild.get_role(STAFF_ROLE_ID)
+        
+        if not staff_role:
+            await msg.channel.send(f"❌ לא נמצא רול צוות עם ה-ID {STAFF_ROLE_ID} בשרת זה.")
+            return
 
-class HelpView(discord.ui.View):
-    def __init__(self, author, reason, vt_text):
-        super().__init__(timeout=None)
-        self.author = author
-        self.reason = reason
-        self.vt_text = vt_text
+            return
+        mention = staff_role.mention
+        allowed = discord.AllowedMentions(roles=True)
+        await msg.channel.send(content=mention, embed=emb, view=HelpView(msg.author, reason, vt), allowed_mentions=allowed)
+        return
 
-    @discord.ui.button(label="✅ טופל", style=discord.ButtonStyle.success, custom_id="help_solved")
-    async def solved_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        embed = interaction.message.embeds
-        embed.color = discord.Color.green()
-        embed.title = "✅ קריאת עזרה - טופלה בהצלחה"
-        for child in self.children:
-            child.disabled = True
-        await interaction.response.edit_message(content=f"הקריאה נסגרה על ידי: {interaction.user.mention}", embed=embed, view=self)
-
-    @discord.ui.button(label="❌ ביטול", style=discord.ButtonStyle.danger, custom_id="help_cancel")
-    async def cancel_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.message.delete()
-
-@bot.command(name="h")
-async def help_staff_command(ctx, *, reason: str = None):
-    if not reason:
-        return await ctx.send(f"{ctx.author.mention}, נא לציין סיבה לפתיחת העזרה! ❌", delete_after=5)
-
-    if ctx.author.voice and ctx.author.voice.channel:
-        vt_text = f"<#{ctx.author.voice.channel.id}>"
-    else:
-        vt_text = "`מחוץ לוויס`"
-
-    emb = discord.Embed(title="⚠️ בקשת עזרה ⚠️", description=f"📄 **סיבה:** {reason}\n🎧 **ערוץ קול:** {vt_text}", color=0xff0000)
-    if ctx.guild.icon:
-        emb.set_thumbnail(url=ctx.guild.icon.url)
-    emb.set_footer(text=f"נפתח על ידי: {ctx.author.display_name}")
-
-    STAFF_ROLE_ID = 1521955150309359747
-    staff_role = ctx.guild.get_role(STAFF_ROLE_ID)
-    if not staff_role:
-        return await ctx.send(f"❌ שגיאה: רול הצוות לא נמצא בשרת.")
-
-    allowed = discord.AllowedMentions(roles=True)
-    await ctx.send(content=staff_role.mention, embed=emb, view=HelpView(ctx.author, reason, vt_text), allowed_mentions=allowed)
+    await bot.process_commands(msg)
 
 
-# ==================================================================
-# 🚀 בלוק ההרצה הראשי של הבוט
-# ==================================================================
 if __name__ == "__main__":
     keep_alive()
     if not TOKEN:
