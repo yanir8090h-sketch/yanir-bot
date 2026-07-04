@@ -568,7 +568,6 @@ async def on_message(msg):
         return
         
 @bot.command(name="h")
-        processed_message_ids.add(msg.id)
         reason = text[3:].strip()
         if not reason:
             await msg.channel.send("❌ נא לציין סיבה לפתיחת קריאת העזרה!", delete_after=5)
