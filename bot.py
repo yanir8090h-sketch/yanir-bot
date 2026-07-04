@@ -16,8 +16,8 @@ bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 processed_message_ids = set()
 
 # 🆔 מזהי רולים כלליים של השרת שלך:
-STAFF_ROLE_ID = 1521955150334263437     
-STAFF_ROLE_NAMES = (1521955150309359747)
+STAFF_ROLE_ID = 1521955150334263437
+STAFF_ROLE_NAMES = ["manager", "support", "staff", "admin"] # שים כאן מילים (בכתב קטן) שמופיעות בשמות הרולים של הצוות שלך
 MNG_ROLE =   1521955150309359747
 MEMBER_ROLE = 1521955150246445184       
 VETERAN_ROLE_ID = 1521955150246445184  
