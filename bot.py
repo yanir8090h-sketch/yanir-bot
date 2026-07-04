@@ -126,10 +126,10 @@ class TicketView(discord.ui.View):
 class ShopDropdown(discord.ui.Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label=f"{ROLE_PREFIX} (25,000 XP)", value="mng_sup:25000", emoji="👑", description=),
-            discord.SelectOption(label=f"{ROLE_PREFIX} (20,000 XP)", value="evt_mng:20000", emoji=" 🌟 ", description="רכישת רול מנהל איוונטים בשרת"),
-            discord.SelectOption(label=f"{ROLE_PREFIX} (15,000 XP)", value="sup_team:15000", emoji="💎", description="רכישת רול צוות תמיכה בשרת"),
-            discord.SelectOption(label=f"{ROLE_PREFIX} (10,000 XP)", value="leak_team:10000", emoji="🌀", description="רכישת רול צוות הדלפות בשרת")
+            discord.SelectOption(label=f"{ROLE_PREFIX}👑 (25,000 XP)", value="mng_sup:25000", emoji="👑", description=),
+            discord.SelectOption(label=f"{ROLE_PREFIX}🌟 (20,000 XP)", value="evt_mng:20000", emoji="🌟", description=),
+            discord.SelectOption(label=f"{ROLE_PREFIX}💎(15,000 XP)", value="sup_team:15000", emoji="💎", description=),
+            discord.SelectOption(label=f"{ROLE_PREFIX}🌀(10,000 XP)", value="leak_team:10000", emoji="🌀", description=),
         ]
         super().__init__(placeholder="🛒 בחר את הרול שברצונך לקנות מתוך התפריט...", custom_id="shop_drop", options=options)
 
