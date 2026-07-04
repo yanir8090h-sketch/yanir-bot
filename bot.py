@@ -16,11 +16,10 @@ bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 processed_message_ids = set()
 
 # 🆔 מזהי רולים כלליים של השרת שלך:
-STAFF_ROLE_ID = 1521955150334263437     
-STAFF_ROLE_NAMES = (1521955150309359747)
-MNG_ROLE =   1521955150309359747
-MEMBER_ROLE = 1521955150246445184       
-VETERAN_ROLE_ID = 1521955150246445184  
+STAFF_ROLE_ID = 1520870990543065111    
+MNG_ROLE =   1520870990564032614
+MEMBER_ROLE = 1520870990526021694       
+VETERAN_ROLE_ID = 1520870990526021694
 
 # 🆔 מזהי ארבעת הרולים החדשים של החנות:
 ROLE_MNG_SUPPORT = 1520802461306271825    # Manager Support
