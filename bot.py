@@ -510,33 +510,7 @@ async def on_message(msg):
         await msg.channel.send(embed=emb, view=CasinoView())
         return
 
-    if lower_text.startswith("!קזינו קנה"):
-        parts = text.split()
-        if len(parts) < 3:
-            await msg.channel.send("❌ השתמש: `!קזינו קנה <מזהה>`")
-            return
-        key = parts[2].lower()
-        if key not in CASINO_ROLE_SHOP and not (key.isdigit() and int(key) == SPECIAL_CASINO_ROLE_ID):
-            await msg.channel.send("❌ רול לא חוקי. בחר את אחד המזהים הבאים: " + ", ".join(CASINO_ROLE_SHOP.keys()) + ", או את ה-ID המלא אם זה הרול המיוחד.")
-            return
-        if key in CASINO_ROLE_SHOP:
-            label, price, role_id = CASINO_ROLE_SHOP[key]
-        else:
-            label, price, role_id = ("רול קזינו מיוחד", 18000, SPECIAL_CASINO_ROLE_ID)
-        if get_xp(msg.author.id) < price:
-            await msg.channel.send(f"❌ אין לך מספיק XP לקנות את {label}. צריך {price:,} XP.")
-            return
-        role = find_role(msg.guild, role_id)
-        if not role:
-            await msg.channel.send("❌ הרול לא קיים בשרת.")
-            return
-        if role in msg.author.roles:
-            await msg.channel.send(f"❌ כבר יש לך את {label}.")
-            return
-        add_xp(msg.author.id, -price)
-        await msg.author.add_roles(role)
-        await msg.channel.send(f"🎉 קנית את {label} ב-{price:,} XP! מזל טוב.")
-        return
+    
 
     if lower_text.startswith("!הימור"):
         parts = text.split()
