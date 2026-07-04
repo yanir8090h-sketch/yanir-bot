@@ -186,32 +186,14 @@ class XPShopSelect(discord.ui.Select):
 
 class XPShopView(discord.ui.View):
     def __init__(self):
-        super().__init__(timeout=None) # התפריט לא יינעל וימשיך לעבוד לתמיד
-        self.add_item(XPShopSelect())
-
-@bot.command(name="xpshop")
-async def xpshop(ctx):
-    # יצירת הודעת ה-Embed המעוצבת של החנות
-    emb = discord.Embed(
-        title="🛒 חנות הרולים הרשמית ב-XP 🛒",
-        description="ברוכים הבאים לחנות ה-XP! \nפתח את תפריט הבחירה למטה ובחר את הרול שברצונך לרכוש.",
-        color=0x00ff00
-    )
-    emb.set_footer(text="הרכישה תוריד XP באופן מיידי מחשבונכם")
-    
-    # שליחת ההודעה יחד עם התפריט הנפתח לתוך הערוץ
-    await ctx.send(embed=emb, view=XPShopView())
-
-class XPShopView(discord.ui.View):
-    def __init__(self):
         super().__init__(timeout=None)
         self.add_item(XPShopSelect())
 
 @bot.command(name="xpshop")
 async def xpshop(ctx):
     emb = discord.Embed(
-        title="🛒 חנות הרולים הרשמית 🛒",
-        description="ברוכים הבאים לחנות! \nפתח את תפריט הבחירה למטה ובחר את הרול שברצונך לרכוש.",
+        title="🛒 חנות הרולים הרשמית ב-XP 🛒",
+        description="ברוכים הבאים לחנות ה-XP! \nפתחו את התפריט הנפתח למטה ובחרו את הרול שברצונכם לרכוש.",
         color=0x00ff00
     )
     emb.set_footer(text="הרכישה תוריד XP באופן מיידי מחשבונכם")
