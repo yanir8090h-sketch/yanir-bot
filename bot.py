@@ -12,8 +12,11 @@ intents.message_content = True
 intents.members = True
 intents.guilds = True
 intents.reactions = True
+intents.voice_states = True
+
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 processed_message_ids = set()
+
 
 # 🆔 מזהי רולים כלליים של השרת שלך:
 STAFF_ROLE_ID = 1520870990543065111    
