@@ -136,12 +136,13 @@ class ShopDropdown(discord.ui.Select):
         if get_xp(inter.user.id) < price:
             return await inter.response.send_message(f"❌ אין לך מספיק נקודות XP לרכישת רול זה!", ephemeral=True)
         
-        role_map = {
-            "mng_sup": 1522553430034616351,
-            "evt_mng":1522553732984733867,
-            "sup_team": 1522553933833441330,
-            "leak_team": 1522554104063201301,
-        }
+            CASINO_ROLE_SHOP = { # <--- לשנות כאן בשורה 139!
+        "mng_sup": 1522553438034616351,
+        "evt_mng": 1522553717484711867,
+        "sup_team": 1522554035833444438,
+        "leak_team": 1522554104863201301,
+    }
+    role = inter.guild.get_role(CASINO_ROLE_SHOP[item_id]) # <--- לשנות גם כאן בשורה 146!
         
         role = inter.guild.get_role(role_map[item_id])
         if not role:
