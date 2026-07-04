@@ -136,20 +136,22 @@ class ShopDropdown(discord.ui.Select):
         if get_xp(inter.user.id) < price:
             return await inter.response.send_message(f"❌ אין לך מספיק נקודות XP לרכישת רול זה!", ephemeral=True)
         
-          CASINO_ROLE_SHOP = {
-        "mng_sup": 1522553438034616351,
-        "evt_mng": 1522553717484711867,
-        "sup_team": 1522554035833444438,
-        "leak_team": 1522554104863201301
-    }
+         CASINO_ROLE_SHOP = {
+    "mng_sup": 1522553438034616351,
+    "evt_mng": 1522553717484711867,
+    "sup_team": 1522554035833444438,
+    "leak_team": 1522554104863201301
+}
 
-    role = inter.guild.get_role(CASINO_ROLE_SHOP[item_id])
+
+      role = inter.guild.get_role(CASINO_ROLE_SHOP.get(item_id))
     if not role:
         return await inter.response.send_message("❌ לא נמצא הרול המבוקש בשרת.", ephemeral=True)
 
     await inter.user.add_roles(role)
     new_bal = add_xp(inter.user.id, price)
     await inter.response.send_message(f"✅ קנית בהצלחה את הרול {role.name}! ירד לך XP וכעת יש לך: {new_bal} XP.", ephemeral=True)
+
 
 
 class VeteranView(discord.ui.View):
