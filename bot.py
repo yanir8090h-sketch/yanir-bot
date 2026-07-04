@@ -791,8 +791,10 @@ async def on_voice_state_update(member, before, after):
         emb.add_field(name="➡️ חדר חדש:", value=after.channel.name, inline=True)
         await ch.send(embed=emb)
 
+# ... כאן נמצאים הלוגים בעברית שהדבקנו קודם (on_message_delete, on_voice_state_update וכו') ...
+
+# שורות ההפעלה חייבות להיות האחרונות בהחלט בקובץ!
 if __name__ == "__main__":
     keep_alive()
-    if not TOKEN:
-        raise RuntimeError("TOKEN environment variable is not set. Set TOKEN in .env or in the host config.")
-    bot.run(TOKEN)
+    bot.run(os.getenv("DISCORD_TOKEN"))
+
