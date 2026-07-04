@@ -140,17 +140,32 @@ class XPShopSelect(discord.ui.Select):
         ]
         super().__init__(placeholder="🛒 Select a role to buy...", min_values=1, max_values=1, options=options)
 
+    async def callback(self, inter: discord.Interaction):
+        item_id = self.values[0]
+        role_data = XP_ROLE_SHOP.get(item_id)
         
         if not role_data:
-            return await inter.response.send_message("❌ שגיאה: הפריט לא נמצא בהגדרות החנות.", ephemeral=True)
+            return await inter.response.send_message("❌ השגיאה: הפריט לא נמצא בחנות.", ephemeral=True)
 
         price = role_data["price"]
         role_id = role_data["id"]
 
-        # בדיקת יתרת ה-XP של המשתמש
         current_xp = add_xp(inter.user.id, 0)
         if current_xp < price:
             return await inter.response.send_message(f"❌ אין לך מספיק XP! חסרים לך {price - current_xp:,} XP לרול זה.", ephemeral=True)
+
+        role = inter.guild.get_role(role_id)
+        if not role:
+            return await inter.response.send_message("❌ שגיאה: הרול המבוקש לא נמצא בשרת זה.", ephemeral=True)
+
+        if role in inter.user.roles:
+            return await inter.response.send_message("❌ כבר יש לך את הרול הזה!", ephemeral=True)
+
+        add_xp(inter.user.id, -price)
+        await inter.user.add_roles(role)
+        
+        new_xp = add_xp(inter.user.id, 0)
+        await inter.response.send_message(f"✅ קנית בהצלחה את הרול **{role.name}**! ירד לך {price:,} XP. יתרה נוכחית: {new_xp:,} XP.", ephemeral=True)
 
         # הבאת הרול מתוך השרת באמצעות ה-ID שלו
         role = inter.guild.get_role(role_id)
