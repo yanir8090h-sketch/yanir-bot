@@ -1,4 +1,8 @@
-import os, discord, asyncio, random, sqlite3
+import os
+import discord
+import asyncio
+import random
+import sqlite3
 from threading import Thread
 from flask import Flask
 from dotenv import load_dotenv
@@ -9,40 +13,29 @@ load_dotenv()
 
 intents = discord.Intents.default()
 intents.message_content = True
-# תמחק את כל הגוש הזה שנמצא כרגע בין שורה 12 לשורה 24:
-staff_role = msg.guild.get_role(STAFF_ROLE_ID)
-if staff_role and STAFF_ROLE_NAMES:
-    if not any(sub in staff_role.name.lower() for sub in STAFF_ROLE_NAMES):
-        staff_role = None
-if not staff_role:
-    staff_role = msg.guild.get_role(MNG_ROLE)
 
-    
-# 🆔 מזהי רולים כלליים של השרת שלך:
+bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
+processed_message_ids = set()
+
+# מזהי רולים כלליים של השרת
 STAFF_ROLE_ID = 1521955150334263437
-STAFF_ROLE_NAMES = ["manager", "support", "staff", "admin"] # שים כאן מילים (בכתב קטן) שמופיעות בשמות הרולים של הצוות שלך
-MNG_ROLE =   1521955150309359747
-MEMBER_ROLE = 1521955150246445184       
-VETERAN_ROLE_ID = 1521955150246445184  
+STAFF_ROLE_NAMES = ["manager", "support", "staff", "admin"]
+MNG_ROLE = 1521955150309359747
+MEMBER_ROLE = 1521955150246445184
+VETERAN_ROLE_ID = 1521955150246445184
 
-# 🆔 מזהי ארבעת הרולים החדשים של החנות:
-ROLE_MNG_SUPPORT = 1520802461306271825    # Manager Support
-ROLE_EV_MNG = 1520807998505312431         # Event Manager
-ROLE_SUP_TEAM = 1520870990535312431       # Support Team
-ROLE_LEAK_TEAM = 1520870990505312430      # Leaks Team
-STAFF_FRIEND_ROLE_ID = 1521955150275809377  # Staff Friend
-STAFF_REQUEST_CHANNEL_ID = 1522010120089895032  # אם תרצה, שנה ל-ID של חדר staff-request
-GUILD_ID = int(os.getenv("GUILD_ID", "0")) or None
+# מזהי הרולים החדשים של החנות
+ROLE_MNG_SUPPORT = 1520802461306271825
+ROLE_EV_MNG = 1520807998505312431
+ROLE_SUP_TEAM = 1520870990535312431
+ROLE_LEAK_TEAM = 1520870990505312430
+STAFF_FRIEND_ROLE_ID = 1521955150275809377
+STAFF_REQUEST_CHANNEL_ID = 1522010120089895032
+GUILD_ID = int(os.getenv("GUID_ID", "0"))
 WELCOME_CHANNEL_ID = int(os.getenv("WELCOME_CHANNEL_ID", "0")) or None
-ROLE_PREFIX = "קזינו - "
+ROLE_PREFIX = "קודש - "
 CASINO_START_BALANCE = 10000
-SPECIAL_CASINO_ROLE_ID = 1521955150246445179
-CASINO_ROLE_SHOP = {
-    "mng_support": ("דילר/ית תמיכה", 25000, ROLE_MNG_SUPPORT),
-    "evt_mng": ("מנהל/ת קופה", 20000, ROLE_EV_MNG),
-    "sup_team": ("צוות VIP", 15000, ROLE_SUP_TEAM),
-    "leak_team": ("צייד/ת בונוסים", 10000, ROLE_LEAK_TEAM),
-    "special": ("רול קזינו מיוחד", 18000, SPECIAL_CASINO_ROLE_ID),
+
 }
 TOKEN = os.getenv("TOKEN")
 
