@@ -710,8 +710,8 @@ async def on_message(msg):
     await bot.process_commands(msg)
 
 def get_log_channel(guild):
-    # שים כאן את ה-ID המדויק של ערוץ הלוגים שלך בשרת
-    return guild.get_channel(1522010120089895032)
+    # שים כאן את ה-ID המדויק של ערוץ ה-server-logs שלכם!
+    return guild.get_channel(1522001012008989503)
 
 @bot.event
 async def on_message_delete(message):
