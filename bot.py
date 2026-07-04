@@ -796,5 +796,5 @@ async def on_voice_state_update(member, before, after):
 # שורות ההפעלה חייבות להיות האחרונות בהחלט בקובץ!
 if __name__ == "__main__":
     keep_alive()
-    bot.run(os.getenv("DISCORD_TOKEN"))
+    bot.run(os.getenv("TOKEN"))
 
