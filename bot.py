@@ -567,31 +567,27 @@ async def on_message(msg):
             await msg.channel.send(f"🎉 ג'קפוט! קיבלת {amount * 2:,} XP! סך הכל יש לך {get_xp(msg.author.id):,} XP.")
         return
 
-        if lower_text.startswith("!h"):
+            if lower_text.startswith("!h"):
         if msg.id in processed_message_ids:
             return
         processed_message_ids.add(msg.id)
 
-        # 1. ניתוח סיבת הפקודה
         reason = msg.content[3:].strip()
         if not reason:
             await msg.channel.send("❌, נא לציין סיבה לפתיחת העזרה", delete_after=5)
             return
 
-        # 2. בדיקת ערוץ קולי בצורה בטוחה
         if msg.author.voice and msg.author.voice.channel:
             vt = msg.author.voice.channel.mention
         else:
             vt = "מחוץ לוויס"
 
-        # 3. יצירת ה-Embed
         emb = discord.Embed(
             title="⚠️ בקשת עזרה ⚠️", 
             description=f"🚨 חיים 🔴 | סיבה: {reason} | {vt}", 
             color=0xff0000
         )
 
-        # 4. בחירת הרול
         staff_role = msg.guild.get_role(STAFF_ROLE_ID)
         if not staff_role:
             staff_role = msg.guild.get_role(MNG_ROLE)
@@ -603,13 +599,10 @@ async def on_message(msg):
         mention = staff_role.mention
         allowed = discord.AllowedMentions(roles=True)
         
-        # 5. שליחת ההודעה (בלי ה-HelpView הבעייתי)
         await msg.channel.send(content=mention, embed=emb, allowed_mentions=allowed)
         return
 
-    # 🚨 מחוץ לתנאי של !h - כדי ששאר הפקודות בבוט ימשיכו לעבוד!
     await bot.process_commands(msg)
-
 
 
 if __name__ == "__main__":
