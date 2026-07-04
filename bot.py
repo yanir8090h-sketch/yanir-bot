@@ -695,14 +695,10 @@ async def on_message(msg):
 
     await bot.process_commands(msg)
 
-# פונקציית עזר פנימית לשליפת ערוץ הלוגים
 def get_log_channel(guild):
-    log_id = os.getenv("1523091026720591973")
-    if log_id:
-        return guild.get_channel(int(log_id))
-    return None
+    # שים כאן את ה-ID המדויק של ערוץ הלוגים שלך בשרת
+    return guild.get_channel(1522010120089895032)
 
-# 1️⃣ לוג מחיקת הודעות
 @bot.event
 async def on_message_delete(message):
     if message.author.bot:
@@ -717,7 +713,6 @@ async def on_message_delete(message):
     emb.add_field(name="📝 תוכן ההודעה שנמחקה:", value=message.content if message.content else "*הודעה ללא טקסט (תמונה/קובץ)*", inline=False)
     await ch.send(embed=emb)
 
-# 2️⃣ לוג עריכת הודעות
 @bot.event
 async def on_message_edit(before, after):
     if before.author.bot or before.content == after.content:
@@ -733,7 +728,6 @@ async def on_message_edit(before, after):
     emb.add_field(name="➡️ אחרי השינוי:", value=after.content, inline=False)
     await ch.send(embed=emb)
 
-# 3️⃣ לוג כניסת משתמש חדש לשרת
 @bot.event
 async def on_member_join(member):
     ch = get_log_channel(member.guild)
@@ -743,11 +737,9 @@ async def on_member_join(member):
     emb = discord.Embed(title="📥 משתמש נכנס לשרת", color=0x00ff00, timestamp=datetime.utcnow())
     emb.add_field(name="👤 משתמש:", value=member.mention, inline=True)
     emb.add_field(name="🆔 ID:", value=member.id, inline=True)
-    emb.add_field(name="📅 יצירת החשבון:", value=member.created_at.strftime("%d/%m/%Y %H:%M"), inline=False)
     emb.set_thumbnail(url=member.display_avatar.url)
     await ch.send(embed=emb)
 
-# 4️⃣ לוג עזיבת משתמש את השרת
 @bot.event
 async def on_member_remove(member):
     ch = get_log_channel(member.guild)
@@ -760,50 +752,30 @@ async def on_member_remove(member):
     emb.set_thumbnail(url=member.display_avatar.url)
     await ch.send(embed=emb)
 
-# 5️⃣ לוג פעילות חדרים קוליים (כניסה, יציאה ומעבר חדרים בוויס)
 @bot.event
 async def on_voice_state_update(member, before, after):
     ch = get_log_channel(member.guild)
     if not ch:
         return
 
-    # מקרה א': כניסה לחדר קולי
     if before.channel is None and after.channel is not None:
         emb = discord.Embed(title="🔊 כניסה לוויס", color=0x2ecc71, timestamp=datetime.utcnow())
         emb.add_field(name="👤 משתמש:", value=member.mention, inline=True)
         emb.add_field(name="📥 התחבר לחדר:", value=after.channel.name, inline=True)
         await ch.send(embed=emb)
 
-    # מקרה ב': יציאה מחדר קולי
     elif before.channel is not None and after.channel is None:
         emb = discord.Embed(title="🔇 יציאה מהוויס", color=0xe74c3c, timestamp=datetime.utcnow())
         emb.add_field(name="👤 משתמש:", value=member.mention, inline=True)
         emb.add_field(name="📤 התנתק מהחדר:", value=before.channel.name, inline=True)
         await ch.send(embed=emb)
 
-    # מקרה ג': מעבר והעברה בין חדרים קוליים (מי עבר/הועבר ולאיזה חדר)
     elif before.channel is not None and after.channel is not None and before.channel != after.channel:
         emb = discord.Embed(title="🔀 מעבר חדר בוויס", color=0x3498db, timestamp=datetime.utcnow())
         emb.add_field(name="👤 משתמש:", value=member.mention, inline=False)
         emb.add_field(name="⬅️ חדר קודם:", value=before.channel.name, inline=True)
         emb.add_field(name="➡️ חדר חדש:", value=after.channel.name, inline=True)
         await ch.send(embed=emb)
-
-# 6️⃣ לוג מחיקת ערוצים (טקסט או וויס)
-@bot.event
-async def on_guild_channel_delete(channel):
-    ch = get_log_channel(channel.guild)
-    if not ch:
-        return
-
-    channel_type = "ערוץ טקסט 💬" if isinstance(channel, discord.TextChannel) else "ערוץ קולי 🔊" if isinstance(channel, discord.VoiceChannel) else "קטגוריה 📁"
-    
-    emb = discord.Embed(title="🗑️ ערוץ נמחק מהשרת", color=0xd35400, timestamp=datetime.utcnow())
-    emb.add_field(name="📛 שם הערוץ:", value=channel.name, inline=True)
-    emb.add_field(name="🗂️ סוג הערוץ:", value=channel_type, inline=True)
-    await ch.send(embed=emb)
-
-
 
 if __name__ == "__main__":
     keep_alive()
