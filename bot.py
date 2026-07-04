@@ -36,7 +36,7 @@ WELCOME_CHANNEL_ID = int(os.getenv("WELCOME_CHANNEL_ID", "0")) or None
 ROLE_PREFIX = "קודש - "
 CASINO_START_BALANCE = 10000
 
-}
+
 TOKEN = os.getenv("TOKEN")
 
 # 🔄 חיבור לבסיס הנתונים הסופי והנקי:
