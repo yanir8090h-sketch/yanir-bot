@@ -536,25 +536,29 @@ async def on_message(msg):
             add_xp(msg.author.id, amount * 2)
             await msg.channel.send(f"🎉 ג'קפוט! קיבלת {amount * 2:,} XP! סך הכל יש לך {get_xp(msg.author.id):,} XP.")
         return
-
 @bot.command(name="h")
 async def h(ctx, *, reason: str = None):
+    # 1. בדיקה אם המשתמש רשם סיבה לפקודה
     if not reason:
         await ctx.send("❌, נא לציין סיבה לפתיחת העזרה", delete_after=5)
         return
 
+    # 2. בדיקה בטוחה של ערוץ קולי באמצעות ctx
     if ctx.author.voice and ctx.author.voice.channel:
         vt = ctx.author.voice.channel.mention
     else:
         vt = "מחוץ לוויס"
 
+    # 3. יצירת ה-Embed של בקשת העזרה
     emb = discord.Embed(
         title="⚠️ בקשת עזרה ⚠️", 
         description=f"🚨 חיים 🔴 | סיבה: {reason} | {vt}", 
         color=0xff0000
     )
 
+    # 4. בחירת רול הצוות המתאים באמצעות ctx
     staff_role = ctx.guild.get_role(STAFF_ROLE_ID)
+    
     if staff_role and STAFF_ROLE_NAMES:
         if not any(sub in staff_role.name.lower() for sub in STAFF_ROLE_NAMES):
             staff_role = None
@@ -563,13 +567,17 @@ async def h(ctx, *, reason: str = None):
         staff_role = ctx.guild.get_role(MNG_ROLE)
 
     if not staff_role:
-        await ctx.send(f"❌ לא נמצא רול צוות מתאים בשרת.")
+        await ctx.send("❌ לא נמצא רול צוות מתאים בשרת.")
         return
 
     mention = staff_role.mention
     allowed = discord.AllowedMentions(roles=True)
     
+    # 5. שליחת ההודעה הסופית לערוץ בדיסקורד
     await ctx.send(content=mention, embed=emb, allowed_mentions=allowed)
+
+
+
 
 if __name__ == "__main__":
     keep_alive()
