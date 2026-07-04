@@ -797,4 +797,3 @@ async def on_voice_state_update(member, before, after):
 if __name__ == "__main__":
     keep_alive()
     bot.run(os.getenv("TOKEN"))
-
