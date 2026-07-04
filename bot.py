@@ -199,6 +199,14 @@ async def xpshop_slash(inter: discord.Interaction):
     emb.set_footer(text="הרכישה תוריד XP באופן מיידי מחשבונכם")
     await inter.response.send_message(embed=emb, view=XPShopView())
 
+@bot.command(name="sync")
+@commands.is_owner() # רק אתה (יוצר הבוט) תוכל להפעיל אותה
+async def sync_commands(ctx):
+    try:
+        fmt = await bot.tree.sync()
+        await ctx.send(f"✅ סונכרנו בהצלחה {len(fmt)} פקודות סלאש לשרת!")
+    except Exception as e:
+        await ctx.send(f"❌ שגיאה בזמן הסנכרון: {e}")
 
 class VeteranView(discord.ui.View):
     def __init__(self, days): super().__init__(timeout=None); self.days = days
