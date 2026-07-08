@@ -595,22 +595,7 @@ async def on_message(msg):
 
     await bot.process_commands(msg)
 
-import discord
-from discord.ext import commands
-import json
-import os
-from datetime import datetime
 
-# הגדרת ה-Intents (הרשאות הבוט)
-intents = discord.Intents.default()
-intents.message_content = True
-intents.voice_states = True  # חובה בשביל לספור שעות בחדרי קול (Voice)
-
-# יצירת אובייקט הבוט עם קידומת פקודות '!'
-bot = commands.Bot(command_prefix="!", intents=intents)
-
-# שם קובץ מסד הנתונים לשמירת הסטטיסטיקות
-DB_FILE = "stats.json"
 
 # ==========================================
 #      פונקציות לניהול מסד הנתונים (JSON)
