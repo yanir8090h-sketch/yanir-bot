@@ -627,6 +627,9 @@ async def on_voice_state_update(member, before, after):
         emb.add_field(name="👤 משתמש:", value=member.mention, inline=True)
         emb.add_field(name="📤 התנתק מהחדר:", value=before.channel.name, inline=True)
         await ch.send(embed=emb)
+
+
+
 import discord
 from discord.ext import commands
 import random
@@ -634,6 +637,7 @@ import json
 import os
 from datetime import datetime
 
+# הגדרת ה-Intents
 intents = discord.Intents.default()
 intents.message_content = True
 intents.voice_states = True
@@ -843,11 +847,11 @@ async def roulette(ctx, amount: str, bet: str):
     try:
         amount_int = int(amount)
     except ValueError:
-        return await ctx.send("❌ נא להזין סכום הימור תקין במספרים!")
+        return await ctx.send("❌ נא להזין סכום הימור תקין במספרים שלמים!")
 
     xp = get_xp(ctx.author.id)
     if amount_int <= 0 or xp < amount_int:
-        return await ctx.send(f"❌ סכום לא תקין או שאין לך מספיק XP! (יש לך {xp} XP)")
+        return await ctx.send(f"❌ אין לך מספיק XP! (יתרה נוכחית: {xp} XP)")
     
     bet = bet.lower()
     valid_colors = ["אדום", "שחור", "ירוק"]
@@ -874,7 +878,7 @@ async def roulette(ctx, amount: str, bet: str):
         await ctx.send(embed=discord.Embed(title="🎰 רולטה", description=f"🎉 נחת על **{roll_color} ({roll_num})**! ניצחת **{payout} XP**!", color=discord.Color.green()))
     else:
         update_xp(ctx.author.id, -amount_int)
-        await ctx.send(embed=discord.Embed(title="🎰 רולטה", description=f"📉 נחת על **{roll_color} ({roll_num})**! הפסדת **{amount_int} XP**.", color=discord.Color.red()))
+
 
 
 
