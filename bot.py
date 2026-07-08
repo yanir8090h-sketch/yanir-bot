@@ -631,44 +631,39 @@ async def on_voice_state_update(member, before, after):
 # ==========================================
 #      פונקציות עזר למערכת ה-XP שלך
 # ==========================================
-# שים לב: שנה את התוכן של הפונקציות האלו כדי שיתחברו למסד הנתונים הקיים שלך בבוט!
-
-# יצירת מילון זמני למקרה שאין לך עדיין מסד נתונים
 if 'user_xp' not in globals():
     user_xp = {}
 
 def get_xp(user_id):
-    # כאן אתה קורא את ה-XP של המשתמש ממסד הנתונים שלך
-    return user_xp.get(user_id, 100) # 100 XP מתנה להתחלה
+    return user_xp.get(user_id, 100)  # 100 XP מתנה להתחלה
 
 def update_xp(user_id, amount):
-    # כאן אתה מעדכן את ה-XP של המשתמש במסד הנתונים שלך
     current = get_xp(user_id)
-    user_xp[user_id] = max(0, current + amount) # מונע מה-XP לרדת מתחת ל-0
+    user_xp[user_id] = max(0, current + amount)  # מונע מה-XP לרדת מתחת ל-0
 
 
 # ==========================================
-#             פקודות המשחקים
+#             פקודות המשחקים באנגלית
 # ==========================================
 
 # ---- תפריט המשחקים המעוצב ----
-@bot.command(name="משחקים")
+@bot.command(name="games")
 async def games_menu(ctx):
     embed = discord.Embed(
         title="🎮 מרכז משחקי ה-XP של השרת!",
         description="המר את ה-XP שלך ושחק במשחקים הבאים כדי להרוויח או להפסיד!",
         color=discord.Color.purple()
     )
-    embed.add_field(name="🎰 רולטה (`!רולטה [כמות] [צבע/מספר]`)", value="המר על צבע (`אדום`/`שחור`/`ירוק`) או מספר (0-36).", inline=False)
-    embed.add_field(name="🎲 קוביות (`!קוביות [כמות]`)", value="הטל קוביות נגד הבוט. מי שמקבל תוצאה גבוהה יותר מנצח!", inline=False)
-    embed.add_field(name="🪙 מטבע (`!מטבע [כמות] [עץ/פלי]`)", value="הטל מטבע ונחש האם ייצא עץ או פלי.", inline=False)
-    embed.add_field(name="🔮 ניחוש (`!ניחוש [כמות] [מספר]`)", value="נחש מספר בין 1 ל-5. פי 4 זכייה אם צדקת!", inline=False)
-    embed.add_field(name="💰 בדיקת יתרה (`!אקספי`)", value="בדוק כמה XP יש לך כרגע.", inline=False)
+    embed.add_field(name="🎰 רולטה (`!roulette [כמות] [אדום/שחור/ירוק או מספר]`)", value="המר על צבע או מספר (0-36).", inline=False)
+    embed.add_field(name="🎲 קוביות (`!dice [כמות]`)", value="הטל קוביות נגד הבוט. מי שמקבל תוצאה גבוהה יותר מנצח!", inline=False)
+    embed.add_field(name="🪙 מטבע (`!coin [כמות] [עץ/פלי]`)", value="הטל מטבע ונחש האם ייצא עץ או פלי.", inline=False)
+    embed.add_field(name="🔮 ניחוש (`!guess [כמות] [מספר]`)", value="נחש מספר בין 1 ל-5. פי 4 זכייה אם צדקת!", inline=False)
+    embed.add_field(name="💰 בדיקת יתרה (`!xp`)", value="בדוק כמה XP יש לך כרגע.", inline=False)
     embed.set_footer(text="בהצלחה! שחקו באחריות.")
     await ctx.send(embed=embed)
 
 # ---- בדיקת XP ----
-@bot.command(name="אקספי")
+@bot.command(name="xp")
 async def check_xp(ctx):
     xp = get_xp(ctx.author.id)
     embed = discord.Embed(
@@ -679,7 +674,7 @@ async def check_xp(ctx):
     await ctx.send(embed=embed)
 
 # ---- 1. משחק רולטה ----
-@bot.command(name="רולטה")
+@bot.command(name="roulette")
 async def roulette(ctx, amount: int, bet: str):
     xp = get_xp(ctx.author.id)
     if amount <= 0:
@@ -727,7 +722,7 @@ async def roulette(ctx, amount: int, bet: str):
     await ctx.send(embed=embed)
 
 # ---- 2. משחק קוביות ----
-@bot.command(name="קוביות")
+@bot.command(name="dice")
 async def dice(ctx, amount: int):
     xp = get_xp(ctx.author.id)
     if amount <= 0 or xp < amount:
@@ -752,7 +747,7 @@ async def dice(ctx, amount: int):
     await ctx.send(embed=embed)
 
 # ---- 3. משחק מטבע ----
-@bot.command(name="מטבע")
+@bot.command(name="coin")
 async def coinflip(ctx, amount: int, bet: str):
     xp = get_xp(ctx.author.id)
     if amount <= 0 or xp < amount:
@@ -776,7 +771,7 @@ async def coinflip(ctx, amount: int, bet: str):
     await ctx.send(embed=embed)
 
 # ---- 4. משחק ניחוש מספר ----
-@bot.command(name="ניחוש")
+@bot.command(name="guess")
 async def guess(ctx, amount: int, number: int):
     xp = get_xp(ctx.author.id)
     if amount <= 0 or xp < amount:
@@ -812,9 +807,9 @@ async def on_command_error(ctx, error):
         )
         await ctx.send(embed=embed)
     else:
-        # מאפשר לשגיאות אחרות להמשיך להופיע בקונסול כרגיל
         await bot.process_respond_error(ctx, error) if hasattr(bot, 'process_respond_error') else None
         raise error
+
 
 
 # ... כאן נמצאים הלוגים בעברית שהדבקנו קודם (on_message_delete, on_voice_state_update וכו') ...
