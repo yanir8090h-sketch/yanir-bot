@@ -1069,12 +1069,16 @@ async def coinflip(ctx, amount: int, bet: str):
     embed = discord.Embed(title="🪙 הטלת מטבע", description=res, color=color)
     await ctx.send(embed=embed)
 
-# ---- 4. משחק ניחוש מספר ----
+# ---- 4. משחק ניחוש מספר (מתוקן) ----
 @bot.command(name="guess")
 async def guess(ctx, amount: int, number: int):
     xp = get_xp(ctx.author.id)
-    if amount <= 0 or xp < amount:
-        return await ctx.send("❌ סכום לא תקין או שאין לך מספיק XP!")
+    if amount <= 0:
+        return await ctx.send("❌ סכום ההימור חייב להיות גדול מ-0!")
+    if xp < amount:
+        return await ctx.send("❌ אין לך מספיק XP כדי להמר על סכום זה!")
+        
+    # הבדיקה המתוקנת - מוודאת שהמספר המנוחש הוא בין 1 ל-5
     if number < 1 or number > 5:
         return await ctx.send("❌ עליך לנחש מספר בין 1 ל-5!")
 
@@ -1087,6 +1091,11 @@ async def guess(ctx, amount: int, number: int):
         color = discord.Color.green()
     else:
         update_xp(ctx.author.id, -amount)
+        res = f"🔮 פסקוס! המספר היה **{secret_number}**. הפסדת **{amount} XP**."
+        color = discord.Color.red()
+
+    embed = discord.Embed(title="🔮 ניחוש המספר הסודי", description=res, color=color)
+    await ctx.send(embed=embed)
 
 # ==========================================
 #        תפיסת שגיאות קלט (Error Handler)
