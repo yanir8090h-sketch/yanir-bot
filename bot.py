@@ -628,176 +628,6 @@ async def on_voice_state_update(member, before, after):
         emb.add_field(name="📤 התנתק מהחדר:", value=before.channel.name, inline=True)
         await ch.send(embed=emb)
 
-# ==========================================
-#      פונקציות עזר למערכת ה-XP שלך
-# ==========================================
-if 'user_xp' not in globals():
-    user_xp = {}
-
-def get_xp(user_id):
-    return user_xp.get(user_id, 100)  # 100 XP מתנה להתחלה
-
-def update_xp(user_id, amount):
-    current = get_xp(user_id)
-    user_xp[user_id] = max(0, current + amount)  # מונע מה-XP לרדת מתחת ל-0
-
-
-# ==========================================
-#             פקודות המשחקים באנגלית
-# ==========================================
-
-# ---- תפריט המשחקים המעוצב ----
-@bot.command(name="games")
-async def games_menu(ctx):
-    embed = discord.Embed(
-        title="🎮 מרכז משחקי ה-XP של השרת!",
-        description="המר את ה-XP שלך ושחק במשחקים הבאים כדי להרוויח או להפסיד!",
-        color=discord.Color.purple()
-    )
-    embed.add_field(name="🎰 רולטה (`!roulette [כמות] [אדום/שחור/ירוק או מספר]`)", value="המר על צבע או מספר (0-36).", inline=False)
-    embed.add_field(name="🎲 קוביות (`!dice [כמות]`)", value="הטל קוביות נגד הבוט. מי שמקבל תוצאה גבוהה יותר מנצח!", inline=False)
-    embed.add_field(name="🪙 מטבע (`!coin [כמות] [עץ/פלי]`)", value="הטל מטבע ונחש האם ייצא עץ או פלי.", inline=False)
-    embed.add_field(name="🔮 ניחוש (`!guess [כמות] [מספר]`)", value="נחש מספר בין 1 ל-5. פי 4 זכייה אם צדקת!", inline=False)
-    embed.set_footer(text="בהצלחה! שחקו באחריות.")
-    await ctx.send(embed=embed)
-
-# ---- 1. משחק רולטה ----
-@bot.command(name="roulette")
-async def roulette(ctx, amount: int, bet: str):
-    xp = get_xp(ctx.author.id)
-    if amount <= 0:
-        return await ctx.send("❌ סכום ההימור חייב להיות גדול מ-0!")
-    if xp < amount:
-        return await ctx.send(f"❌ אין לך מספיק XP כדי להמר על סכום זה!")
-
-    bet = bet.lower()
-    valid_colors = ["אדום", "שחור", "ירוק"]
-    
-    roll_num = random.randint(0, 36)
-    if roll_num == 0:
-        roll_color = "ירוק"
-    elif roll_num % 2 == 0:
-        roll_color = "אדום"
-    else:
-        roll_color = "שחור"
-
-    win = False
-    payout = amount
-
-    if bet in valid_colors:
-        if bet == roll_color:
-            win = True
-            payout = amount * 14 if bet == "ירוק" else amount
-    else:
-        try:
-            bet_num = int(bet)
-            if bet_num == roll_num:
-                win = True
-                payout = amount * 35
-        except ValueError:
-            return await ctx.send("❌ הימור לא תקין! בחר צבע (אדום/שחור/ירוק) או מספר (0-36).")
-
-    if win:
-        update_xp(ctx.author.id, payout)
-        color_embed = discord.Color.green()
-        result_text = f"🎉 נחת על **{roll_color} ({roll_num})**! ניצחת והרווחת **{payout} XP**!"
-    else:
-        update_xp(ctx.author.id, -amount)
-        color_embed = discord.Color.red()
-        result_text = f"📉 נחת על **{roll_color} ({roll_num})**! הפסדת **{amount} XP**."
-
-    embed = discord.Embed(title="🎰 תוצאת הרולטה", description=result_text, color=color_embed)
-    await ctx.send(embed=embed)
-
-# ---- 2. משחק קוביות ----
-@bot.command(name="dice")
-async def dice(ctx, amount: int):
-    xp = get_xp(ctx.author.id)
-    if amount <= 0 or xp < amount:
-        return await ctx.send("❌ סכום לא תקין או שאין לך מספיק XP!")
-
-    user_roll = random.randint(1, 6) + random.randint(1, 6)
-    bot_roll = random.randint(1, 6) + random.randint(1, 6)
-
-    if user_roll > bot_roll:
-        update_xp(ctx.author.id, amount)
-        res = f"🎉 ניצחת! גלגלת **{user_roll}** והבוט גלגל **{bot_roll}**. הרווחת **{amount} XP**!"
-        color = discord.Color.green()
-    elif user_roll < bot_roll:
-        update_xp(ctx.author.id, -amount)
-        res = f"📉 הפסדת! גלגלת **{user_roll}** והבוט גלגל **{bot_roll}**. הפסדת **{amount} XP**."
-        color = discord.Color.red()
-    else:
-        res = f"🤝 תיקו! שניכם גלגלתם **{user_roll}**. ה-XP שלך לא השתנה."
-        color = discord.Color.gold()
-
-    embed = discord.Embed(title="🎲 קרב קוביות", description=res, color=color)
-    await ctx.send(embed=embed)
-
-# ---- 3. משחק מטבע ----
-@bot.command(name="coin")
-async def coinflip(ctx, amount: int, bet: str):
-    xp = get_xp(ctx.author.id)
-    if amount <= 0 or xp < amount:
-        return await ctx.send("❌ סכום לא תקין או שאין לך מספיק XP!")
-
-    if bet not in ["עץ", "פלי"]:
-        return await ctx.send("❌ עליך לבחור `עץ` או `פלי`!")
-
-    result = random.choice(["עץ", "פלי"])
-
-    if bet == result:
-        update_xp(ctx.author.id, amount)
-        res = f"🪙 המטבע נחת על **{result}**! צדקת והרווחת **{amount} XP**!"
-        color = discord.Color.green()
-    else:
-        update_xp(ctx.author.id, -amount)
-        res = f"🪙 המטבע נחת על **{result}**! טעית והפסדת **{amount} XP**."
-        color = discord.Color.red()
-
-    embed = discord.Embed(title="🪙 הטלת מטבע", description=res, color=color)
-    await ctx.send(embed=embed)
-
-# ---- 4. משחק ניחוש מספר ----
-@bot.command(name="guess")
-async def guess(ctx, amount: int, number: int):
-    xp = get_xp(ctx.author.id)
-    if amount <= 0 or xp < amount:
-        return await ctx.send("❌ סכום לא תקין או שאין לך מספיק XP!")
-    if number < 1 or number > 5:
-        return await ctx.send("❌ עליך לנחש מספר בין 1 ל-5!")
-
-    secret_number = random.randint(1, 5)
-
-    if number == secret_number:
-        payout = amount * 4
-        update_xp(ctx.author.id, payout)
-        res = f"🔮 מדהים! המספר היה **{secret_number}**! ניצחת פי 4 והרווחת **{payout} XP**!"
-        color = discord.Color.green()
-    else:
-        update_xp(ctx.author.id, -amount)
-        res = f"🔮 פספוס! המספר היה **{secret_number}**. הפסדת **{amount} XP**."
-        color = discord.Color.red()
-
-    embed = discord.Embed(title="🔮 ניחוש המספר הסודי", description=res, color=color)
-    await ctx.send(embed=embed)
-
-# ==========================================
-#        תפיסת שגיאות קלט (טיפול ב-BadArgument)
-# ==========================================
-@bot.event
-async def on_command_error(ctx, error):
-    if isinstance(error, commands.BadArgument):
-        embed = discord.Embed(
-            title="❌ שגיאה בקלט הפקודה",
-            description="נראה שהזנת אותיות/טקסט במקום מספר (למשל בכמות ההימור). אנא נסה שוב עם מספר שלם תקין בלבד!",
-            color=discord.Color.red()
-        )
-        await ctx.send(embed=embed)
-    else:
-        await bot.process_respond_error(ctx, error) if hasattr(bot, 'process_respond_error') else None
-        raise error
-
 import discord
 from discord.ext import commands
 import random
@@ -1069,7 +899,7 @@ async def coinflip(ctx, amount: int, bet: str):
     embed = discord.Embed(title="🪙 הטלת מטבע", description=res, color=color)
     await ctx.send(embed=embed)
 
-# ---- 4. משחק ניחוש מספר (מתוקן) ----
+# ---- 4. משחק ניחוש מספר ----
 @bot.command(name="guess")
 async def guess(ctx, amount: int, number: int):
     xp = get_xp(ctx.author.id)
@@ -1078,7 +908,6 @@ async def guess(ctx, amount: int, number: int):
     if xp < amount:
         return await ctx.send("❌ אין לך מספיק XP כדי להמר על סכום זה!")
         
-    # הבדיקה המתוקנת - מוודאת שהמספר המנוחש הוא בין 1 ל-5
     if number < 1 or number > 5:
         return await ctx.send("❌ עליך לנחש מספר בין 1 ל-5!")
 
@@ -1088,54 +917,7 @@ async def guess(ctx, amount: int, number: int):
         payout = amount * 4
         update_xp(ctx.author.id, payout)
         res = f"🔮 מדהים! המספר היה **{secret_number}**! ניצחת פי 4 והרווחת **{payout} XP**!"
-        color = discord.Color.green()
-    else:
-        update_xp(ctx.author.id, -amount)
-        res = f"🔮 פסקוס! המספר היה **{secret_number}**. הפסדת **{amount} XP**."
-        color = discord.Color.red()
 
-    embed = discord.Embed(title="🔮 ניחוש המספר הסודי", description=res, color=color)
-    await ctx.send(embed=embed)
-
-# ==========================================
-#        תפיסת שגיאות קלט (Error Handler)
-# ==========================================
-@bot.event
-async def on_command_error(ctx, error):
-    # שגיאה כשהמשתמש מכניס אותיות במקום מספרים
-    if isinstance(error, commands.BadArgument):
-        embed = discord.Embed(
-            title="❌ שגיאה בקלט הפקודה",
-            description="נראה שהזנת אותיות/טקסט במקום מספר (למשל בכמות ההימור). אנא נסה שוב עם מספר שלם תקין בלבד!",
-            color=discord.Color.red()
-        )
-        await ctx.send(embed=embed)
-        
-    # שגיאה כשהמשתמש שוכח להכניס חלק מהנתונים (השגיאה מהצילום מסך שלך)
-    elif isinstance(error, commands.MissingRequiredArgument):
-        # בדיקה באיזו פקודה מדובר כדי להסביר לו בדיוק מה חסר
-        cmd_name = ctx.command.name
-        usage = ""
-        if cmd_name == "roulette":
-            usage = "`!roulette [כמות הימור] [אדום/שחור/ירוק או מספר]`"
-        elif cmd_name == "dice":
-            usage = "`!dice [כמות הימור]`"
-        elif cmd_name == "coin":
-            usage = "`!coin [כמות הימור] [עץ/פלי]`"
-        elif cmd_name == "guess":
-            usage = "`!guess [כמות הימור] [מספר בין 1 ל-5]`"
-            
-        embed = discord.Embed(
-            title="❌ חסרים נתונים בפקודה",
-            description=f"שכחת לרשום את אחד הפרמטרים!\nהצורה התקינה להשתמש בפקודה היא:\n{usage}",
-            color=discord.Color.red()
-        )
-        await ctx.send(embed=embed)
-        
-    else:
-        # מאפשר לשגיאות קריטיות אחרות להמשיך להופיע כרגיל
-        await bot.process_respond_error(ctx, error) if hasattr(bot, 'process_respond_error') else None
-        raise error
 
 
 
