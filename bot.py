@@ -1,4 +1,4 @@
-import os, discord, asyncio, random, sqlite3
+import os, discord, asyncio, random, sqlite3, json
 from threading import Thread
 from flask import Flask
 from dotenv import load_dotenv
