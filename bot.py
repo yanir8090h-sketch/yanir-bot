@@ -814,7 +814,6 @@ async def coinflip(ctx, choice: str = None, amount: int = None):
     else:
         stats["xp"] -= amount
         await ctx.send(f"😢 הפסדת! המטבע יצא {result}. איבדת {amount} XP.")
-
 # ... כאן נמצאים הלוגים בעברית שהדבקנו קודם (on_message_delete, on_voice_state_update וכו') ...
 
 # שורות ההפעלה חייבות להיות האחרונות בהחלט בקובץ!
