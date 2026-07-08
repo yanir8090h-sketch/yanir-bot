@@ -578,10 +578,10 @@ async def on_message(msg):
         vt = msg.author.voice.channel.mention if msg.author.voice and msg.author.voice.channel else "מחוץ לווייס"
         emb = discord.Embed(title="⚠️ בקשת עזרה ⚠️", description=f"📝 סיבה: {reason} | 🎧 ווייס: {vt}", color=0xff0000)
         staff_role = msg.guild.get_role(1521955150309359747)
-        if staff_role and not any(sub in staff_role.name.lower() for sub in STAFF_ROLE_NAMES):
+        if staff_role and staff_role.id != STAFF_ROLE_NAMES:
             staff_role = None
                 # בדיקה ישירה לפי ה-ID של רול הצוות
-        staff_role = msg.guild.get_role(STAFF_ROLE_ID)
+        staff_role = msg.guild.get_role(1521955150309359747)
         
         if not staff_role:
             await msg.channel.send(f"❌ לא נמצא רול צוות עם ה-ID {STAFF_ROLE_ID} בשרת זה.")
@@ -594,7 +594,6 @@ async def on_message(msg):
         return
 
     await bot.process_commands(msg)
-
 
 
 
