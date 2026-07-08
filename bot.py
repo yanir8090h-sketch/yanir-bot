@@ -799,6 +799,83 @@ async def on_command_error(ctx, error):
         raise error
 
 
+# ==========================================
+#    מערכת נתונים מדומה לסטטיסטיקות פעילות
+# ==========================================
+# במציאות, הפונקציות האלו צריכות למשוך נתונים אמיתיים ממסד הנתונים שלך (כמו קובץ JSON או SQLite)
+def get_user_stats(user_id):
+    # נתוני דוגמה מעוצבים למטרת התצוגה
+    return {
+        "daily": {"messages": 45, "hours": 1.5},
+        "weekly": {"messages": 320, "hours": 12.0},
+        "monthly": {"messages": 1420, "hours": 54.2},
+        "yearly": {"messages": 12450, "hours": 410.5}
+    }
+
+# ==========================================
+#        יצירת כפתורי הניווט (UI View)
+# ==========================================
+class StatsView(discord.ui.View):
+    def __init__(self, target_user):
+        super().__init__(timeout=60) # הכפתורים יפסיקו לעבוד אחרי דקה של חוסר פעילות
+        self.target_user = target_user
+        self.stats = get_user_stats(target_user.id)
+
+    def create_stats_embed(self, timeframe, title_text, color):
+        data = self.stats[timeframe]
+        embed = discord.Embed(
+            title=f"📊 סטטיסטיקות פעילות - {title_text}",
+            description=f"הפעילות של {self.target_user.mention} בשרת לתקופה זו:",
+            color=color
+        )
+        embed.add_field(name="💬 הודעות שנשלחו", value=f"**{data['messages']}** הודעות", inline=True)
+        embed.add_field(name="🎙️ זמן בחדרי קול (בדיבור)", value=f"**{data['hours']}** שעות", inline=True)
+        embed.set_thumbnail(url=self.target_user.display_avatar.url)
+        embed.set_footer(text="המערכת מתעדכנת בזמן אמת")
+        return embed
+
+    @discord.ui.button(label="📅 יומי", style=discord.ButtonStyle.primary, custom_id="stats_daily")
+    async def daily_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.target_user.id:
+            return await interaction.response.send_message("❌ רק מי שהפעיל את הפקודה יכול ללחוץ על הכפתורים!", ephemeral=True)
+        embed = self.create_stats_embed("daily", "היום", discord.Color.blue())
+        await interaction.response.edit_message(embed=embed)
+
+    @discord.ui.button(label="🗓️ שבועי", style=discord.ButtonStyle.success, custom_id="stats_weekly")
+    async def weekly_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.target_user.id:
+            return await interaction.response.send_message("❌ רק מי שהפעיל את הפקודה יכול ללחוץ על הכפתורים!", ephemeral=True)
+        embed = self.create_stats_embed("weekly", "השבוע", discord.Color.green())
+        await interaction.response.edit_message(embed=embed)
+
+    @discord.ui.button(label="📊 חודשי", style=discord.ButtonStyle.amber, custom_id="stats_monthly")
+    async def monthly_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.target_user.id:
+            return await interaction.response.send_message("❌ רק מי שהפעיל את הפקודה יכול ללחוץ על הכפתורים!", ephemeral=True)
+        embed = self.create_stats_embed("monthly", "החודש", discord.Color.orange())
+        await interaction.response.edit_message(embed=embed)
+
+    @discord.ui.button(label="👑 שנתי", style=discord.ButtonStyle.danger, custom_id="stats_yearly")
+    async def yearly_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.target_user.id:
+            return await interaction.response.send_message("❌ רק מי שהפעיל את הפקודה יכול ללחוץ על הכפתורים!", ephemeral=True)
+        embed = self.create_stats_embed("yearly", "השנה", discord.Color.red())
+        await interaction.response.edit_message(embed=embed)
+
+
+# ==========================================
+#             פקודת הסטטיסטיקות
+# ==========================================
+@bot.command(name="stats")
+async def user_activity_stats(ctx, member: discord.Member = None):
+    # אם המשתמש לא תייג אף אחד, נציג את הסטטיסטיקות של עצמו
+    target = member or ctx.author
+    
+    view = StatsView(target)
+    # תצוגת ברירת מחדל ראשונית (מציג את הנתון היומי כברירת מחדל)
+    initial_embed = view.create_stats_embed("daily", "היום", discord.Color.blue())
+    
+    await ctx.send(embed=initial_embed, view=view)
 
 
 # ... כאן נמצאים הלוגים בעברית שהדבקנו קודם (on_message_delete, on_voice_state_update וכו') ...
