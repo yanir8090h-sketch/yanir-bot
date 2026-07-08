@@ -798,38 +798,144 @@ async def on_command_error(ctx, error):
         await bot.process_respond_error(ctx, error) if hasattr(bot, 'process_respond_error') else None
         raise error
 
+import discord
+from discord.ext import commands
+import json
+import os
+from datetime import datetime
+
+# הגדרת ה-Intents (הרשאות הבוט)
+intents = discord.Intents.default()
+intents.message_content = True
+intents.voice_states = True  # חובה בשביל לספור שעות בחדרי קול (Voice)
+
+# יצירת אובייקט הבוט עם קידומת פקודות '!'
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+# שם קובץ מסד הנתונים
+DB_FILE = "stats.json"
 
 # ==========================================
-#    מערכת נתונים מדומה לסטטיסטיקות פעילות
+#      פונקציות לניהול מסד הנתונים (JSON)
 # ==========================================
-def get_user_stats(user_id):
+def load_stats():
+    if os.path.exists(DB_FILE):
+        try:
+            with open(DB_FILE, "r") as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+def save_stats(data):
+    with open(DB_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+
+# מילון זמני בזיכרון לשמירת שעת הכניסה של משתמשים ל-Voice
+voice_tracking = {}
+
+# פונקציית עזר לקבלת מפתחות הזמן הדינמיים (לפי התאריך הנוכחי)
+def get_time_keys():
+    now = datetime.now()
     return {
-        "daily": {"messages": 45, "hours": 1.5},
-        "weekly": {"messages": 320, "hours": 12.0},
-        "monthly": {"messages": 1420, "hours": 54.2},
-        "yearly": {"messages": 12450, "hours": 410.5}
+        "daily": now.strftime("%Y-%m-%d"),
+        "weekly": now.strftime("%Y-w%W"),
+        "monthly": now.strftime("%Y-%m"),
+        "yearly": now.strftime("%Y")
     }
 
+# שליפת נתוני הפעילות האמיתיים עבור ה-Embed
+def get_real_user_stats(user_id, timeframe):
+    data = load_stats()
+    u_str = str(user_id)
+    keys = get_time_keys()
+    current_key = keys[timeframe]
+    default_stats = {"messages": 0, "hours": 0.0}
+
+    if u_str in data and timeframe in data[u_str]:
+        if current_key in data[u_str][timeframe]:
+            return data[u_str][timeframe][current_key]
+    return default_stats
+
 # ==========================================
-#        יצירת כפתורי הניווט המתוקנים
+#        מערכות מעקב אוטומטיות (Events)
+# ==========================================
+
+# ---- 1. ספירת הודעות אוטומטית ----
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    data = load_stats()
+    user_id = str(message.author.id)
+    keys = get_time_keys()
+
+    if user_id not in data:
+        data[user_id] = {"daily": {}, "weekly": {}, "monthly": {}, "yearly": {}}
+
+    # עדכון ספירת ההודעות לכל טווח זמן
+    for timeframe, key in keys.items():
+        if key not in data[user_id][timeframe]:
+            data[user_id][timeframe][key] = {"messages": 0, "hours": 0.0}
+        data[user_id][timeframe][key]["messages"] += 1
+
+    save_stats(data)
+    await bot.process_commands(message)
+
+# ---- 2. ספירת שעות בדיבור (Voice) ----
+@bot.event
+async def on_voice_state_update(member, before, after):
+    if member.bot:
+        return
+
+    user_id = member.id
+    now = datetime.now()
+
+    # משתמש נכנס לחדר קול
+    if before.channel is None and after.channel is not None:
+        voice_tracking[user_id] = now
+
+    # משתמש יצא מחדר קול לחלוטין
+    elif before.channel is not None and after.channel is None:
+        join_time = voice_tracking.pop(user_id, None)
+        if join_time:
+            duration = (now - join_time).total_seconds() / 3600.0  # המרה לשעות
+            
+            data = load_stats()
+            u_str = str(user_id)
+            keys = get_time_keys()
+
+            if u_str not in data:
+                data[u_str] = {"daily": {}, "weekly": {}, "monthly": {}, "yearly": {}}
+
+            for timeframe, key in keys.items():
+                if key not in data[u_str][timeframe]:
+                    data[u_str][timeframe][key] = {"messages": 0, "hours": 0.0}
+                data[u_str][timeframe][key]["hours"] = round(data[u_str][timeframe][key]["hours"] + duration, 2)
+
+            save_stats(data)
+
+# ==========================================
+#        יצירת כפתורי הניווט לסטטיסטיקות
 # ==========================================
 class StatsView(discord.ui.View):
     def __init__(self, target_user):
         super().__init__(timeout=60)
         self.target_user = target_user
-        self.stats = get_user_stats(target_user.id)
 
     def create_stats_embed(self, timeframe, title_text, color):
-        data = self.stats[timeframe]
+        stats = get_real_user_stats(self.target_user.id, timeframe)
+        
         embed = discord.Embed(
             title=f"📊 סטטיסטיקות פעילות - {title_text}",
-            description=f"הפעילות של {self.target_user.mention} בשרת לתקופה זו:",
+            description=f"הפעילות האמיתית של {self.target_user.mention} בשרת לתקופה זו:",
             color=color
         )
-        embed.add_field(name="💬 הודעות שנשלחו", value=f"**{data['messages']}** הודעות", inline=True)
-        embed.add_field(name="🎙️ זמן בחדרי קול", value=f"**{data['hours']}** שעות", inline=True)
+        embed.add_field(name="💬 הודעות שנשלחו", value=f"**{stats['messages']}** הודעות", inline=True)
+        embed.add_field(name="🎙️ זמן בחדרי קול", value=f"**{stats['hours']}** שעות", inline=True)
         embed.set_thumbnail(url=self.target_user.display_avatar.url)
-        embed.set_footer(text="המערכת מתעדכנת בזמן אמת")
+        embed.set_footer(text="המערכת סופרת ומתעדכנת אוטומטית")
         return embed
 
     @discord.ui.button(label="📅 יומי", style=discord.ButtonStyle.primary, custom_id="stats_daily")
@@ -860,16 +966,15 @@ class StatsView(discord.ui.View):
         embed = self.create_stats_embed("yearly", "השנה", discord.Color.red())
         await interaction.response.edit_message(embed=embed)
 
-
-# ==========================================
-#             פקדת הסטטיסטיקות
-# ==========================================
+# ---- פקודת הסטטיסטיקות ----
 @bot.command(name="stats")
 async def user_activity_stats(ctx, member: discord.Member = None):
     target = member or ctx.author
     view = StatsView(target)
     initial_embed = view.create_stats_embed("daily", "היום", discord.Color.blue())
     await ctx.send(embed=initial_embed, view=view)
+
+
 
 
 
