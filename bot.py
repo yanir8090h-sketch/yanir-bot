@@ -627,7 +627,6 @@ async def on_voice_state_update(member, before, after):
         emb.add_field(name="👤 משתמש:", value=member.mention, inline=True)
         emb.add_field(name="📤 התנתק מהחדר:", value=before.channel.name, inline=True)
         await ch.send(embed=emb)
-
 import discord
 from discord.ext import commands
 import random
@@ -635,15 +634,11 @@ import json
 import os
 from datetime import datetime
 
-# הגדרת הרשאות הבוט (Intents)
 intents = discord.Intents.default()
 intents.message_content = True
-intents.voice_states = True  # חובה לספירת שעות בחדרי קול
+intents.voice_states = True
 
-# יצירת הבוט עם קידומת פקודות '!'
 bot = commands.Bot(command_prefix="!", intents=intents)
-
-# שם קובץ מסד הנתונים
 DB_FILE = "stats.json"
 
 # ==========================================
@@ -652,15 +647,15 @@ DB_FILE = "stats.json"
 def load_stats():
     if os.path.exists(DB_FILE):
         try:
-            with open(DB_FILE, "r") as f:
+            with open(DB_FILE, "r", encoding="utf-8") as f:
                 return json.load(f)
         except:
             return {}
     return {}
 
 def save_stats(data):
-    with open(DB_FILE, "w") as f:
-        json.dump(data, f, indent=4)
+    with open(DB_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
 
 voice_tracking = {}
 
@@ -685,9 +680,6 @@ def get_real_user_stats(user_id, timeframe):
             return data[u_str]["activity"][timeframe][current_key]
     return default_stats
 
-# ==========================================
-#      פונקציות עזר למערכת ה-XP
-# ==========================================
 def get_xp(user_id):
     data = load_stats()
     u_str = str(user_id)
@@ -714,7 +706,6 @@ def update_xp(user_id, amount):
 # ==========================================
 #        מערכות מעקב אוטומטיות (Events)
 # ==========================================
-
 @bot.event
 async def on_message(message):
     if message.author.bot:
@@ -848,10 +839,15 @@ async def games_menu(ctx):
     await ctx.send(embed=embed)
 
 @bot.command(name="roulette")
-async def roulette(ctx, amount: int, bet: str):
+async def roulette(ctx, amount: str, bet: str):
+    try:
+        amount_int = int(amount)
+    except ValueError:
+        return await ctx.send("❌ נא להזין סכום הימור תקין במספרים!")
+
     xp = get_xp(ctx.author.id)
-    if amount <= 0 or xp < amount:
-        return await ctx.send("❌ סכום לא תקין או שאין לך מספיק XP!")
+    if amount_int <= 0 or xp < amount_int:
+        return await ctx.send(f"❌ סכום לא תקין או שאין לך מספיק XP! (יש לך {xp} XP)")
     
     bet = bet.lower()
     valid_colors = ["אדום", "שחור", "ירוק"]
@@ -859,17 +855,17 @@ async def roulette(ctx, amount: int, bet: str):
     roll_color = "ירוק" if roll_num == 0 else ("אדום" if roll_num % 2 == 0 else "שחור")
 
     win = False
-    payout = amount
+    payout = amount_int
 
     if bet in valid_colors:
         if bet == roll_color:
             win = True
-            payout = amount * 14 if bet == "ירוק" else amount
+            payout = amount_int * 14 if bet == "ירוק" else amount_int
     else:
         try:
             if int(bet) == roll_num:
                 win = True
-                payout = amount * 35
+                payout = amount_int * 35
         except ValueError:
             return await ctx.send("❌ בחר צבע (אדום/שחור/ירוק) או מספר (0-36).")
 
@@ -877,8 +873,8 @@ async def roulette(ctx, amount: int, bet: str):
         update_xp(ctx.author.id, payout)
         await ctx.send(embed=discord.Embed(title="🎰 רולטה", description=f"🎉 נחת על **{roll_color} ({roll_num})**! ניצחת **{payout} XP**!", color=discord.Color.green()))
     else:
-        update_xp(ctx.author.id, -amount)
-        await ctx.send(embed=discord.Embed(title="🎰 רולטה", description=f"📉 נחת על **{roll_color} ({roll_num})**! הפסדת **{amount} XP**.", color=discord.Color.red()))
+        update_xp(ctx.author.id, -amount_int)
+        await ctx.send(embed=discord.Embed(title="🎰 רולטה", description=f"📉 נחת על **{roll_color} ({roll_num})**! הפסדת **{amount_int} XP**.", color=discord.Color.red()))
 
 
 
