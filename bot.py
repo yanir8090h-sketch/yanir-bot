@@ -800,6 +800,7 @@ async def on_command_error(ctx, error):
 
 import discord
 from discord.ext import commands
+import random
 import json
 import os
 from datetime import datetime
@@ -812,7 +813,7 @@ intents.voice_states = True  # חובה בשביל לספור שעות בחדר�
 # יצירת אובייקט הבוט עם קידומת פקודות '!'
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# שם קובץ מסד הנתונים
+# שם קובץ מסד הנתונים המאוחד
 DB_FILE = "stats.json"
 
 # ==========================================
@@ -852,10 +853,36 @@ def get_real_user_stats(user_id, timeframe):
     current_key = keys[timeframe]
     default_stats = {"messages": 0, "hours": 0.0}
 
-    if u_str in data and timeframe in data[u_str]:
-        if current_key in data[u_str][timeframe]:
-            return data[u_str][timeframe][current_key]
+    if u_str in data and "activity" in data[u_str]:
+        if current_key in data[u_str]["activity"][timeframe]:
+            return data[u_str]["activity"][timeframe][current_key]
     return default_stats
+
+# ==========================================
+#      פונקציות עזר למערכת ה-XP המאוחדת
+# ==========================================
+def get_xp(user_id):
+    data = load_stats()
+    u_str = str(user_id)
+    if u_str in data and "xp" in data[u_str]:
+        return data[u_str]["xp"]
+    return 100  # 100 XP מתנה להתחלה כברירת מחדל
+
+def update_xp(user_id, amount):
+    data = load_stats()
+    u_str = str(user_id)
+    
+    if u_str not in data:
+        data[u_str] = {
+            "xp": 100,
+            "activity": {"daily": {}, "weekly": {}, "monthly": {}, "yearly": {}}
+        }
+    if "activity" not in data[u_str]:
+        data[u_str]["activity"] = {"daily": {}, "weekly": {}, "monthly": {}, "yearly": {}}
+        
+    current = data[u_str].get("xp", 100)
+    data[u_str]["xp"] = max(0, current + amount)  # מונע מה-XP לרדת מתחת ל-0
+    save_stats(data)
 
 # ==========================================
 #        מערכות מעקב אוטומטיות (Events)
@@ -872,13 +899,18 @@ async def on_message(message):
     keys = get_time_keys()
 
     if user_id not in data:
-        data[user_id] = {"daily": {}, "weekly": {}, "monthly": {}, "yearly": {}}
+        data[user_id] = {
+            "xp": 100,
+            "activity": {"daily": {}, "weekly": {}, "monthly": {}, "yearly": {}}
+        }
+    if "activity" not in data[user_id]:
+        data[user_id]["activity"] = {"daily": {}, "weekly": {}, "monthly": {}, "yearly": {}}
 
     # עדכון ספירת ההודעות לכל טווח זמן
     for timeframe, key in keys.items():
-        if key not in data[user_id][timeframe]:
-            data[user_id][timeframe][key] = {"messages": 0, "hours": 0.0}
-        data[user_id][timeframe][key]["messages"] += 1
+        if key not in data[user_id]["activity"][timeframe]:
+            data[user_id]["activity"][timeframe][key] = {"messages": 0, "hours": 0.0}
+        data[user_id]["activity"][timeframe][key]["messages"] += 1
 
     save_stats(data)
     await bot.process_commands(message)
@@ -907,72 +939,155 @@ async def on_voice_state_update(member, before, after):
             keys = get_time_keys()
 
             if u_str not in data:
-                data[u_str] = {"daily": {}, "weekly": {}, "monthly": {}, "yearly": {}}
+                data[u_str] = {
+                    "xp": 100,
+                    "activity": {"daily": {}, "weekly": {}, "monthly": {}, "yearly": {}}
+                }
+            if "activity" not in data[u_str]:
+                data[u_str]["activity"] = {"daily": {}, "weekly": {}, "monthly": {}, "yearly": {}}
 
             for timeframe, key in keys.items():
-                if key not in data[u_str][timeframe]:
-                    data[u_str][timeframe][key] = {"messages": 0, "hours": 0.0}
-                data[u_str][timeframe][key]["hours"] = round(data[u_str][timeframe][key]["hours"] + duration, 2)
+                if key not in data[u_str]["activity"][timeframe]:
+                    data[u_str]["activity"][timeframe][key] = {"messages": 0, "hours": 0.0}
+                data[u_str]["activity"][timeframe][key]["hours"] = round(data[u_str]["activity"][timeframe][key]["hours"] + duration, 2)
 
             save_stats(data)
 
 # ==========================================
-#        יצירת כפתורי הניווט לסטטיסטיקות
+#             פקודות המשחקים באנגלית
 # ==========================================
-class StatsView(discord.ui.View):
-    def __init__(self, target_user):
-        super().__init__(timeout=60)
-        self.target_user = target_user
 
-    def create_stats_embed(self, timeframe, title_text, color):
-        stats = get_real_user_stats(self.target_user.id, timeframe)
-        
-        embed = discord.Embed(
-            title=f"📊 סטטיסטיקות פעילות - {title_text}",
-            description=f"הפעילות האמיתית של {self.target_user.mention} בשרת לתקופה זו:",
-            color=color
-        )
-        embed.add_field(name="💬 הודעות שנשלחו", value=f"**{stats['messages']}** הודעות", inline=True)
-        embed.add_field(name="🎙️ זמן בחדרי קול", value=f"**{stats['hours']}** שעות", inline=True)
-        embed.set_thumbnail(url=self.target_user.display_avatar.url)
-        embed.set_footer(text="המערכת סופרת ומתעדכנת אוטומטית")
-        return embed
+# ---- תפריט המשחקים המעוצב ----
+@bot.command(name="games")
+async def games_menu(ctx):
+    embed = discord.Embed(
+        title="🎮 מרכז משחקי ה-XP של השרת!",
+        description="המר את ה-XP שלך ושחק במשחקים הבאים כדי להרוויח או להפסיד!",
+        color=discord.Color.purple()
+    )
+    embed.add_field(name="🎰 רולטה (`!roulette [כמות] [אדום/שחור/ירוק או מספר]`)", value="המר על צבע או מספר (0-36).", inline=False)
+    embed.add_field(name="🎲 קוביות (`!dice [כמות]`)", value="הטל קוביות נגד הבוט. מי שמקבל תוצאה גבוהה יותר מנצח!", inline=False)
+    embed.add_field(name="🪙 מטבע (`!coin [כמות] [עץ/פלי]`)", value="הטל מטבע ונחש האם ייצא עץ או פלי.", inline=False)
+    embed.add_field(name="🔮 ניחוש (`!guess [כמות] [מספר]`)", value="נחש מספר בין 1 ל-5. פי 4 זכייה אם צדקת!", inline=False)
+    embed.set_footer(text="בהצלחה! שחקו באחריות.")
+    await ctx.send(embed=embed)
 
-    @discord.ui.button(label="📅 יומי", style=discord.ButtonStyle.primary, custom_id="stats_daily")
-    async def daily_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if interaction.user.id != self.target_user.id:
-            return await interaction.response.send_message("❌ רק מי שהפעיל את הפקודה יכול ללחוץ!", ephemeral=True)
-        embed = self.create_stats_embed("daily", "היום", discord.Color.blue())
-        await interaction.response.edit_message(embed=embed)
+# ---- 1. משחק רולטה ----
+@bot.command(name="roulette")
+async def roulette(ctx, amount: int, bet: str):
+    xp = get_xp(ctx.author.id)
+    if amount <= 0:
+        return await ctx.send("❌ סכום ההימור חייב להיות גדול מ-0!")
+    if xp < amount:
+        return await ctx.send("❌ אין לך מספיק XP כדי להמר על סכום זה!")
 
-    @discord.ui.button(label="🗓️ שבועי", style=discord.ButtonStyle.success, custom_id="stats_weekly")
-    async def weekly_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if interaction.user.id != self.target_user.id:
-            return await interaction.response.send_message("❌ רק מי שהפעיל את הפקודה יכול ללחוץ!", ephemeral=True)
-        embed = self.create_stats_embed("weekly", "השבוע", discord.Color.green())
-        await interaction.response.edit_message(embed=embed)
+    bet = bet.lower()
+    valid_colors = ["אדום", "שחור", "ירוק"]
+    
+    roll_num = random.randint(0, 36)
+    if roll_num == 0:
+        roll_color = "ירוק"
+    elif roll_num % 2 == 0:
+        roll_color = "אדום"
+    else:
+        roll_color = "שחור"
 
-    @discord.ui.button(label="📊 חודשי", style=discord.ButtonStyle.secondary, custom_id="stats_monthly")
-    async def monthly_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if interaction.user.id != self.target_user.id:
-            return await interaction.response.send_message("❌ רק מי שהפעיל את הפקודה יכול ללחוץ!", ephemeral=True)
-        embed = self.create_stats_embed("monthly", "החודש", discord.Color.orange())
-        await interaction.response.edit_message(embed=embed)
+    win = False
+    payout = amount
 
-    @discord.ui.button(label="👑 שנתי", style=discord.ButtonStyle.danger, custom_id="stats_yearly")
-    async def yearly_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if interaction.user.id != self.target_user.id:
-            return await interaction.response.send_message("❌ רק מי שהפעיל את הפקודה יכול ללחוץ!", ephemeral=True)
-        embed = self.create_stats_embed("yearly", "השנה", discord.Color.red())
-        await interaction.response.edit_message(embed=embed)
+    if bet in valid_colors:
+        if bet == roll_color:
+            win = True
+            payout = amount * 14 if bet == "ירוק" else amount
+    else:
+        try:
+            bet_num = int(bet)
+            if bet_num == roll_num:
+                win = True
+                payout = amount * 35
+        except ValueError:
+            return await ctx.send("❌ הימור לא תקין! בחר צבע (אדום/שחור/ירוק) או מספר (0-36).")
 
-# ---- פקודת הסטטיסטיקות ----
-@bot.command(name="stats")
-async def user_activity_stats(ctx, member: discord.Member = None):
-    target = member or ctx.author
-    view = StatsView(target)
-    initial_embed = view.create_stats_embed("daily", "היום", discord.Color.blue())
-    await ctx.send(embed=initial_embed, view=view)
+    if win:
+        update_xp(ctx.author.id, payout)
+        color_embed = discord.Color.green()
+        result_text = f"🎉 נחת על **{roll_color} ({roll_num})**! ניצחת והרווחת **{payout} XP**!"
+    else:
+        update_xp(ctx.author.id, -amount)
+        color_embed = discord.Color.red()
+        result_text = f"📉 נחת על **{roll_color} ({roll_num})**! הפסדת **{amount} XP**."
+
+    embed = discord.Embed(title="🎰 תוצאת הרולטה", description=result_text, color=color_embed)
+    await ctx.send(embed=embed)
+
+# ---- 2. משחק קוביות ----
+@bot.command(name="dice")
+async def dice(ctx, amount: int):
+    xp = get_xp(ctx.author.id)
+    if amount <= 0 or xp < amount:
+        return await ctx.send("❌ סכום לא תקין או שאין לך מספיק XP!")
+
+    user_roll = random.randint(1, 6) + random.randint(1, 6)
+    bot_roll = random.randint(1, 6) + random.randint(1, 6)
+
+    if user_roll > bot_roll:
+        update_xp(ctx.author.id, amount)
+        res = f"🎉 ניצחת! גלגלת **{user_roll}** והבוט גלגל **{bot_roll}**. הרווחת **{amount} XP**!"
+        color = discord.Color.green()
+    elif user_roll < bot_roll:
+        update_xp(ctx.author.id, -amount)
+        res = f"📉 הפסדת! גלגלת **{user_roll}** והבוט גלגל **{bot_roll}**. הפסדת **{amount} XP**."
+        color = discord.Color.red()
+    else:
+        res = f"🤝 תיקו! שניכם גלגלתם **{user_roll}**. ה-XP שלך לא השתנה."
+        color = discord.Color.gold()
+
+    embed = discord.Embed(title="🎲 קרב קוביות", description=res, color=color)
+    await ctx.send(embed=embed)
+
+# ---- 3. משחק מטבע ----
+@bot.command(name="coin")
+async def coinflip(ctx, amount: int, bet: str):
+    xp = get_xp(ctx.author.id)
+    if amount <= 0 or xp < amount:
+        return await ctx.send("❌ סכום לא תקין או שאין לך מספיק XP!")
+
+    if bet not in ["עץ", "פלי"]:
+        return await ctx.send("❌ עליך לבחור `עץ` או `פלי`!")
+
+    result = random.choice(["עץ", "פלי"])
+
+    if bet == result:
+        update_xp(ctx.author.id, amount)
+        res = f"🪙 המטבע נחת על **{result}**! צדקת והרווחת **{amount} XP**!"
+        color = discord.Color.green()
+    else:
+        update_xp(ctx.author.id, -amount)
+        res = f"🪙 המטבע נחת על **{result}**! טעית והפסדת **{amount} XP**."
+        color = discord.Color.red()
+
+    embed = discord.Embed(title="🪙 הטלת מטבע", description=res, color=color)
+    await ctx.send(embed=embed)
+
+# ---- 4. משחק ניחוש מספר ----
+@bot.command(name="guess")
+async def guess(ctx, amount: int, number: int):
+    xp = get_xp(ctx.author.id)
+    if amount <= 0 or xp < amount:
+        return await ctx.send("❌ סכום לא תקין או שאין לך מספיק XP!")
+    if number < 1 or number > 5:
+        return await ctx.send("❌ עליך לנחש מספר בין 1 ל-5!")
+
+    secret_number = random.randint(1, 5)
+
+    if number == secret_number:
+        payout = amount * 4
+        update_xp(ctx.author.id, payout)
+        res = f"🔮 מדהים! המספר היה **{secret_number}**! ניצחת פי 4 והרווחת **{payout} XP**!"
+        color = discord.Color.green()
+    else:
+        update_xp(ctx.author.id, -amount)
+
 
 
 
