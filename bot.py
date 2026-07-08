@@ -791,6 +791,30 @@ async def on_voice_state_update(member, before, after):
         emb.add_field(name="➡️ חדר חדש:", value=after.channel.name, inline=True)
         await ch.send(embed=emb)
 
+@bot.command(name="games")
+async def games(ctx):
+    embed = discord.Embed(title="🎮 משחקי ה-XP", color=discord.Color.green())
+    embed.add_field(name="🎲 !rps", value="אבן נייר ומספריים", inline=False)
+    embed.add_field(name="💰 !coinflip", value="הימור על מטבע", inline=False)
+    await ctx.send(embed=embed)
+
+@bot.command(name="coinflip")
+async def coinflip(ctx, choice: str = None, amount: int = None):
+    if choice not in ["עץ", "פלי"] or amount is None or amount <= 0:
+        await ctx.send("❌ שימוש: `!coinflip [עץ/פלי] [כמות]`")
+        return
+    stats = get_user_stats(ctx.author.id)
+    if stats["xp"] < amount:
+        await ctx.send("❌ אין לך מספיק XP להימור זה.")
+        return
+    result = random.choice(["עץ", "פלי"])
+    if choice == result:
+        stats["xp"] += amount
+        await ctx.send(f"🎉 ניצחת! המטבע יצא {result}. קיבלת {amount} XP.")
+    else:
+        stats["xp"] -= amount
+        await ctx.send(f"😢 הפסדת! המטבע יצא {result}. איבדת {amount} XP.")
+
 # ... כאן נמצאים הלוגים בעברית שהדבקנו קודם (on_message_delete, on_voice_state_update וכו') ...
 
 # שורות ההפעלה חייבות להיות האחרונות בהחלט בקובץ!
