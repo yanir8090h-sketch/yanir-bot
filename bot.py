@@ -597,48 +597,6 @@ async def on_message(msg):
 
 
 
-# ==========================================
-#      פונקציות לניהול מסד הנתונים (JSON)
-# ==========================================
-def load_stats():
-    if os.path.exists(DB_FILE):
-        try:
-            with open(DB_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except:
-            return {}
-    return {}
-
-def save_stats(data):
-    with open(DB_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
-
-# מילון זמני בזיכרון לשמירת שעת הכניסה של משתמשים ל-Voice
-voice_tracking = {}
-
-# פונקציית עזר לקבלת מפתחות הזמן הדינמיים (לפי התאריך הנוכחי)
-def get_time_keys():
-    now = datetime.now()
-    return {
-        "daily": now.strftime("%Y-%m-%d"),
-        "weekly": now.strftime("%Y-w%W"),
-        "monthly": now.strftime("%Y-%m"),
-        "yearly": now.strftime("%Y")
-    }
-
-# שליפת נתוני הפעילות האמיתיים עבור ה-Embed
-def get_real_user_stats(user_id, timeframe):
-    data = load_stats()
-    u_str = str(user_id)
-    keys = get_time_keys()
-    current_key = keys[timeframe]
-    default_stats = {"messages": 0, "hours": 0.0}
-
-    if u_str in data and timeframe in data[u_str]:
-        if current_key in data[u_str][timeframe]:
-            return data[u_str][timeframe][current_key]
-    return default_stats
-
 
 
 if __name__ == "__main__":
