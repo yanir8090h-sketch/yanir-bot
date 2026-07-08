@@ -658,19 +658,7 @@ async def games_menu(ctx):
     embed.add_field(name="🎲 קוביות (`!dice [כמות]`)", value="הטל קוביות נגד הבוט. מי שמקבל תוצאה גבוהה יותר מנצח!", inline=False)
     embed.add_field(name="🪙 מטבע (`!coin [כמות] [עץ/פלי]`)", value="הטל מטבע ונחש האם ייצא עץ או פלי.", inline=False)
     embed.add_field(name="🔮 ניחוש (`!guess [כמות] [מספר]`)", value="נחש מספר בין 1 ל-5. פי 4 זכייה אם צדקת!", inline=False)
-    embed.add_field(name="💰 בדיקת יתרה (`!xp`)", value="בדוק כמה XP יש לך כרגע.", inline=False)
     embed.set_footer(text="בהצלחה! שחקו באחריות.")
-    await ctx.send(embed=embed)
-
-# ---- בדיקת XP ----
-@bot.command(name="xp")
-async def check_xp(ctx):
-    xp = get_xp(ctx.author.id)
-    embed = discord.Embed(
-        title="💰 יתרת ה-XP שלך",
-        description=f"{ctx.author.mention}, יש לך כרגע **{xp} XP**!",
-        color=discord.Color.blue()
-    )
     await ctx.send(embed=embed)
 
 # ---- 1. משחק רולטה ----
@@ -680,7 +668,7 @@ async def roulette(ctx, amount: int, bet: str):
     if amount <= 0:
         return await ctx.send("❌ סכום ההימור חייב להיות גדול מ-0!")
     if xp < amount:
-        return await ctx.send(f"❌ אין לך מספיק XP! יש לך רק {xp}.")
+        return await ctx.send(f"❌ אין לך מספיק XP כדי להמר על סכום זה!")
 
     bet = bet.lower()
     valid_colors = ["אדום", "שחור", "ירוק"]
@@ -809,6 +797,7 @@ async def on_command_error(ctx, error):
     else:
         await bot.process_respond_error(ctx, error) if hasattr(bot, 'process_respond_error') else None
         raise error
+
 
 
 
