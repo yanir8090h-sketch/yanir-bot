@@ -1088,6 +1088,45 @@ async def guess(ctx, amount: int, number: int):
     else:
         update_xp(ctx.author.id, -amount)
 
+# ==========================================
+#        תפיסת שגיאות קלט (Error Handler)
+# ==========================================
+@bot.event
+async def on_command_error(ctx, error):
+    # שגיאה כשהמשתמש מכניס אותיות במקום מספרים
+    if isinstance(error, commands.BadArgument):
+        embed = discord.Embed(
+            title="❌ שגיאה בקלט הפקודה",
+            description="נראה שהזנת אותיות/טקסט במקום מספר (למשל בכמות ההימור). אנא נסה שוב עם מספר שלם תקין בלבד!",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+        
+    # שגיאה כשהמשתמש שוכח להכניס חלק מהנתונים (השגיאה מהצילום מסך שלך)
+    elif isinstance(error, commands.MissingRequiredArgument):
+        # בדיקה באיזו פקודה מדובר כדי להסביר לו בדיוק מה חסר
+        cmd_name = ctx.command.name
+        usage = ""
+        if cmd_name == "roulette":
+            usage = "`!roulette [כמות הימור] [אדום/שחור/ירוק או מספר]`"
+        elif cmd_name == "dice":
+            usage = "`!dice [כמות הימור]`"
+        elif cmd_name == "coin":
+            usage = "`!coin [כמות הימור] [עץ/פלי]`"
+        elif cmd_name == "guess":
+            usage = "`!guess [כמות הימור] [מספר בין 1 ל-5]`"
+            
+        embed = discord.Embed(
+            title="❌ חסרים נתונים בפקודה",
+            description=f"שכחת לרשום את אחד הפרמטרים!\nהצורה התקינה להשתמש בפקודה היא:\n{usage}",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+        
+    else:
+        # מאפשר לשגיאות קריטיות אחרות להמשיך להופיע כרגיל
+        await bot.process_respond_error(ctx, error) if hasattr(bot, 'process_respond_error') else None
+        raise error
 
 
 
