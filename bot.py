@@ -1,4 +1,4 @@
-import os, discord, asyncio, random, sqlite3, json
+import os, discord, asyncio, random, sqlite3
 from threading import Thread
 from flask import Flask
 from dotenv import load_dotenv
@@ -7,23 +7,20 @@ from datetime import datetime
 
 load_dotenv()
 
-
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 intents.guilds = True
 intents.reactions = True
-intents.voice_states = True # <--- הוספנו את השורה הזו כדי שהבוט ידע מתי נכנסים ויוצאים מחדרי קול
-
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 processed_message_ids = set()
 
 # 🆔 מזהי רולים כלליים של השרת שלך:
-STAFF_ROLE_ID = 1521955150334263437     
+STAFF_ROLE_ID = 1521955150334263437
 STAFF_ROLE_NAMES = (1521955150309359747)
 MNG_ROLE =   1521955150309359747
-MEMBER_ROLE = 1521955150246445184       
-VETERAN_ROLE_ID = 1521955150246445184  
+MEMBER_ROLE = 1521955150246445184
+VETERAN_ROLE_ID = 1521955150246445184
 
 # 🆔 מזהי ארבעת הרולים החדשים של החנות:
 ROLE_MNG_SUPPORT = 1520802461306271825    # Manager Support
@@ -111,7 +108,7 @@ class TicketDropdown(discord.ui.Select):
     async def callback(self, inter):
         g = inter.guild; u = inter.user
         choice = self.values[0]
-        
+
         if choice == "staff":
             ch = await g.create_text_channel(name=f"📝-בחינה-{u.name}", overwrites={g.default_role: discord.PermissionOverwrite(read_messages=False), u: discord.PermissionOverwrite(read_messages=True, send_messages=True)})
             await inter.response.send_message(f"✅ חדר הבחינה שלך נפתח בהצלחה: {ch.mention}", ephemeral=True)
@@ -139,21 +136,21 @@ class ShopDropdown(discord.ui.Select):
     async def callback(self, inter):
         item_id, price = self.values[0].split(":")
         price = int(price)
-        
+
         if get_xp(inter.user.id) < price:
             return await inter.response.send_message(f"❌ אין לך מספיק נקודות XP לרכישת רול זה!", ephemeral=True)
-        
+
         role_map = {
             "mng_sup": ROLE_MNG_SUPPORT,
             "evt_mng": ROLE_EV_MNG,
             "sup_team": ROLE_SUP_TEAM,
             "leak_team": ROLE_LEAK_TEAM
         }
-        
+
         role = inter.guild.get_role(role_map[item_id])
         if not role:
             return await inter.response.send_message("❌ שגיאה: הרול שנבחר לא הוגדר נכון בקוד על ידי המנהל!", ephemeral=True)
-            
+
         await inter.user.add_roles(role)
         new_bal = add_xp(inter.user.id, -price)
         await inter.response.send_message(f"🎉 תתחדש! הרכישה בוצעה בהצלחה וקיבלת את הרול: {role.name}! 🌟\nיתרת ה-XP החדשה שלך היא: `{new_bal:,} XP`", ephemeral=True)
@@ -585,7 +582,7 @@ async def on_message(msg):
             staff_role = None
                 # בדיקה ישירה לפי ה-ID של רול הצוות
         staff_role = msg.guild.get_role(1521955150309359747)
-        
+
         if not staff_role:
             await msg.channel.send(f"❌ לא נמצא רול צוות עם ה-ID {STAFF_ROLE_ID} בשרת זה.")
             return
@@ -598,156 +595,6 @@ async def on_message(msg):
 
     await bot.process_commands(msg)
 
-# ==========================================================
-#     מערכת סטטיסטיקות, שעות וכפתורים (תוספת לסוף הקובץ)
-# ==========================================================
-
-DB_FILE = "stats.json"
-
-def load_stats():
-    if os.path.exists(DB_FILE):
-        try:
-            with open(DB_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except:
-            return {}
-    return {}
-
-def save_stats(data):
-    with open(DB_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
-
-voice_tracking = {}
-
-def get_time_keys():
-    now = datetime.now()
-    return {
-        "daily": now.strftime("%Y-%m-%d"),
-        "weekly": now.strftime("%Y-w%W"),
-        "monthly": now.strftime("%Y-%m"),
-        "yearly": now.strftime("%Y")
-    }
-
-def get_real_user_stats(user_id, timeframe):
-    data = load_stats()
-    u_str = str(user_id)
-    keys = get_time_keys()
-    current_key = keys[timeframe]
-    default_stats = {"messages": 0, "hours": 0.0}
-
-    if u_str in data and timeframe in data[u_str]:
-        if current_key in data[u_str][timeframe]:
-            return data[u_str][timeframe][current_key]
-    return default_stats
-
-# ---- אירועים אוטומטיים למעקב ברקע ----
-
-@bot.listen()
-async def on_message(message):
-    if message.author.bot:
-        return
-
-    data = load_stats()
-    user_id = str(message.author.id)
-    keys = get_time_keys()
-
-    if user_id not in data:
-        data[user_id] = {"daily": {}, "weekly": {}, "monthly": {}, "yearly": {}}
-
-    for timeframe, key in keys.items():
-        if key not in data[user_id][timeframe]:
-            data[user_id][timeframe][key] = {"messages": 0, "hours": 0.0}
-        data[user_id][timeframe][key]["messages"] += 1
-
-    save_stats(data)
-
-@bot.listen()
-async def on_voice_state_update(member, before, after):
-    if member.bot:
-        return
-
-    user_id = member.id
-    now = datetime.now()
-
-    if before.channel is None and after.channel is not None:
-        voice_tracking[user_id] = now
-
-    elif before.channel is not None and after.channel is None:
-        join_time = voice_tracking.pop(user_id, None)
-        if join_time:
-            duration = (now - join_time).total_seconds() / 3600.0
-            
-            data = load_stats()
-            u_str = str(user_id)
-            keys = get_time_keys()
-
-            if u_str not in data:
-                data[u_str] = {"daily": {}, "weekly": {}, "monthly": {}, "yearly": {}}
-
-            for timeframe, key in keys.items():
-                if key not in data[u_str][timeframe]:
-                    data[u_str][timeframe][key] = {"messages": 0, "hours": 0.0}
-                data[u_str][timeframe][key]["hours"] = round(data[u_str][timeframe][key]["hours"] + duration, 2)
-
-            save_stats(data)
-
-# ---- עיצוב כפתורי הניווט (UI View) ----
-
-class StatsView(discord.ui.View):
-    def __init__(self, target_user):
-        super().__init__(timeout=60)
-        self.target_user = target_user
-
-    def create_stats_embed(self, timeframe, title_text, color):
-        stats = get_real_user_stats(self.target_user.id, timeframe)
-        
-        embed = discord.Embed(
-            title=f"📊 סטטיסטיקות פעילות - {title_text}",
-            description=f"הפעילות האמיתית של {self.target_user.mention} בשרת לתקופה זו:",
-            color=color
-        )
-        embed.add_field(name="💬 הודעות שנשלחו", value=f"**{stats['messages']}** הודעות", inline=True)
-        embed.add_field(name="🎙️ זמן בחדרי קול", value=f"**{stats['hours']}** שעות", inline=True)
-        embed.set_thumbnail(url=self.target_user.display_avatar.url)
-        embed.set_footer(text="המערכת סופרת ומתעדכנת אוטומטית")
-        return embed
-
-    @discord.ui.button(label="📅 יומי", style=discord.ButtonStyle.primary, custom_id="stats_daily")
-    async def daily_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if interaction.user.id != self.target_user.id:
-            return await interaction.response.send_message("❌ רק מי שהפעיל את הפקודה יכול ללחוץ!", ephemeral=True)
-        embed = self.create_stats_embed("daily", "היום", discord.Color.blue())
-        await interaction.response.edit_message(embed=embed)
-
-    @discord.ui.button(label="🗓️ שבועי", style=discord.ButtonStyle.success, custom_id="stats_weekly")
-    async def weekly_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if interaction.user.id != self.target_user.id:
-            return await interaction.response.send_message("❌ רק מי שהפעיל את הפקודה יכול ללחוץ!", ephemeral=True)
-        embed = self.create_stats_embed("weekly", "השבוע", discord.Color.green())
-        await interaction.response.edit_message(embed=embed)
-
-    @discord.ui.button(label="📊 חודשי", style=discord.ButtonStyle.secondary, custom_id="stats_monthly")
-    async def monthly_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if interaction.user.id != self.target_user.id:
-            return await interaction.response.send_message("❌ רק מי שהפעיל את הפקודה יכול ללחוץ!", ephemeral=True)
-        embed = self.create_stats_embed("monthly", "החודש", discord.Color.orange())
-        await interaction.response.edit_message(embed=embed)
-
-    @discord.ui.button(label="👑 שנתי", style=discord.ButtonStyle.danger, custom_id="stats_yearly")
-    async def yearly_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if interaction.user.id != self.target_user.id:
-            return await interaction.response.send_message("❌ רק מי שהפעיל את הפקודה יכול ללחוץ!", ephemeral=True)
-        embed = self.create_stats_embed("yearly", "השנה", discord.Color.red())
-        await interaction.response.edit_message(embed=embed)
-
-# ---- פקודת stats הראשי ----
-
-@bot.command(name="stats")
-async def user_activity_stats(ctx, member: discord.Member = None):
-    target = member or ctx.author
-    view = StatsView(target)
-    initial_embed = view.create_stats_embed("daily", "היום", discord.Color.blue())
-    await ctx.send(embed=initial_embed, view=view)
 
 
 
