@@ -903,6 +903,8 @@ async def on_ready():
     print('Your service is live 🚀')
 
 
-keep_alive()
-message.txt
-bot.run("TOKEN")
+if __name__ == "__main__":
+    keep_alive()
+    if not TOKEN:
+        raise RuntimeError("TOKEN environment variable is not set. Set TOKEN in .env or in the host config.")
+    bot.run(TOKEN)
